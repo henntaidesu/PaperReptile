@@ -194,75 +194,76 @@ class ArxivOrg:
             # print("sleep 2s")
             # time.sleep(2)
 
-    def translate_classification(self, data):
-        try:
-            # print(data)
-            for i in data:
-                Now_time = now_time()
-                uuid = i[0]
-                classification_en = i[1]
 
-                # classification_cn = self.GPT.openai_chat(classification_cn)
-                classification_cn = self.tr.GoogleTR(classification_en, 'zh-CN')
-                # classification_cn = self.tr.baiduTR("en", "zh", classification_en)
+def translate_classification(data):
+    logger = log()
+    tr = translate()
+    try:
+        for i in data:
+            Now_time = now_time()
+            uuid = i[0]
+            classification_en = i[1]
 
-                self.logger.write_log(f"[EN : {classification_en}] -> [CN : {classification_cn}]")
-                # self.logger.write_log(f"[EN : {title_en}] -> [CN : {title_cn}]")
+            # classification_cn = self.GPT.openai_chat(classification_cn)
+            classification_cn = tr.GoogleTR(classification_en, 'zh-CN')
+            # classification_cn = self.tr.baiduTR("en", "zh", classification_en)
 
-                sql = (f"UPDATE `index` SET `classification_zh` = '{classification_cn}' "
-                       f" , `state` = '01', `update_time` = '{Now_time}' WHERE `UUID` = '{uuid}';")
-                date_base = db()
-                date_base.update_all(sql)
+            logger.write_log(f"[EN : {classification_en}] -> [CN : {classification_cn}]")
+            # self.logger.write_log(f"[EN : {title_en}] -> [CN : {title_cn}]")
 
-        except Exception as e:
-            if type(e).__name__ == 'SSLError':
-                self.logger.write_log("SSL Error")
-                time.sleep(3)
-                self.translate_classification()
-            self.logger.write_log(f"Err Message:,{str(e)}")
-            self.logger.write_log(f"Err Type:, {type(e).__name__}")
-            _, _, tb = sys.exc_info()
-            self.logger.write_log(
-                f"Err Local:, {tb.tb_frame.f_code.co_filename}, {tb.tb_lineno}")
+            sql = (f"UPDATE `index` SET `classification_zh` = '{classification_cn}' "
+                   f" , `state` = '01', `update_time` = '{Now_time}' WHERE `UUID` = '{uuid}';")
+            date_base = db()
+            date_base.update_all(sql)
 
-    def translate_title(self):
-        try:
-            sql = f"SELECT UUID, classification_en,  title_en  FROM `index` WHERE state = '01' limit 100"
-            # date_base = db()
-            # flag, data = date_base.select_all(sql)
-            # print(data)
-            for i in list:
-                title_cn = None
-                Now_time = None
-                Now_time = now_time()
-                uuid = i[0]
-                title_en = i[2]
+    except Exception as e:
+        if type(e).__name__ == 'SSLError':
+            logger.write_log("SSL Error")
+            time.sleep(3)
+            translate_classification()
+        logger.write_log(f"Err Message:,{str(e)}")
+        logger.write_log(f"Err Type:, {type(e).__name__}")
+        _, _, tb = sys.exc_info()
+        logger.write_log(
+            f"Err Local:, {tb.tb_frame.f_code.co_filename}, {tb.tb_lineno}")
 
-                title_en = f"《{title_en}》"
 
-            # title_cn = self.GPT.openai_chat(title_en)
-            title_cn = self.tr.GoogleTR(title_en, 'zh-CN')
-            # title_cn = self.tr.baiduTR("en", "zh", title_cn)
+def translate_title(data):
+    logger = log()
+    tr = translate()
+    try:
+        for i in data:
+            title_cn = None
+            Now_time = None
+            Now_time = now_time()
+            uuid = i[0]
+            title_en = i[2]
 
-            if title_cn.startswith("《"):
-                title_cn = title_cn[1:]
-            if title_cn.endswith("》"):
-                title_cn = title_cn[:-1]
+            title_en = f"《{title_en}》"
 
-                self.logger.write_log(f"[EN : {title_en}] -> [CN : {title_cn}]")
+        # title_cn = self.GPT.openai_chat(title_en)
+        title_cn = tr.GoogleTR(title_en, 'zh-CN')
+        # title_cn = self.tr.baiduTR("en", "zh", title_cn)
 
-                sql = (f"UPDATE `index` SET `title_cn` = '{title_cn}' "
-                       f" , `state` = '02', `update_time` = '{Now_time}' WHERE `UUID` = '{uuid}';")
-                date_base = db()
-                date_base.update_all(sql)
+        if title_cn.startswith("《"):
+            title_cn = title_cn[1:]
+        if title_cn.endswith("》"):
+            title_cn = title_cn[:-1]
 
-        except Exception as e:
-            if type(e).__name__ == 'SSLError':
-                self.logger.write_log("SSL Error")
-                time.sleep(3)
-                self.translate_classification()
-            self.logger.write_log(f"Err Message:,{str(e)}")
-            self.logger.write_log(f"Err Type:, {type(e).__name__}")
-            _, _, tb = sys.exc_info()
-            self.logger.write_log(
-                f"Err Local:, {tb.tb_frame.f_code.co_filename}, {tb.tb_lineno}")
+            logger.write_log(f"[EN : {title_en}] -> [CN : {title_cn}]")
+
+            sql = (f"UPDATE `index` SET `title_zh` = '{title_cn}' "
+                   f" , `state` = '02', `update_time` = '{Now_time}' WHERE `UUID` = '{uuid}';")
+            date_base = db()
+            date_base.update_all(sql)
+
+    except Exception as e:
+        if type(e).__name__ == 'SSLError':
+            logger.write_log("SSL Error")
+            time.sleep(3)
+            translate_classification()
+        logger.write_log(f"Err Message:,{str(e)}")
+        logger.write_log(f"Err Type:, {type(e).__name__}")
+        _, _, tb = sys.exc_info()
+        logger.write_log(
+            f"Err Local:, {tb.tb_frame.f_code.co_filename}, {tb.tb_lineno}")

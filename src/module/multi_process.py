@@ -9,7 +9,7 @@ class Process:
     def __init__(self):
         self.database = db()
         self.conf = read_conf()
-        # self.arxiv = ArxivOrg()
+        self.arxiv = ArxivOrg()
 
     def split_list(self, input_list, num_parts):
         avg = len(input_list) // num_parts
@@ -24,7 +24,7 @@ class Process:
 
         return chunks
 
-    def multi_process_as_up_group(self, sql, func, *args):
+    def multi_process_as_up_group(self, sql, func):
         processes = int(self.conf.processes())
         date_base = db()
         flag, work_list = date_base.select_all(sql)
@@ -32,8 +32,8 @@ class Process:
             print("已完成获取AS UPGroup")
             return False
         chunks = self.split_list(work_list, processes)
-        func_with_args = partial(func, *args)
+        # func_with_args = partial(func, *args)
         pool = multiprocessing.Pool(processes=processes)
-        pool.map(func_with_args, chunks)
+        pool.map(func, chunks)
         pool.close()
         pool.join()
