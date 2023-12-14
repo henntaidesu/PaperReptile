@@ -25,7 +25,7 @@ class ArxivOrg:
             self.session.proxies.update(self.proxies)
         self.url_list = PageUrl()
         self.logger = log()
-        self.date_base = db()
+        self.data_base = db()
         self.tr = translate()
         self.GPT = openAI()
 
@@ -194,24 +194,14 @@ class ArxivOrg:
             # print("sleep 2s")
             # time.sleep(2)
 
-    def translate_classification(self):
+    def translate_classification(self, data):
         try:
-            classification_en = None
-            title_en = None
-            sql = f"SELECT UUID, classification_en,  title_en  FROM `index` WHERE state = '00' limit 100"
-            date_base = db()
-            flag, data = date_base.select_all(sql)
             # print(data)
             for i in data:
-                uuid = None
-                classification_en = None
-                classification_cn = None
-                Now_time = None
                 Now_time = now_time()
                 uuid = i[0]
                 classification_en = i[1]
 
-                title_en = f"《{title_en}》"
                 # classification_cn = self.GPT.openai_chat(classification_cn)
                 classification_cn = self.tr.GoogleTR(classification_en, 'zh-CN')
                 # classification_cn = self.tr.baiduTR("en", "zh", classification_en)
@@ -223,7 +213,6 @@ class ArxivOrg:
                        f" , `state` = '01', `update_time` = '{Now_time}' WHERE `UUID` = '{uuid}';")
                 date_base = db()
                 date_base.update_all(sql)
-
 
         except Exception as e:
             if type(e).__name__ == 'SSLError':
@@ -238,15 +227,11 @@ class ArxivOrg:
 
     def translate_title(self):
         try:
-            classification_en = None
-            title_en = None
             sql = f"SELECT UUID, classification_en,  title_en  FROM `index` WHERE state = '01' limit 100"
-            date_base = db()
-            flag, data = date_base.select_all(sql)
+            # date_base = db()
+            # flag, data = date_base.select_all(sql)
             # print(data)
-            for i in data:
-                uuid = None
-                title_en = None
+            for i in list:
                 title_cn = None
                 Now_time = None
                 Now_time = now_time()
@@ -270,7 +255,6 @@ class ArxivOrg:
                        f" , `state` = '02', `update_time` = '{Now_time}' WHERE `UUID` = '{uuid}';")
                 date_base = db()
                 date_base.update_all(sql)
-
 
         except Exception as e:
             if type(e).__name__ == 'SSLError':

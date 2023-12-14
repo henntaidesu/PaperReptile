@@ -64,6 +64,10 @@ class read_conf:
         prompt = self.config.get('ChatGPT', 'prompt')
         return key, model, base_url, prompt
 
+    def processes(self):
+        number = self.config.get('processes', 'number')
+        return number
+
 
 class ArxivYYMM:
     def __init__(self):

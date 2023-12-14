@@ -19,16 +19,16 @@ class translate:
 
         httpClient = None
         baidu_rapid, key = self.conf.baidu_api()
-        myurl = '/api/trans/vip/translate'
+        url = '/api/trans/vip/translate'
         salt = random.randint(32768, 65536)
         sign = baidu_rapid + text + str(salt) + key
         sign = hashlib.md5(sign.encode()).hexdigest()
-        myurl = (myurl + '?appid=' + baidu_rapid + '&q=' + urllib.parse.quote(text) +
-                 '&from=' + language + '&to=' + to_language + '&salt=' + str(salt) + '&sign=' + sign)
+        url = (url + '?appid=' + baidu_rapid + '&q=' + urllib.parse.quote(text) +
+               '&from=' + language + '&to=' + to_language + '&salt=' + str(salt) + '&sign=' + sign)
 
         try:
             httpClient = http.client.HTTPConnection('api.fanyi.baidu.com')
-            httpClient.request('GET', myurl)
+            httpClient.request('GET', url)
             # response是HTTPResponse对象
             response = httpClient.getresponse()
             result_all = response.read().decode("utf-8")
@@ -55,7 +55,3 @@ class translate:
         client = Translate(target=to_language, proxies={'https': proxy}, domain='com')
         trans_text = client.translate(text).translatedText
         return trans_text
-
-    def charGPT_TR(self, text):
-        proxy = self.conf.http_proxy()
-
