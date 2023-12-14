@@ -51,11 +51,11 @@ class translate:
                 httpClient.close()
 
     def GoogleTR(self, text, to_language):
-        proxy = self.conf.proxy()
-        client = Translate(target=to_language, proxies={'https': 'socks5://127.0.0.1:10808'}, domain='com')
+        proxy = self.conf.socks5()
+        client = Translate(target=to_language, proxies={'https': proxy}, domain='com')
         trans_text = client.translate(text).translatedText
         return trans_text
 
     def charGPT_TR(self, text):
-        proxy = self.conf.proxy()
+        proxy = self.conf.http_proxy()
 

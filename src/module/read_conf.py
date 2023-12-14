@@ -25,10 +25,10 @@ class read_conf:
         db = pymysql.connect(host=host, port=port, user=user, password=password, database=data_base)
         return db
 
-    def proxy(self):
-        if_true = self.config.get('proxy', 'true')
-        host = self.config.get('proxy', 'host')
-        port = self.config.get('proxy', 'port')
+    def http_proxy(self):
+        if_true = self.config.get('http_proxy', 'true')
+        host = self.config.get('http_proxy', 'host')
+        port = self.config.get('http_proxy', 'port')
         proxy_url = "http://" + host + ":" + port
 
         proxies = {
@@ -41,6 +41,12 @@ class read_conf:
             return True, proxies
         else:
             return False, proxies
+
+    def socks5(self):
+        host = self.config.get('socks5', 'host')
+        port = self.config.get('socks5', 'port')
+        proxy_url = f"socks5://{host}:{port}"
+        return proxy_url
 
     def baidu_api(self):
         baidu_rapid = self.config.get('baidu translate', 'rapid')

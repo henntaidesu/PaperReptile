@@ -20,7 +20,7 @@ class ArxivOrg:
     def __init__(self):
         self.session = requests.Session()
         self.conf = read_conf()
-        self.if_proxy, self.proxies = self.conf.proxy()
+        self.if_proxy, self.proxies = self.conf.http_proxy()
         if self.if_proxy is True:
             self.session.proxies.update(self.proxies)
         self.url_list = PageUrl()
@@ -194,7 +194,7 @@ class ArxivOrg:
             # print("sleep 2s")
             # time.sleep(2)
 
-    def translate_classification_title(self):
+    def translate_classification(self):
         try:
             classification_en = None
             title_en = None
@@ -206,28 +206,20 @@ class ArxivOrg:
                 uuid = None
                 classification_en = None
                 classification_cn = None
-                title_en = None
-                title_cn = None
                 Now_time = None
                 Now_time = now_time()
                 uuid = i[0]
                 classification_en = i[1]
-                title_en = i[2]
 
+                title_en = f"《{title_en}》"
                 # classification_cn = self.GPT.openai_chat(classification_cn)
                 classification_cn = self.tr.GoogleTR(classification_en, 'zh-CN')
                 # classification_cn = self.tr.baiduTR("en", "zh", classification_en)
 
-                title_cn = self.GPT.openai_chat(title_en)
-                # title_cn = self.tr.GoogleTR(title_cn, 'zh-CN')
-                # title_cn = self.tr.baiduTR("en", "zh", title_cn)
-
-                classification_cn = self.TrimString(classification_cn)
-                title_cn = self.TrimString(title_cn)
-
                 self.logger.write_log(f"[EN : {classification_en}] -> [CN : {classification_cn}]")
-                self.logger.write_log(f"[EN : {title_en}] -> [CN : {title_cn}]")
-                sql = (f"UPDATE `index` SET `classification_zh` = '{classification_cn}',`title_zh` = '{title_cn}' "
+                # self.logger.write_log(f"[EN : {title_en}] -> [CN : {title_cn}]")
+
+                sql = (f"UPDATE `index` SET `classification_zh` = '{classification_cn}' "
                        f" , `state` = '01', `update_time` = '{Now_time}' WHERE `UUID` = '{uuid}';")
                 date_base = db()
                 date_base.update_all(sql)
@@ -237,7 +229,54 @@ class ArxivOrg:
             if type(e).__name__ == 'SSLError':
                 self.logger.write_log("SSL Error")
                 time.sleep(3)
-                self.translate_classification_title()
+                self.translate_classification()
+            self.logger.write_log(f"Err Message:,{str(e)}")
+            self.logger.write_log(f"Err Type:, {type(e).__name__}")
+            _, _, tb = sys.exc_info()
+            self.logger.write_log(
+                f"Err Local:, {tb.tb_frame.f_code.co_filename}, {tb.tb_lineno}")
+
+    def translate_title(self):
+        try:
+            classification_en = None
+            title_en = None
+            sql = f"SELECT UUID, classification_en,  title_en  FROM `index` WHERE state = '01' limit 100"
+            date_base = db()
+            flag, data = date_base.select_all(sql)
+            # print(data)
+            for i in data:
+                uuid = None
+                title_en = None
+                title_cn = None
+                Now_time = None
+                Now_time = now_time()
+                uuid = i[0]
+                title_en = i[2]
+
+                title_en = f"《{title_en}》"
+
+            # title_cn = self.GPT.openai_chat(title_en)
+            title_cn = self.tr.GoogleTR(title_en, 'zh-CN')
+            # title_cn = self.tr.baiduTR("en", "zh", title_cn)
+
+            if title_cn.startswith("《"):
+                title_cn = title_cn[1:]
+            if title_cn.endswith("》"):
+                title_cn = title_cn[:-1]
+
+                self.logger.write_log(f"[EN : {title_en}] -> [CN : {title_cn}]")
+
+                sql = (f"UPDATE `index` SET `title_cn` = '{title_cn}' "
+                       f" , `state` = '02', `update_time` = '{Now_time}' WHERE `UUID` = '{uuid}';")
+                date_base = db()
+                date_base.update_all(sql)
+
+
+        except Exception as e:
+            if type(e).__name__ == 'SSLError':
+                self.logger.write_log("SSL Error")
+                time.sleep(3)
+                self.translate_classification()
             self.logger.write_log(f"Err Message:,{str(e)}")
             self.logger.write_log(f"Err Type:, {type(e).__name__}")
             _, _, tb = sys.exc_info()
