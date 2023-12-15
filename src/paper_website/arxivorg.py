@@ -6,7 +6,7 @@ import time
 from lxml import html
 from src.module.read_conf import read_conf, ArxivYYMM
 from bs4 import BeautifulSoup
-from src.model.arxiv_org import PageUrl
+from src.model.arxiv_org import ArxivOrgPageModel
 from src.module.execution_db import db
 from src.module.now_time import now_time
 from src.module.UUID import UUID
@@ -23,16 +23,25 @@ class ArxivOrg:
         self.if_proxy, self.proxies = self.conf.http_proxy()
         if self.if_proxy is True:
             self.session.proxies.update(self.proxies)
-        self.url_list = PageUrl()
+        self.subject_list = ArxivOrgPageModel
         self.logger = log()
         self.data_base = db()
         self.tr = translate()
         self.GPT = openAI()
 
-    def read_yy_mm(self):
+    def read_yy_mm_new_data(self):
+
+
         conf = ArxivYYMM()
         yy_mm, code = conf.read_arxiv_yy_mm_code()
         code = str(int(code) + 1).zfill(5)
+
+        return yy_mm, code
+
+    def read_yy_mm_old_data(self):
+        conf = ArxivYYMM()
+        yy_mm, code = conf.read_arxiv_yy_mm_code()
+        code = str(int(code) + 1).zfill(3)
 
         return yy_mm, code
 
@@ -46,7 +55,6 @@ class ArxivOrg:
         if mm == 0:
             yy, mm = yy - 1, 12
             self.logger.write_log(f"本年度已爬取{yy}")
-            sys.exit()
             yy, mm = 99, 12
         conf.write_arxiv_yy_mm_code(f"{yy:02d}{mm:02d}", "00000")
 
@@ -67,7 +75,7 @@ class ArxivOrg:
         sql = sql.replace("None", "NULL").replace("'NULL'", "NULL")
         return sql
 
-    def get_exhaustive_url(self):
+    def get_exhaustive_url_new_data(self):
         while True:
             uuid = None
             yy_mm = None
@@ -87,8 +95,12 @@ class ArxivOrg:
             version = None
             withdrawn = None
 
-            yy_mm, code = self.read_yy_mm()
-            url = f"https://arxiv.org/abs/{yy_mm}.{code}"
+            yy_mm, code = self.read_yy_mm_new_data()
+            if yy_mm > '0700':
+                url = f"https://arxiv.org/abs/{yy_mm}.{code}"
+            else:
+                url = f"https://arxiv.org/abs/astro-ph/{yy_mm}{code}"
+
             self.logger.write_log(url)
             try:
                 response = self.session.get(url)
@@ -96,7 +108,15 @@ class ArxivOrg:
                 if type(e).__name__ == 'SSLError':
                     self.logger.write_log("SSL Error")
                     time.sleep(3)
-                    self.get_exhaustive_url()
+                    self.get_exhaustive_url_new_data()
+                if type(e).__name__ == 'ProxyError':
+                    self.logger.write_log("ProxyError")
+                    time.sleep(3)
+                    self.get_exhaustive_url_new_data()
+                if type(e).__name__ == 'ConnectionError':
+                    self.logger.write_log("ConnectionError")
+                    time.sleep(3)
+                    self.get_exhaustive_url_new_data()
                 self.logger.write_log(f"Err Message:,{str(e)}")
                 self.logger.write_log(f"Err Type:, {type(e).__name__}")
                 _, _, tb = sys.exc_info()
@@ -110,12 +130,10 @@ class ArxivOrg:
             if "Article not found" in data_flag:
                 self.logger.write_log(f"   已爬取完{yy_mm}数据   ")
                 self.write_yy_mm_code(yy_mm)
-                self.get_exhaustive_url()
+                self.get_exhaustive_url_new_data()
 
             title_en = str(tree.xpath('//*[@id="abs"]/h1/text()')[0])[2:-2]
             time.sleep(1)
-            # title_zh = self.tr.GoogleTR(title, 'zh-CN')
-            # title_zh = self.tr.baiduTR("en", "zh", title)
             title_en = self.TrimString(title_en)
 
             authors_list = " , ".join([p.get_text() for p in soup.find('div', class_='authors').find_all('a')])
@@ -128,8 +146,6 @@ class ArxivOrg:
 
             classification = str(soup.find('td', class_='tablecell subjects').get_text(strip=True))
             time.sleep(1)
-            # classification_zh = self.tr.GoogleTR(classification, 'zh-CN')
-            # classification_zh = self.tr.baiduTR("en", "zh", classification)
 
             classification_en = self.TrimString(classification)
 
@@ -193,7 +209,6 @@ class ArxivOrg:
             self.write_code(yy_mm, code)
             # print("sleep 2s")
             # time.sleep(2)
-
 
 def translate_classification(data):
     logger = log()

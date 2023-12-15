@@ -5,82 +5,52 @@ import json
 
 @dataclass
 class ArxivOrgPageModel:
-    Abstract: str
-    Title: str
-    Authors: str
+    Astrophysics: str
+    Condensed_Matter: str
+    General_Relativity_and_Quantum_Cosmology: str
+    High_Energy_Physics_Experiment: str
+    High_Energy_Physi_Physics_Phenomenology: str
+    High_Energy_Physics_Theory: str
+    Mathematical_Physics: str
+    Nonlinear_Sciences: str
+    Nuclear_Experiment: str
+    Physics: str
+    Quantum_Physics: str
+    Mathematics: str
+    computer_science: str
+    quantitative_biology: str
+    quantitative_finance: str
+    Electrical_Engineering_and_Systems_Science: str
+    Economics: str
 
     @staticmethod
     def from_dict(obj: Any) -> 'ArxivOrgPageModel':
-        _Abstract = str(obj.get("Abstract"))
-        _Title = str(obj.get("Title"))
-        _Authors = float(obj.get("Authors"))
+        _Astrophysics = f"astro-ph"
+        _Condensed_Matter = f"cond-mat"
+        _General_Relativity_and_Quantum_Cosmology = "gr-qc"
+        _High_Energy_Physics_Experiment = "hep-ex"
+        _High_Energy_Physi_Physics_Phenomenology = "hep-ph"
+        _High_Energy_Physics_Theory = "hep-th"
+        _Mathematical_Physics = "math-ph"
+        _Nonlinear_Sciences = "nlin"
+        _Nuclear_Experiment = "nucl-ex"
+        _Physics = "physics"
+        _Quantum_Physics = "quant-ph"
+        _Mathematics = "math"
+        _computer_science = "cs"
+        _quantitative_biology = "q-bio"
+        _quantitative_finance = "quantitative_finance"
+        _Electrical_Engineering_and_Systems_Science = "eess"
+        _Economics = "econ"
 
-        return ArxivOrgPageModel(_Abstract, _Title, _Authors)
+        return ArxivOrgPageModel(_Astrophysics, _Condensed_Matter, _General_Relativity_and_Quantum_Cosmology
+                                 , _High_Energy_Physics_Experiment, _High_Energy_Physi_Physics_Phenomenology
+                                 , _High_Energy_Physics_Theory, _Mathematical_Physics, _Nonlinear_Sciences
+                                 , _Nuclear_Experiment, _Physics, _Quantum_Physics, _Mathematics, _computer_science
+                                 , _quantitative_biology, _quantitative_finance
+                                 , _Electrical_Engineering_and_Systems_Science, _Economics)
 
     def to_json(self) -> str:
         return json.dumps(self.__dict__)
 
 
-class PageUrl:
-
-    def all_url(self):
-        paysice_url = self.paysice()
-        mathematics_url = self.mathematics()
-        computer_science_url = self.computer_science()
-        quantitative_biology_url = self.quantitative_biology()
-        quantitative_finance_url = self.quantitative_biology()
-        statistics_url = self.statistics()
-        Electrical_Engineering_and_Systems_Science_url = self.Electrical_Engineering_and_Systems_Science()
-        Economics_url = self.Economics()
-        url_list = (paysice_url + mathematics_url + computer_science_url + quantitative_finance_url +
-                    quantitative_finance_url + statistics_url + Electrical_Engineering_and_Systems_Science_url +
-                    Economics_url)
-        # url_list = [computer_science_url]
-
-        return url_list
-
-    def paysice(self):
-        Astrophysics = f"astro-ph"
-        Condensed_Matter = f"cond-mat"
-        General_Relativity_and_Quantum_Cosmology = "gr-qc"
-        High_Energy_Physics_Experiment = "hep-ex"
-        High_Energy_Physi_Physics_Phenomenology = "hep-ph"
-        High_Energy_Physics_Theory = "hep-th"
-        Mathematical_Physics = "math-ph"
-        Nonlinear_Sciences = "nlin"
-        Nuclear_Experiment = "nucl-ex"
-        Physics = "physics"
-        Quantum_Physics = "quant-ph"
-
-        return [Astrophysics, Condensed_Matter, General_Relativity_and_Quantum_Cosmology,
-                High_Energy_Physics_Experiment, High_Energy_Physi_Physics_Phenomenology,
-                High_Energy_Physics_Theory, Mathematical_Physics, Nonlinear_Sciences, Nuclear_Experiment,
-                Physics, Quantum_Physics]
-
-    def mathematics(self):
-        Mathematics = "math"
-        return [Mathematics]
-
-    def computer_science(self):
-        computer_science = "cs"
-        return [computer_science]
-
-    def quantitative_biology(self):
-        quantitative_biology = "q-bio"
-        return [quantitative_biology]
-
-    def quantitative_finance(self):
-        quantitative_finance = "quantitative_finance"
-        return [quantitative_finance]
-
-    def statistics(self):
-        statistics = "stat"
-        return [statistics]
-
-    def Electrical_Engineering_and_Systems_Science(self):
-        Electrical_Engineering_and_Systems_Science = "eess"
-        return [Electrical_Engineering_and_Systems_Science]
-
-    def Economics(self):
-        Economics = "econ"
-        return [Economics]
