@@ -39,9 +39,10 @@ class ArxivOrgPageModel:
         _Mathematics = "math"
         _computer_science = "cs"
         _quantitative_biology = "q-bio"
-        _quantitative_finance = "quantitative_finance"
+        _quantitative_finance = "q-fin"
         _Electrical_Engineering_and_Systems_Science = "eess"
         _Economics = "econ"
+        _Statistics = "stat"
 
         return ArxivOrgPageModel(_Astrophysics, _Condensed_Matter, _General_Relativity_and_Quantum_Cosmology
                                  , _High_Energy_Physics_Experiment, _High_Energy_Physi_Physics_Phenomenology

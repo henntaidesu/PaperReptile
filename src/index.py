@@ -16,18 +16,18 @@ class index:
         print("1:爬论文")
         print("2:翻译classification")
         print("3:翻译title")
-
-
+        # paper_units = input()
+        # self.arxivorg.get_exhaustive_url(paper_units)
         flag = input()
-        if flag == '1':
-            self.arxivorg.get_exhaustive_url_old_data()
+        # if flag == '1':
+        #     self.arxivorg.get_exhaustive_url()
 
         if flag == '2':
             while True:
-                sql = f"SELECT UUID, classification_en,  title_en  FROM `index` WHERE state = '00' limit 1000"
+                sql = f"SELECT UUID, classification_en,  title_en  FROM `index` WHERE state = '00'"
                 self.process.multi_process_as_up_group(sql, translate_classification)
 
         if flag == '3':
             while True:
-                sql = f"SELECT UUID, classification_en,  title_en  FROM `index` WHERE state = '00'"
+                sql = f"SELECT UUID, classification_en,  title_en  FROM `index` WHERE state = '01'"
                 self.process.multi_process_as_up_group(sql, translate_title)

@@ -29,36 +29,34 @@ class ArxivOrg:
         self.tr = translate()
         self.GPT = openAI()
 
-    def read_yy_mm_new_data(self):
-
-
-        conf = ArxivYYMM()
-        yy_mm, code = conf.read_arxiv_yy_mm_code()
-        code = str(int(code) + 1).zfill(5)
-
-        return yy_mm, code
-
-    def read_yy_mm_old_data(self):
+    @staticmethod
+    def read_yy_mm_new_data():
         conf = ArxivYYMM()
         yy_mm, code = conf.read_arxiv_yy_mm_code()
         code = str(int(code) + 1).zfill(3)
 
         return yy_mm, code
 
-    def write_code(self, yy_mm, code):
+    @staticmethod
+    def write_code(yy_mm, code):
         conf = ArxivYYMM()
         conf.write_arxiv_yy_mm_code(yy_mm, code)
+
 
     def write_yy_mm_code(self, yy_mm):
         conf = ArxivYYMM()
         yy, mm = divmod(int(str(yy_mm)) - 1, 100)
         if mm == 0:
+            self.logger.write_log(f"已处理完本年度数据{yy}")
             yy, mm = yy - 1, 12
-            self.logger.write_log(f"本年度已爬取{yy}")
-            yy, mm = 99, 12
-        conf.write_arxiv_yy_mm_code(f"{yy:02d}{mm:02d}", "00000")
+            if yy < 1:
+                sys.exit()
+            if yy == 0:
+                yy, mm = 99, 12
+        conf.write_arxiv_yy_mm_code(f"{yy:02d}{mm:02d}", "000")
 
-    def TrimString(self, Str):
+    @staticmethod
+    def TrimString(Str):
         # if '\n' in Str:
         #     Str = Str.replace('\n', ' ')
         # if ' ' in Str:
@@ -71,35 +69,26 @@ class ArxivOrg:
             Str = Str.replace('"', '\\"')
         return Str
 
-    def TrSQL(self, sql):
+    @staticmethod
+    def TrSQL(sql):
         sql = sql.replace("None", "NULL").replace("'NULL'", "NULL")
         return sql
 
-    def get_exhaustive_url_new_data(self):
+    def get_exhaustive_url(self, paper_units):
         while True:
-            uuid = None
-            yy_mm = None
-            code = None
             classification_en = None
             classification_zh = None
             title_zh = None
-            title_en = None
-            Now_time = None
-            authors_list = None
-            introduction = None
-            receive_time = None
-            Journal_reference = None
-            Comments = None
-            size = None
-            DOI = None
-            version = None
-            withdrawn = None
+            paper_code = None
 
             yy_mm, code = self.read_yy_mm_new_data()
-            if yy_mm > '0700':
-                url = f"https://arxiv.org/abs/{yy_mm}.{code}"
-            else:
-                url = f"https://arxiv.org/abs/astro-ph/{yy_mm}{code}"
+            # if yy_mm > '0800':
+            #     url = f"https://arxiv.org/abs/{yy_mm}.{code}"
+            #     paper_code = f"{yy_mm}.{code}"
+            # else:
+            url = f"https://arxiv.org/abs/{paper_units}/{yy_mm}{code}"
+            paper_code = f"{paper_units}/{yy_mm}{code}"
+
 
             self.logger.write_log(url)
             try:
@@ -108,15 +97,15 @@ class ArxivOrg:
                 if type(e).__name__ == 'SSLError':
                     self.logger.write_log("SSL Error")
                     time.sleep(3)
-                    self.get_exhaustive_url_new_data()
+                    self.get_exhaustive_url()
                 if type(e).__name__ == 'ProxyError':
                     self.logger.write_log("ProxyError")
                     time.sleep(3)
-                    self.get_exhaustive_url_new_data()
+                    self.get_exhaustive_url()
                 if type(e).__name__ == 'ConnectionError':
                     self.logger.write_log("ConnectionError")
                     time.sleep(3)
-                    self.get_exhaustive_url_new_data()
+                    self.get_exhaustive_url()
                 self.logger.write_log(f"Err Message:,{str(e)}")
                 self.logger.write_log(f"Err Type:, {type(e).__name__}")
                 _, _, tb = sys.exc_info()
@@ -127,10 +116,10 @@ class ArxivOrg:
             soup = BeautifulSoup(response.text, 'html.parser')
 
             data_flag = tree.xpath('/html/head/title')[0].text if tree.xpath('/html/head/title') else None
-            if "Article not found" in data_flag:
+            if data_flag is None or "Article not found" in data_flag or 'identifier not recognized' in data_flag:
                 self.logger.write_log(f"   已爬取完{yy_mm}数据   ")
                 self.write_yy_mm_code(yy_mm)
-                self.get_exhaustive_url_new_data()
+                self.get_exhaustive_url(paper_units)
 
             title_en = str(tree.xpath('//*[@id="abs"]/h1/text()')[0])[2:-2]
             time.sleep(1)
@@ -199,7 +188,7 @@ class ArxivOrg:
                    f"(`UUID`, `web_site_id`, `classification_en`, `classification_zh`, `source_language`, "
                    f"`title_zh`, `title_en`, `update_time`, `insert_time`, `from`, `state`, `authors`, `Introduction`, "
                    f"`receive_time`, `Journal_reference`, `Comments`, `size`, `DOI`, `version`, `withdrawn`)"
-                   f" VALUES ('{uuid}', '{yy_mm}.{code}', '{classification_en}', '{classification_zh}', 'en', "
+                   f" VALUES ('{uuid}', '{paper_code}', '{classification_en}', '{classification_zh}', 'en', "
                    f"'{title_zh}', '{title_en}', NULL, '{Now_time}', 'arxiv', '00', '{authors_list}', '{introduction}',"
                    f"'{receive_time}','{Journal_reference}','{Comments}',{size},'{DOI}','{version}','{withdrawn}');")
 
@@ -209,6 +198,7 @@ class ArxivOrg:
             self.write_code(yy_mm, code)
             # print("sleep 2s")
             # time.sleep(2)
+
 
 def translate_classification(data):
     logger = log()
@@ -247,6 +237,7 @@ def translate_title(data):
     logger = log()
     tr = translate()
     try:
+
         for i in data:
             title_cn = None
             Now_time = None
