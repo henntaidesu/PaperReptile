@@ -19,8 +19,8 @@ class index:
         # paper_units = input()
         # self.arxivorg.get_exhaustive_url(paper_units)
         flag = input()
-        # if flag == '1':
-        #     self.arxivorg.get_exhaustive_url()
+        if flag == '1':
+            self.arxivorg.get_exhaustive_url()
 
         if flag == '2':
             while True:

@@ -33,7 +33,7 @@ class ArxivOrg:
     def read_yy_mm_new_data():
         conf = ArxivYYMM()
         yy_mm, code = conf.read_arxiv_yy_mm_code()
-        code = str(int(code) + 1).zfill(3)
+        code = str(int(code) + 1).zfill(5)
 
         return yy_mm, code
 
@@ -41,7 +41,6 @@ class ArxivOrg:
     def write_code(yy_mm, code):
         conf = ArxivYYMM()
         conf.write_arxiv_yy_mm_code(yy_mm, code)
-
 
     def write_yy_mm_code(self, yy_mm):
         conf = ArxivYYMM()
@@ -53,7 +52,7 @@ class ArxivOrg:
                 sys.exit()
             if yy == 0:
                 yy, mm = 99, 12
-        conf.write_arxiv_yy_mm_code(f"{yy:02d}{mm:02d}", "000")
+        conf.write_arxiv_yy_mm_code(f"{yy:02d}{mm:02d}", "00000")
 
     @staticmethod
     def TrimString(Str):
@@ -82,13 +81,12 @@ class ArxivOrg:
             paper_code = None
 
             yy_mm, code = self.read_yy_mm_new_data()
-            # if yy_mm > '0800':
-            #     url = f"https://arxiv.org/abs/{yy_mm}.{code}"
-            #     paper_code = f"{yy_mm}.{code}"
-            # else:
-            url = f"https://arxiv.org/abs/{paper_units}/{yy_mm}{code}"
-            paper_code = f"{paper_units}/{yy_mm}{code}"
 
+            url = f"https://arxiv.org/abs/{yy_mm}.{code}"
+            paper_code = f"{yy_mm}.{code}"
+
+            # url = f"https://arxiv.org/abs/{paper_units}/{yy_mm}{code}"
+            # paper_code = f"{paper_units}/{yy_mm}{code}"
 
             self.logger.write_log(url)
             try:
@@ -97,15 +95,15 @@ class ArxivOrg:
                 if type(e).__name__ == 'SSLError':
                     self.logger.write_log("SSL Error")
                     time.sleep(3)
-                    self.get_exhaustive_url()
+                    self.get_exhaustive_url(paper_units)
                 if type(e).__name__ == 'ProxyError':
                     self.logger.write_log("ProxyError")
                     time.sleep(3)
-                    self.get_exhaustive_url()
+                    self.get_exhaustive_url(paper_units)
                 if type(e).__name__ == 'ConnectionError':
                     self.logger.write_log("ConnectionError")
                     time.sleep(3)
-                    self.get_exhaustive_url()
+                    self.get_exhaustive_url(paper_units)
                 self.logger.write_log(f"Err Message:,{str(e)}")
                 self.logger.write_log(f"Err Type:, {type(e).__name__}")
                 _, _, tb = sys.exc_info()
