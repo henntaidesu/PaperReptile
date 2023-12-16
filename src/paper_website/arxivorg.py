@@ -34,7 +34,6 @@ class ArxivOrg:
         conf = ArxivYYMM()
         yy_mm, code = conf.read_arxiv_yy_mm_code()
         code = str(int(code) + 1).zfill(5)
-
         return yy_mm, code
 
     @staticmethod
@@ -45,13 +44,9 @@ class ArxivOrg:
     def write_yy_mm_code(self, yy_mm):
         conf = ArxivYYMM()
         yy, mm = divmod(int(str(yy_mm)) - 1, 100)
-        if mm == 0:
-            self.logger.write_log(f"已处理完本年度数据{yy}")
-            yy, mm = yy - 1, 12
-            if yy < 1:
-                sys.exit()
-            if yy == 0:
-                yy, mm = 99, 12
+        if mm == 13:
+            self.logger.write_log(f"已处理完本{yy}年{mm}月数据")
+            yy, mm = yy + 1, 1
         conf.write_arxiv_yy_mm_code(f"{yy:02d}{mm:02d}", "00000")
 
     @staticmethod
@@ -73,7 +68,7 @@ class ArxivOrg:
         sql = sql.replace("None", "NULL").replace("'NULL'", "NULL")
         return sql
 
-    def get_exhaustive_url(self, paper_units):
+    def get_exhaustive_url(self):
         while True:
             classification_en = None
             classification_zh = None
@@ -95,15 +90,15 @@ class ArxivOrg:
                 if type(e).__name__ == 'SSLError':
                     self.logger.write_log("SSL Error")
                     time.sleep(3)
-                    self.get_exhaustive_url(paper_units)
+                    self.get_exhaustive_url()
                 if type(e).__name__ == 'ProxyError':
                     self.logger.write_log("ProxyError")
                     time.sleep(3)
-                    self.get_exhaustive_url(paper_units)
+                    self.get_exhaustive_url()
                 if type(e).__name__ == 'ConnectionError':
                     self.logger.write_log("ConnectionError")
                     time.sleep(3)
-                    self.get_exhaustive_url(paper_units)
+                    self.get_exhaustive_url()
                 self.logger.write_log(f"Err Message:,{str(e)}")
                 self.logger.write_log(f"Err Type:, {type(e).__name__}")
                 _, _, tb = sys.exc_info()
@@ -117,7 +112,7 @@ class ArxivOrg:
             if data_flag is None or "Article not found" in data_flag or 'identifier not recognized' in data_flag:
                 self.logger.write_log(f"   已爬取完{yy_mm}数据   ")
                 self.write_yy_mm_code(yy_mm)
-                self.get_exhaustive_url(paper_units)
+                self.get_exhaustive_url()
 
             title_en = str(tree.xpath('//*[@id="abs"]/h1/text()')[0])[2:-2]
             time.sleep(1)
@@ -234,6 +229,7 @@ def translate_classification(data):
 def translate_title(data):
     logger = log()
     tr = translate()
+    GPT = openAI
     try:
 
         for i in data:
@@ -245,8 +241,8 @@ def translate_title(data):
 
             title_en = f"《{title_en}》"
 
-        # title_cn = self.GPT.openai_chat(title_en)
-        title_cn = tr.GoogleTR(title_en, 'zh-CN')
+        title_cn = GPT.openai_chat(title_en)
+        # title_cn = tr.GoogleTR(title_en, 'zh-CN')
         # title_cn = self.tr.baiduTR("en", "zh", title_cn)
 
         if title_cn.startswith("《"):

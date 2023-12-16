@@ -29,5 +29,6 @@ class index:
 
         if flag == '3':
             while True:
-                sql = f"SELECT UUID, classification_en,  title_en  FROM `index` WHERE state = '01'"
+                sql = (f"SELECT UUID, classification_en, title_en  FROM `index` WHERE state = '01' and "
+                       f"`classification_zh` LIKE '%cs%'")
                 self.process.multi_process_as_up_group(sql, translate_title)
