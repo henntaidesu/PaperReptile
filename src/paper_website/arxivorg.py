@@ -8,7 +8,7 @@ from src.module.read_conf import read_conf, ArxivYYMM
 from bs4 import BeautifulSoup
 from src.model.arxiv_org import ArxivOrgPageModel
 from src.module.execution_db import db
-from src.module.now_time import now_time
+from src.module.now_time import now_time, year, moon
 from src.module.UUID import UUID
 from src.module.log import log
 from src.module.translate import translate
@@ -43,11 +43,18 @@ class ArxivOrg:
 
     def write_yy_mm_code(self, yy_mm):
         conf = ArxivYYMM()
-        yy, mm = divmod(int(str(yy_mm)) - 1, 100)
-        if mm == 13:
-            self.logger.write_log(f"已处理完本{yy}年{mm}月数据")
-            yy, mm = yy + 1, 1
-        conf.write_arxiv_yy_mm_code(f"{yy:02d}{mm:02d}", "00000")
+        mm = moon()
+        if str(mm) == str(yy_mm)[2:]:
+            self.logger.write_log(f"已处理完该阶段数据，暂停6小时")
+            time.sleep(21600)
+            return True
+        else:
+            yy, mm = divmod(int(str(yy_mm)) + 1, 100)
+            if mm == 13:
+                self.logger.write_log(f"已处理完{yy}年{mm}月数据")
+                yy, mm = yy + 1, 1
+            conf.write_arxiv_yy_mm_code(f"{yy:02d}{mm:02d}", "00000")
+            return False
 
     @staticmethod
     def TrimString(Str):
@@ -69,11 +76,13 @@ class ArxivOrg:
         return sql
 
     def get_exhaustive_url(self):
+        global version
         while True:
             classification_en = None
             classification_zh = None
             title_zh = None
             paper_code = None
+            DOI = None
 
             yy_mm, code = self.read_yy_mm_new_data()
 
@@ -110,9 +119,12 @@ class ArxivOrg:
 
             data_flag = tree.xpath('/html/head/title')[0].text if tree.xpath('/html/head/title') else None
             if data_flag is None or "Article not found" in data_flag or 'identifier not recognized' in data_flag:
-                self.logger.write_log(f"   已爬取完{yy_mm}数据   ")
-                self.write_yy_mm_code(yy_mm)
-                self.get_exhaustive_url()
+                flag = self.write_yy_mm_code(yy_mm)
+                if flag:
+                    self.get_exhaustive_url()
+                else:
+                    self.logger.write_log(f"   已爬取完{yy_mm}数据   ")
+                    self.get_exhaustive_url()
 
             title_en = str(tree.xpath('//*[@id="abs"]/h1/text()')[0])[2:-2]
             time.sleep(1)
@@ -130,6 +142,7 @@ class ArxivOrg:
             time.sleep(1)
 
             classification_en = self.TrimString(classification)
+            # classification_zh = self.tr.GoogleTR(classification, 'zh-CN')
 
             Journal_reference = soup.find('td', class_='tablecell jref')
             if Journal_reference:
@@ -153,10 +166,21 @@ class ArxivOrg:
             if ',' in size:
                 size = size.replace(",", "")
 
-            DOI = (soup.find('td', class_='tablecell arxivdoi')).find('a')['href'][16:]
+            try:
+                DOI = (soup.find('td', class_='tablecell doi')).find('a')['href'][16:]
+            except:
+                try:
+                    DOI = (soup.find('td', class_='tablecell arxivdoi')).find('a')['href'][16:]
+                except:
+                    DOI = None
+
+            if "[v5]" in receive_time:
+                receive_time = receive_time[receive_time.find("[v5]") + 9:]
+                receive_time = datetime.strptime(receive_time[:receive_time.find("UTC") - 1], "%d %b %Y %H:%M:%S")
+                version = '5'
 
             if "[v4]" in receive_time:
-                receive_time = receive_time[receive_time.find("[v2]") + 9:]
+                receive_time = receive_time[receive_time.find("[v4]") + 9:]
                 receive_time = datetime.strptime(receive_time[:receive_time.find("UTC") - 1], "%d %b %Y %H:%M:%S")
                 version = '4'
 
@@ -189,8 +213,10 @@ class ArxivOrg:
             date_base = db()
             date_base.insert_all(sql)
             self.write_code(yy_mm, code)
+            # self.logger.write_log(f"[EN : {classification_en}] -> [CN : {classification_zh}]")
             # print("sleep 2s")
             # time.sleep(2)
+
 
 
 def translate_classification(data):
@@ -229,7 +255,7 @@ def translate_classification(data):
 def translate_title(data):
     logger = log()
     tr = translate()
-    GPT = openAI
+    GPT = openAI()
     try:
 
         for i in data:
@@ -237,31 +263,29 @@ def translate_title(data):
             Now_time = None
             Now_time = now_time()
             uuid = i[0]
-            title_en = i[2]
+            title_en = i[1]
 
             title_en = f"《{title_en}》"
+            # title_cn = GPT.openai_chat(title_en)
+            title_cn = tr.GoogleTR(title_en, 'zh-CN')
+            # title_cn = self.tr.baiduTR("en", "zh", title_cn)
 
-        title_cn = GPT.openai_chat(title_en)
-        # title_cn = tr.GoogleTR(title_en, 'zh-CN')
-        # title_cn = self.tr.baiduTR("en", "zh", title_cn)
+            if title_cn.startswith("《"):
+                title_cn = title_cn[1:]
+            if title_cn.endswith("》"):
+                title_cn = title_cn[:-1]
 
-        if title_cn.startswith("《"):
-            title_cn = title_cn[1:]
-        if title_cn.endswith("》"):
-            title_cn = title_cn[:-1]
+                logger.write_log(f"[EN : {title_en}] -> [CN : {title_cn}]")
 
-            logger.write_log(f"[EN : {title_en}] -> [CN : {title_cn}]")
-
-            sql = (f"UPDATE `index` SET `title_zh` = '{title_cn}' "
-                   f" , `state` = '02', `update_time` = '{Now_time}' WHERE `UUID` = '{uuid}';")
-            date_base = db()
-            date_base.update_all(sql)
+                sql = (f"UPDATE `index` SET `title_zh` = '{title_cn}' "
+                       f" , `state` = '02', `update_time` = '{Now_time}' WHERE `UUID` = '{uuid}';")
+                date_base = db()
+                date_base.update_all(sql)
 
     except Exception as e:
         if type(e).__name__ == 'SSLError':
             logger.write_log("SSL Error")
             time.sleep(3)
-            translate_classification()
         logger.write_log(f"Err Message:,{str(e)}")
         logger.write_log(f"Err Type:, {type(e).__name__}")
         _, _, tb = sys.exc_info()

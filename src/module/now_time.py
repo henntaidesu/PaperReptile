@@ -14,3 +14,17 @@ def day():
     datetime_obj = datetime.fromtimestamp(Time)
     formatted_date = datetime_obj.strftime("%Y-%m-%d")
     return formatted_date
+
+
+def year():
+    Time = time.time()
+    datetime_obj = datetime.fromtimestamp(Time)
+    formatted_date = datetime_obj.strftime("%Y")
+    return formatted_date
+
+
+def moon():
+    Time = time.time()
+    datetime_obj = datetime.fromtimestamp(Time)
+    formatted_date = datetime_obj.strftime("%m")
+    return formatted_date

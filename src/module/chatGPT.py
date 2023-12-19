@@ -12,7 +12,7 @@ class openAI:
         self.conf = read_conf()
         self.key, self.model, self.base_url, self.prompt = self.conf.ChatGPT()
 
-    def openai_chat(self, question: str) -> str | None:
+    def openai_chat(self, question):
         """
         :param question: what you want to ask for
         """
