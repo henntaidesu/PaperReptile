@@ -3,7 +3,7 @@ from src.module.log import log
 from src.module.read_conf import read_conf
 
 
-class db():
+class Date_base:
 
     def __init__(self):
         read_db_conf = read_conf()

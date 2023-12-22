@@ -1,16 +1,14 @@
 import sys
-
-from src.module.execution_db import db
+from src.module.execution_db import Date_base
 import multiprocessing
 from src.module.read_conf import read_conf
-from src.paper_website.arxivorg import ArxivOrg
-from functools import partial
+from src.paper_website.arxiv.arxivorg import ArxivOrg
 from src.module.log import log
 
 
 class Process:
     def __init__(self):
-        self.database = db()
+        self.database = Date_base()
         self.conf = read_conf()
         self.arxiv = ArxivOrg()
         self.logger = log()
@@ -31,7 +29,7 @@ class Process:
     def multi_process_as_up_group(self, sql, func):
         try:
             processes = int(self.conf.processes())
-            date_base = db()
+            date_base = Date_base()
             flag, work_list = date_base.select_all(sql)
             if len(work_list) == 0:
                 print("已完成获取AS UPGroup")

@@ -7,7 +7,7 @@ from lxml import html
 from src.module.read_conf import read_conf, ArxivYYMM
 from bs4 import BeautifulSoup
 from src.model.arxiv_org import ArxivOrgPageModel
-from src.module.execution_db import db
+from src.module.execution_db import Date_base
 from src.module.now_time import now_time, year, moon
 from src.module.UUID import UUID
 from src.module.log import log
@@ -25,7 +25,7 @@ class ArxivOrg:
             self.session.proxies.update(self.proxies)
         self.subject_list = ArxivOrgPageModel
         self.logger = log()
-        self.data_base = db()
+        self.data_base = Date_base()
         self.tr = translate()
         self.GPT = openAI()
 
@@ -76,7 +76,6 @@ class ArxivOrg:
         return sql
 
     def get_exhaustive_url(self):
-        global version
         while True:
             classification_en = None
             classification_zh = None
@@ -210,7 +209,7 @@ class ArxivOrg:
                    f"'{receive_time}','{Journal_reference}','{Comments}',{size},'{DOI}','{version}','{withdrawn}');")
 
             sql = self.TrSQL(sql)
-            date_base = db()
+            date_base = Date_base()
             date_base.insert_all(sql)
             self.write_code(yy_mm, code)
             # self.logger.write_log(f"[EN : {classification_en}] -> [CN : {classification_zh}]")
@@ -237,7 +236,7 @@ def translate_classification(data):
 
             sql = (f"UPDATE `index` SET `classification_zh` = '{classification_cn}' "
                    f" , `state` = '01', `update_time` = '{Now_time}' WHERE `UUID` = '{uuid}';")
-            date_base = db()
+            date_base = Date_base()
             date_base.update_all(sql)
 
     except Exception as e:
@@ -265,22 +264,26 @@ def translate_title(data):
             uuid = i[0]
             title_en = i[1]
 
-            title_en = f"《{title_en}》"
+            title_en = f"'{title_en}'"
             # title_cn = GPT.openai_chat(title_en)
             title_cn = tr.GoogleTR(title_en, 'zh-CN')
             # title_cn = self.tr.baiduTR("en", "zh", title_cn)
 
-            if title_cn.startswith("《"):
+            if title_cn.startswith("'"):
                 title_cn = title_cn[1:]
-            if title_cn.endswith("》"):
+            if title_cn.startswith('"'):
+                title_cn = title_cn[1:]
+            if title_cn.endswith('"'):
+                title_cn = title_cn[:-1]
+            if title_cn.endswith("'"):
                 title_cn = title_cn[:-1]
 
-                logger.write_log(f"[EN : {title_en}] -> [CN : {title_cn}]")
+            logger.write_log(f"[EN : {title_en}] -> [CN : {title_cn}]")
 
-                sql = (f"UPDATE `index` SET `title_zh` = '{title_cn}' "
-                       f" , `state` = '02', `update_time` = '{Now_time}' WHERE `UUID` = '{uuid}';")
-                date_base = db()
-                date_base.update_all(sql)
+            sql = (f"UPDATE `index` SET `title_zh` = '{title_cn}' "
+                   f" , `state` = '02', `update_time` = '{Now_time}' WHERE `UUID` = '{uuid}';")
+            date_base = Date_base()
+            date_base.update_all(sql)
 
     except Exception as e:
         if type(e).__name__ == 'SSLError':
