@@ -68,6 +68,12 @@ class read_conf:
         number = self.config.get('processes', 'number')
         return number
 
+    def down_path(self):
+        path = self.config.get('Paper File Path', 'path')
+        # if '\\' in path:
+        #     path = path.replace('\\','\\\\')
+        return path
+
 
 class ArxivYYMM:
     def __init__(self):

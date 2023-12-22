@@ -1,7 +1,7 @@
 from src.paper_website.arxiv.arxivorg import ArxivOrg, translate_classification, translate_title
 from src.module.log import log
 from src.module.multi_process import Process
-from src.paper_website.arxiv.arxiv_paper_down import paper_down
+from src.paper_website.arxiv.arxiv_paper_down import Arxiv_paper_down
 import asyncio
 
 
@@ -11,6 +11,7 @@ class index:
         self.logger = log()
         self.arxivorg = ArxivOrg()
         self.process = Process()
+        self.Arxiv_paper_down = Arxiv_paper_down()
 
     def index(self):
         print("1:爬论文")
@@ -20,7 +21,7 @@ class index:
         # self.arxivorg.get_exhaustive_url(paper_units)
 
         # flag = input()
-        flag = '4'
+        flag = '2'
         if flag == '1':
             self.arxivorg.get_exhaustive_url()
 
@@ -38,4 +39,4 @@ class index:
         if flag == '4':
             sql = (f"SELECT UUID, web_site_id FROM `Paper`.`index`WHERE state = '02' and classification_zh  "
                    f"like '%cs%' ORDER BY receive_time desc limit 10")
-            paper_down(sql)
+            self.Arxiv_paper_down.paper_down(sql)
