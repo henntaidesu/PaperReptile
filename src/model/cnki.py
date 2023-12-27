@@ -11,6 +11,8 @@ def xpath_inf():
         ("/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[3]/span", "/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[3]/p"),
         ("/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[3]/span", "/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[3]/p"),
         ("/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[3]/span", "/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[3]/p"),
+        ("/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[4]/span", "/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[4]/p"),
+        ("/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[4]/span", "/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[4]/p")
     ]
 
     return xpaths

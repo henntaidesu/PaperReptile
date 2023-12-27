@@ -14,7 +14,7 @@ from src.module.UUID import UUID
 from src.module.now_time import now_time
 from src.model.cnki import xpath_inf, xpath_base
 from src.module.log import log
-
+import random
 logger = log()
 
 
@@ -61,7 +61,9 @@ def webserver():
 def open_page(driver, keyword):
     # 打开页面，等待两秒
     driver.get("https://kns.cnki.net/kns8/AdvSearch")
-    time.sleep(2)
+    random_sleep = round(random.uniform(0, 3), 2)
+    print(f"sleep {random_sleep}s")
+    time.sleep(random_sleep)
 
     # 修改属性，使下拉框显示
     opt = driver.find_element(By.CSS_SELECTOR, 'div.sort-list')  # 定位元素
@@ -127,9 +129,14 @@ def crawl(driver, papers_need, keyword):
     count = 1
     xpath_information = xpath_inf()
 
+    sql = f"select title from `cnki_index` where `from` = '{keyword}'"
+    flag, paper_title = Date_base().select_all(sql)
+
     for i in range((count - 1) // 20):
         # 切换到下一页
-        time.sleep(3)
+        random_sleep = round(random.uniform(0, 3), 2)
+        print(f"sleep {random_sleep}s")
+        time.sleep(random_sleep)
         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, "//*[@id='PageNext']"))).click()
 
     print(f"从第 {count} 条开始爬取\n")
@@ -142,6 +149,7 @@ def crawl(driver, papers_need, keyword):
         title_list = WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.CLASS_NAME, "fz14")))
         # 循环网页一页中的条目
         for i in range((count - 1) % 20 + 1, 21):
+            if_title = False
             print(
                 f"\n###正在爬取第 {count} 条(第{(count - 1) // 20 + 1}页第{i}条)#######################################\n")
 
@@ -154,9 +162,14 @@ def crawl(driver, papers_need, keyword):
                 title, authors, source, date, db_type, quote, down_sun = [future.result() for future in
                                                                           future_elements]
 
-                # db = Date_base
-                # sql = f"select `cnki_index`"
-                # flag, paper_title = db.select_all(sql)
+                for ii in paper_title:
+                    if ii[0] == title:
+                        print(f"数据已存在 : {title}")
+                        if_title = True
+                        break
+
+                if if_title is True:
+                    continue
 
                 if not quote.isdigit():
                     quote = '0'
@@ -183,7 +196,7 @@ def crawl(driver, papers_need, keyword):
                     pass
 
                 # 获取作者单位
-                print('正在获取institute...')
+                print('正在获取作者单位')
                 try:
                     institute = WebDriverWait(driver, 3).until(EC.presence_of_element_located(
                         (By.XPATH, "/html/body/div[2]/div[1]/div[3]/div/div/div[3]/div/h3[2]"))).text
@@ -191,15 +204,13 @@ def crawl(driver, papers_need, keyword):
                     institute = None
                 print(institute)
 
-                # 获取摘要、关键词、专辑、专题
-                # 获取摘要
-                print('正在获取abstract...')
+                print('正在获取摘要')
                 try:
                     abstract = WebDriverWait(driver, 3).until(
                         EC.presence_of_element_located((By.CLASS_NAME, "abstract-text"))).text
                 except:
                     abstract = None
-                # print(abstract + '\n')
+                print(abstract)
 
                 # 获取关键词
                 # print('正在获取keywords...')
@@ -265,6 +276,7 @@ def crawl(driver, papers_need, keyword):
                 print(paper_size)
 
                 # 获取文章目录
+                print("获取文章目录")
                 try:
                     article_directory = WebDriverWait(driver, 0).until(
                         EC.presence_of_element_located((By.CLASS_NAME, "catalog-list"))).text
@@ -277,12 +289,20 @@ def crawl(driver, papers_need, keyword):
                 # 获取下载链接
                 try:
                     down_url = WebDriverWait(driver, 0).until(EC.presence_of_all_elements_located
-                                                          ((By.CLASS_NAME, "btn-dlpdf")))[0].get_attribute('href')
+                                                              ((By.CLASS_NAME, "btn-dlpdf")))[0].get_attribute('href')
                     down_url = urljoin(driver.current_url, down_url)
                 except:
                     down_url = None
 
-                # 写入文件
+                print("获取new_title")
+                try:
+                    new_title = WebDriverWait(driver, 3).until(
+                        EC.presence_of_element_located((By.TAG_NAME, "h1"))
+                    )
+                    new_title = new_title.text
+                except:
+                    new_title = None
+                print(new_title)
 
                 uuid = UUID()
                 insert_time = now_time()
@@ -292,12 +312,12 @@ def crawl(driver, papers_need, keyword):
                 update_time = None
 
                 sql1 = (
-                    f"INSERT INTO `Paper`.`index_copy1`(`UUID`, `web_site_id`, `classification_en`,`classification_zh`,"
+                    f"INSERT INTO `Paper`.`index`(`UUID`, `web_site_id`, `classification_en`,`classification_zh`,"
                     f"`source_language`, `title_zh`, `title_en`, `update_time`, `insert_time`, `from`, `state`, "
                     f"`authors`, `Introduction`, `receive_time`, `Journal_reference`, `Comments`, `size`, `DOI`, "
                     f"`version`, `withdrawn`) "
-                    f" VALUES ('{uuid}', '{url}', '{classification_en}', '{classification_zh}', "
-                    f" 'cn', '{title}', '{title_en}', '{update_time}', '{insert_time}', 'cnki', '00', "
+                    f" VALUES ('{uuid}', '{uuid}', '{classification_en}', '{classification_zh}', "
+                    f" 'cn', '{new_title}', '{title_en}', '{update_time}', '{insert_time}', 'cnki', '00', "
                     f" '{authors}', NULL, '{date}', NULL, NULL, {paper_size}, NULL, NULL, NULL);")
 
                 sql2 = (f"INSERT INTO `Paper`.`cnki_paper_information`"
@@ -311,20 +331,23 @@ def crawl(driver, papers_need, keyword):
 
                 sql3 = (f"INSERT INTO `Paper`.`cnki_index`"
                         f"(`UUID`, `source_language`, `title`, `insert_time`, `from`) "
-                        f"VALUES ('{uuid}', cn, '{title}', '{insert_time}', '{keyword}');")
+                        f"VALUES ('{uuid}', 'cn', '{title}', '{insert_time}', '{keyword}');")
 
                 sql1 = TrSQL(sql1)
                 sql2 = TrSQL(sql2)
                 sql3 = TrSQL(sql3)
-                sql = [sql1, sql2, sql3]
 
-                Date_base.insert_list(sql)
+                Date_base().insert_all(sql1)
+                Date_base().insert_all(sql2)
+                Date_base().insert_all(sql3)
 
-                logger.write_log(f"已获取 ： {title}")
-                time.sleep(3)
+                logger.write_log(f"已获取 ： {new_title}, UUID : {uuid}")
+                random_sleep = round(random.uniform(0, 5), 2)
+                print(f"sleep {random_sleep}s")
+                time.sleep(random_sleep)
 
             except:
-                logger.write_log(f"失败 ： {title}")
+                logger.write_log(f"错误 ： {new_title}, UUID : {uuid}")
                 continue
 
             finally:
