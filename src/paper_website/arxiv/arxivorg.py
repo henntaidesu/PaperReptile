@@ -231,6 +231,7 @@ def translate_classification(data):
             classification_cn = tr.GoogleTR(classification_en, 'zh-CN')
             # classification_cn = self.tr.baiduTR("en", "zh", classification_en)
 
+            classification_en = ArxivOrg.TrimString(classification_en)
             logger.write_log(f"[EN : {classification_en}] -> [CN : {classification_cn}]")
             # self.logger.write_log(f"[EN : {title_en}] -> [CN : {title_cn}]")
 
@@ -264,20 +265,11 @@ def translate_title(data):
             uuid = i[0]
             title_en = i[1]
 
-            title_en = f"'{title_en}'"
-            # title_cn = GPT.openai_chat(title_en)
-            title_cn = tr.GoogleTR(title_en, 'zh-CN')
+            title_en = f"{title_en}"
+            title_cn = GPT.openai_chat(title_en)
+            # title_cn = tr.GoogleTR(title_en, 'zh-CN')
             # title_cn = self.tr.baiduTR("en", "zh", title_cn)
-
-            if title_cn.startswith("'"):
-                title_cn = title_cn[1:]
-            if title_cn.startswith('"'):
-                title_cn = title_cn[1:]
-            if title_cn.endswith('"'):
-                title_cn = title_cn[:-1]
-            if title_cn.endswith("'"):
-                title_cn = title_cn[:-1]
-
+            title_cn = ArxivOrg.TrimString(title_cn)
             logger.write_log(f"[EN : {title_en}] -> [CN : {title_cn}]")
 
             sql = (f"UPDATE `index` SET `title_zh` = '{title_cn}' "
@@ -289,8 +281,13 @@ def translate_title(data):
         if type(e).__name__ == 'SSLError':
             logger.write_log("SSL Error")
             time.sleep(3)
-        logger.write_log(f"Err Message:,{str(e)}")
-        logger.write_log(f"Err Type:, {type(e).__name__}")
-        _, _, tb = sys.exc_info()
-        logger.write_log(
-            f"Err Local:, {tb.tb_frame.f_code.co_filename}, {tb.tb_lineno}")
+        if type(e).__name__ == 'APIStatusError':
+            logger.write_log("APIStatusError")
+            logger.write_log(f"Err Message:,{str(e)}")
+            sys.exit()
+        else:
+            logger.write_log(f"Err Message:,{str(e)}")
+            logger.write_log(f"Err Type:, {type(e).__name__}")
+            _, _, tb = sys.exc_info()
+            logger.write_log(
+                f"Err Local:, {tb.tb_frame.f_code.co_filename}, {tb.tb_lineno}")

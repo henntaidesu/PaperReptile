@@ -13,7 +13,8 @@ class Process:
         self.arxiv = ArxivOrg()
         self.logger = log()
 
-    def split_list(self, input_list, num_parts):
+    @staticmethod
+    def split_list(input_list, num_parts):
         avg = len(input_list) // num_parts
         remainder = len(input_list) % num_parts
         chunks = []
