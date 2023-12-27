@@ -2,6 +2,7 @@ from src.paper_website.arxiv.arxivorg import ArxivOrg, translate_classification,
 from src.module.log import log
 from src.module.multi_process import Process
 from src.paper_website.arxiv.arxiv_paper_down import Arxiv_paper_down
+from src.paper_website.cnki.cnki import cnki_run
 import asyncio
 
 
@@ -21,7 +22,7 @@ class index:
         # self.arxivorg.get_exhaustive_url(paper_units)
 
         # flag = input()
-        flag = '3'
+        flag = '5'
         if flag == '1':
             self.arxivorg.get_exhaustive_url()
 
@@ -43,3 +44,8 @@ class index:
                        f"FROM `Paper`.`index`WHERE state = '02' and classification_zh "
                        f" like '%cs%' ORDER BY receive_time desc limit 10000")
                 self.Arxiv_paper_down.paper_down(sql)
+
+        if flag == '5':
+            keyword = "人工智能"
+            papers_need = 2147483647
+            cnki_run(keyword, papers_need)

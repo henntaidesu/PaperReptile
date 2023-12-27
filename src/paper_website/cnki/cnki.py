@@ -1,5 +1,7 @@
+import sys
 import time
 import concurrent.futures
+from urllib.parse import urljoin
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -10,6 +12,35 @@ import os
 from src.module.execution_db import Date_base
 from src.module.UUID import UUID
 from src.module.now_time import now_time
+from src.model.cnki import xpath_inf, xpath_base
+from src.module.log import log
+
+logger = log()
+
+
+def TrimString(Str):
+    if '\n' in Str:
+        Str = Str.replace('\n', ' ')
+    # if ' ' in Str:
+    #     Str = Str.replace(' ', '')
+    # if '/' in Str:
+    #     Str = Str.replace('/', ' ')
+    if "'" in Str:
+        Str = Str.replace("'", "\\'")
+    if '"' in Str:
+        Str = Str.replace('"', '\\"')
+    return Str
+
+
+def Trim_passkey(Str):
+    Str = Str.replace(";", " ")
+    return Str
+
+
+def TrSQL(sql):
+    sql = sql.replace("None", "NULL").replace("'NULL'", "NULL")
+    return sql
+
 
 def webserver():
     # get直接返回，不再等待界面加载完成
@@ -87,20 +118,14 @@ def get_choose_info(driver, xpath1, xpath2, str):
         if WebDriverWait(driver, 1).until(EC.presence_of_element_located((By.XPATH, xpath1))).text == str:
             return WebDriverWait(driver, 1).until(EC.presence_of_element_located((By.XPATH, xpath2))).text
         else:
-            return '无'
+            return None
     except:
-        return '无'
+        return None
 
 
-def crawl(driver, papers_need, theme):
+def crawl(driver, papers_need, keyword):
     count = 1
-
-    # file_path = f"CNKI_{theme}.tsv"
-    # if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
-    #     with open(file_path, "r") as file:
-    #         lines = file.readlines()
-    #         last_line = lines[-1].strip()
-    #         count = int(last_line.split("\t")[0]) + 1
+    xpath_information = xpath_inf()
 
     for i in range((count - 1) // 20):
         # 切换到下一页
@@ -117,37 +142,26 @@ def crawl(driver, papers_need, theme):
         title_list = WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.CLASS_NAME, "fz14")))
         # 循环网页一页中的条目
         for i in range((count - 1) % 20 + 1, 21):
-            db = read_conf()
             print(
                 f"\n###正在爬取第 {count} 条(第{(count - 1) // 20 + 1}页第{i}条)#######################################\n")
 
             try:
                 term = (count - 1) % 20 + 1  # 本页的第几个条目
-
-                # 获取基础信息
-                print('正在获取基础信息...')
-                title_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr[{term}]/td[2]'''
-                author_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr[{term}]/td[3]'''
-                source_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr[{term}]/td[4]'''
-                date_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr[{term}]/td[5]'''
-                database_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr[{term}]/td[6]'''
-                quote_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr[{term}]/td[7]'''
-                download_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr[{term}]/td[8]'''
-
-                xpaths = [title_xpath, author_xpath, source_xpath, date_xpath, database_xpath, quote_xpath,
-                          download_xpath]
+                xpaths = xpath_base(term)
 
                 with concurrent.futures.ThreadPoolExecutor() as executor:
                     future_elements = [executor.submit(get_info, driver, xpath) for xpath in xpaths]
-                title, authors, source, date, database, quote, download = [future.result() for future in
-                                                                           future_elements]
+                title, authors, source, date, db_type, quote, down_sun = [future.result() for future in
+                                                                          future_elements]
+
+                # db = Date_base
+                # sql = f"select `cnki_index`"
+                # flag, paper_title = db.select_all(sql)
+
                 if not quote.isdigit():
                     quote = '0'
-                if not download.isdigit():
-                    download = '0'
-                print(f"{title} {authors} {source} {date} {database} {quote} {download}\n")
-                sql1= f""
-
+                if not down_sun.isdigit():
+                    down_sun = '0'
 
                 # 点击条目
                 title_list[i - 1].click()
@@ -162,7 +176,7 @@ def crawl(driver, papers_need, theme):
                 # 开始获取页面信息
                 # 点击展开
                 try:
-                    WebDriverWait(driver, 10).until(
+                    WebDriverWait(driver, 3).until(
                         EC.presence_of_element_located((By.XPATH, '''//*[@id="ChDivSummaryMore"]'''))
                     ).click()
                 except:
@@ -171,83 +185,104 @@ def crawl(driver, papers_need, theme):
                 # 获取作者单位
                 print('正在获取institute...')
                 try:
-                    institute = WebDriverWait(driver, 10).until(EC.presence_of_element_located(
+                    institute = WebDriverWait(driver, 3).until(EC.presence_of_element_located(
                         (By.XPATH, "/html/body/div[2]/div[1]/div[3]/div/div/div[3]/div/h3[2]"))).text
                 except:
-                    institute = '无'
-                print(institute + '\n')
+                    institute = None
+                print(institute)
 
                 # 获取摘要、关键词、专辑、专题
                 # 获取摘要
                 print('正在获取abstract...')
                 try:
-                    abstract = WebDriverWait(driver, 10).until(
+                    abstract = WebDriverWait(driver, 3).until(
                         EC.presence_of_element_located((By.CLASS_NAME, "abstract-text"))).text
                 except:
-                    abstract = '无'
-                print(abstract + '\n')
+                    abstract = None
+                # print(abstract + '\n')
 
                 # 获取关键词
-                print('正在获取keywords...')
+                # print('正在获取keywords...')
                 try:
-                    keywords = WebDriverWait(driver, 10).until(
+                    classification_zh = WebDriverWait(driver, 3).until(
                         EC.presence_of_element_located((By.CLASS_NAME, "keywords"))).text[:-1]
                 except:
-                    keywords = '无'
-                print(keywords + '\n')
+                    classification_zh = None
+                    print("无法获取TAG")
+                    sys.exit()
+                classification_zh = Trim_passkey(classification_zh)
+                # print(classification_zh)
 
                 # 获取专辑
-                print('正在获取publication...')
-                xpaths = [
-                    ("/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[1]/span",
-                     "/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[1]/p"),
-                    ("/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[2]/span",
-                     "/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[2]/p"),
-                    ("/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[1]/span",
-                     "/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[1]/p"),
-                    ("/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[2]/span",
-                     "/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[2]/p"),
-                    ("/html/body/div[2]/div[1]/div[3]/div/div/div[4]/ul/li[1]/span",
-                     "/html/body/div[2]/div[1]/div[3]/div/div/div[4]/ul/li[1]/p")
-                ]
+                print('获取专辑')
                 with concurrent.futures.ThreadPoolExecutor() as executor:
                     futures = [executor.submit(get_choose_info, driver, xpath1, xpath2, '专辑：') for xpath1, xpath2 in
-                               xpaths]
+                               xpath_information]
                     results = [future.result() for future in concurrent.futures.as_completed(futures)]
-                publication = next((result for result in results if result != '无'), '无')
-                print(publication + '\n')
+                publication = next((result for result in results if result is not None), None)
+                if publication is None:
+                    logger.write_log(f"获取专辑错误 ： {title}")
+                print(publication)
 
                 # 获取专题
-                print('正在获取topic...')
-                xpaths = [
-                    ("/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[2]/span",
-                     "/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[2]/p"),
-                    ("/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[3]/span",
-                     "/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[3]/p"),
-                    ("/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[2]/span",
-                     "/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[2]/p"),
-                    ("/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[3]/span",
-                     "/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[3]/p"),
-                    ("/html/body/div[2]/div[1]/div[3]/div/div/div[4]/ul/li[2]/span",
-                     "/html/body/div[2]/div[1]/div[3]/div/div/div[4]/ul/li[2]/p")
-                ]
+                print('获取专题')
                 with concurrent.futures.ThreadPoolExecutor() as executor:
                     futures = [executor.submit(get_choose_info, driver, xpath1, xpath2, '专题：') for xpath1, xpath2 in
-                               xpaths]
+                               xpath_information]
                     results = [future.result() for future in concurrent.futures.as_completed(futures)]
-                topic = next((result for result in results if result != '无'), '无')
-                print(topic + '\n')
+                topic = next((result for result in results if result is not None), None)
+                if topic is None:
+                    logger.write_log(f"获取专题错误 ： {title}")
+                print(topic)
+
+                # 获取分类号
+                print('获取分类号')
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    futures = [executor.submit(get_choose_info, driver, xpath1, xpath2, '分类号：') for xpath1, xpath2 in
+                               xpath_information]
+                    results = [future.result() for future in concurrent.futures.as_completed(futures)]
+                classification_number = next((result for result in results if result is not None), None)
+                if classification_number is None:
+                    logger.write_log(f"获取分类号错误 ： {title}")
+                print(classification_number)
+
+                # 获取资金资助
+                print('获取资金资助')
+                try:
+                    funding = WebDriverWait(driver, 3).until(
+                        EC.presence_of_element_located((By.CLASS_NAME, "funds"))).text
+                except:
+                    funding = None
+                print(funding)
+
+                print('获取论文大小')
+                try:
+                    paper_size = WebDriverWait(driver, 0).until(EC.presence_of_element_located(
+                        (By.XPATH, '''//*[@id="DownLoadParts"]/div[2]/div/div/p/span[4]'''))).text
+                    paper_size = int(paper_size[3:][:-1])
+                except:
+                    paper_size = None
+                print(paper_size)
+
+                # 获取文章目录
+                try:
+                    article_directory = WebDriverWait(driver, 0).until(
+                        EC.presence_of_element_located((By.CLASS_NAME, "catalog-list"))).text
+                except:
+                    article_directory = None
+                print(article_directory)
 
                 url = driver.current_url[46:][:-32]
 
-
                 # 获取下载链接
-                # link = WebDriverWait( driver, 10 ).until( EC.presence_of_all_elements_located((By.CLASS_NAME  ,"btn-dlcaj") ) )[0].get_attribute('href')
-                # link = urljoin(driver.current_url, link)
+                try:
+                    down_url = WebDriverWait(driver, 0).until(EC.presence_of_all_elements_located
+                                                          ((By.CLASS_NAME, "btn-dlpdf")))[0].get_attribute('href')
+                    down_url = urljoin(driver.current_url, down_url)
+                except:
+                    down_url = None
 
                 # 写入文件
-                res = f"{count}\t{title}\t{authors}\t{institute}\t{date}\t{source}\t{publication}\t{topic}\t{database}\t{quote}\t{download}\t{keywords}\t{abstract}\t{url}".replace(
-                    "\n", "") + "\n"
 
                 uuid = UUID()
                 insert_time = now_time()
@@ -255,39 +290,41 @@ def crawl(driver, papers_need, theme):
                 title_en = None
                 classification_en = None
                 update_time = None
-                classification_zh = None
 
-                sql1 = (f"INSERT INTO `Paper`.`index_copy1`(`UUID`, `web_site_id`, `classification_en`, `classification_zh`, "
-                       f"`source_language`, `title_zh`, `title_en`, `update_time`, `insert_time`, `from`, `state`, "
-                       f"`authors`, `Introduction`, `receive_time`, `Journal_reference`, `Comments`, `size`, `DOI`, "
-                       f"`version`, `withdrawn`) "
-                       f" VALUES ('{uuid}', '{url}', '{classification_en}', '{classification_zh}', "
-                       f" 'zh-CN', '{title}', '{title_en}', '{update_time}', '{insert_time}', 'cnki', '00', "
-                       f" '{authors}', '{abstract}', '{date}', NULL, NULL, 6434, '10.48550/arXiv.2112.03379', '2', '0');")
+                sql1 = (
+                    f"INSERT INTO `Paper`.`index_copy1`(`UUID`, `web_site_id`, `classification_en`,`classification_zh`,"
+                    f"`source_language`, `title_zh`, `title_en`, `update_time`, `insert_time`, `from`, `state`, "
+                    f"`authors`, `Introduction`, `receive_time`, `Journal_reference`, `Comments`, `size`, `DOI`, "
+                    f"`version`, `withdrawn`) "
+                    f" VALUES ('{uuid}', '{url}', '{classification_en}', '{classification_zh}', "
+                    f" 'cn', '{title}', '{title_en}', '{update_time}', '{insert_time}', 'cnki', '00', "
+                    f" '{authors}', NULL, '{date}', NULL, NULL, {paper_size}, NULL, NULL, NULL);")
 
                 sql2 = (f"INSERT INTO `Paper`.`cnki_paper_information`"
                         f"(`UUID`, `institute`, `paper_from`, `db_type`, `down_sun`, `quote`, `insert_time`, "
-                        f"`update_time`, `funding`, `album`, `classification_number`, `article_directory`) "
+                        f"`update_time`, `funding`, `album`, `classification_number`, "
+                        f"`article_directory`, `Topics`, `down_url`) "
                         f"VALUES "
-                        f"('{uuid}', {institute}, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);")
+                        f"('{uuid}', '{institute}', '{source}', '{db_type}',' {down_sun}', '{quote}', '{insert_time}',"
+                        f" '{update_time}', '{funding}', '{publication}', '{classification_number}',"
+                        f" '{article_directory}', '{topic}', '{down_url}');")
 
-                print(sql1)
+                sql3 = (f"INSERT INTO `Paper`.`cnki_index`"
+                        f"(`UUID`, `source_language`, `title`, `insert_time`, `from`) "
+                        f"VALUES ('{uuid}', cn, '{title}', '{insert_time}', '{keyword}');")
 
+                sql1 = TrSQL(sql1)
+                sql2 = TrSQL(sql2)
+                sql3 = TrSQL(sql3)
+                sql = [sql1, sql2, sql3]
 
+                Date_base.insert_list(sql)
 
-                # db = Date_base()
-                # flag = db.insert_all(sql)
+                logger.write_log(f"已获取 ： {title}")
+                time.sleep(3)
 
-                # try:
-                #     with open(file_path, 'a', encoding='gbk') as f:
-                #         f.write(res)
-                #         print('写入成功')
-                # except Exception as e:
-                #     print('写入失败:', str(e))
-                #     raise e
             except:
-                print(f" 第{count} 条爬取失败\n")
-                # 跳过本条，接着下一个
+                logger.write_log(f"失败 ： {title}")
                 continue
 
             finally:
@@ -300,29 +337,18 @@ def crawl(driver, papers_need, theme):
                 count += 1
                 if count == papers_need: break
 
-            sql = f""
-
         # 切换到下一页
         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, "//a[@id='PageNext']"))).click()
 
-    print("爬取完毕！")
 
-
-if __name__ == "__main__":
-    keyword = "青少年抑郁"
+def cnki_run(keyword, papers_need):
     driver = webserver()
-
     # 设置所需篇数
-    papers_need = 2000
     res_unm = open_page(driver, keyword)
-
     # 判断所需是否大于总篇数
     papers_need = papers_need if (papers_need <= res_unm) else res_unm
-
-    os.system("pause")
-
+    # os.system("pause")
     # 开始爬取
     crawl(driver, papers_need, keyword)
-
     # 关闭浏览器
     driver.close()
