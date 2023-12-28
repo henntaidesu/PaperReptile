@@ -137,8 +137,11 @@ def get_choose_info(driver, xpath1, xpath2, str):
 
 
 def crawl(driver, papers_need, keyword):
-    global pl_list
     number = None
+    pl_list = None
+    new_title = None
+    uuid = None
+
     cp = crawl_xpath()
     rp = reference_papers()
     qp = QuotePaper()
@@ -217,7 +220,7 @@ def crawl(driver, papers_need, keyword):
                 time.sleep(3)
 
                 # 拉取页面到最低端
-                # driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.END)
+                driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.END)
 
                 # 开始获取页面信息
                 # 点击展开
@@ -348,6 +351,20 @@ def crawl(driver, papers_need, keyword):
                         break
                 print(f"论文大小 : {paper_size}k")
 
+                # print('获取论文页数')
+                paper_page_flag = 0
+                while True:
+                    paper_page_flag += 1
+                    page_sum = WebDriverWait(driver, 0).until(EC.presence_of_element_located(
+                        (By.XPATH, cp[f'paper_size{paper_page_flag}']))).text
+                    if '页数' in page_sum:
+                        page_sum = int(page_sum[3:])
+                        break
+                    if paper_page_flag > 8:
+                        page_sum = None
+                        break
+                print(f"论文页数 : {page_sum}")
+
                 level = None
                 if '报' in db_type or '报纸' in db_type:
                     try:
@@ -384,11 +401,11 @@ def crawl(driver, papers_need, keyword):
                     while True:
                         if paper_flag == len(pl_list):
                             break
-
+                        paper_list = None
                         continue_flag = False
                         # 期刊参考文件页数
                         try:
-                            paper_sum = funding = WebDriverWait(driver, 3).until(
+                            paper_sum = WebDriverWait(driver, 3).until(
                                 EC.presence_of_element_located((By.CLASS_NAME, rp[rn[paper_flag]])))
                             paper_sum = int(paper_sum.find_element(By.ID, 'pc_JOURNAL').text)
                         except:
@@ -398,23 +415,21 @@ def crawl(driver, papers_need, keyword):
                         if continue_flag is True:
                             try:
                                 print(f"$$$本论文没有引用{rn[paper_flag]} Paper$$$")
-                                pl_list[paper_flag] = None
                                 continue
                             except:
                                 break
 
                         if paper_sum:
-                            print(f"存在{rn[paper_flag]}{paper_sum}篇")
+                            print(f"存在引用{rn[paper_flag]} {paper_sum} 篇")
                             journal_paper_sum = int((paper_sum / 10) + 1)
                             flag = 0
                             paper_list = []
                             while True:
-                                funding = None
                                 # 获取参考文献
 
-                                funding = WebDriverWait(driver, 3).until(
+                                li_elements = WebDriverWait(driver, 3).until(
                                     EC.presence_of_element_located((By.CLASS_NAME, rp[rn[paper_flag]])))
-                                li_elements = funding.find_elements(By.TAG_NAME, 'li')
+                                li_elements = li_elements.find_elements(By.TAG_NAME, 'li')
 
                                 for li in li_elements:
                                     li_text = li.text.replace('[', ';', 1)
@@ -799,7 +814,7 @@ def crawl(driver, papers_need, keyword):
                 update_time = None
 
                 sql1 = (
-                    f"INSERT INTO `Paper`.`index_copy1`(`UUID`, `web_site_id`, `classification_en`,`classification_zh`,"
+                    f"INSERT INTO `Paper`.`index`(`UUID`, `web_site_id`, `classification_en`,`classification_zh`,"
                     f"`source_language`, `title_zh`, `title_en`, `update_time`, `insert_time`, `from`, `state`, "
                     f"`authors`, `Introduction`, `receive_time`, `Journal_reference`, `Comments`, `size`, `DOI`, "
                     f"`version`, `withdrawn`) "
@@ -810,32 +825,32 @@ def crawl(driver, papers_need, keyword):
                 sql2 = (f"INSERT INTO `Paper`.`cnki_paper_information`"
                         f"(`UUID`, `institute`, `paper_from`, `db_type`, `down_sun`, `quote`, `insert_time`, "
                         f"`update_time`, `funding`, `album`, `classification_number`, "
-                        f"`article_directory`, `Topics`, `level`, `journal_reference`, `journal`, "
+                        f"`article_directory`, `Topics`, `level`, `page_sum`, `journal`, "
                         f"`master`, `PhD`, `international_journals`, `book`, "
-                        f"`Chinese_and_foreign`, 'newpaper') "
+                        f"`Chinese_and_foreign`, `newpaper`) "
                         f"VALUES "
                         f"('{uuid}', '{institute}', '{source}', '{db_type}',' {down_sun}', '{quote}', '{insert_time}',"
                         f" '{update_time}', '{funding}', '{publication}', '{classification_number}',"
-                        f" '{article_directory}', '{topic}', '{level}', '{journal_reference}', '{pl_list[0]}',"
+                        f" '{article_directory}', '{topic}', '{level}', '{page_sum}', '{pl_list[0]}',"
                         f" '{pl_list[1]}', '{pl_list[2]}', '{pl_list[3]}', '{pl_list[4]}',"
                         f" '{pl_list[5]}', '{pl_list[6]}');")
 
                 sql3 = (f"INSERT INTO `Paper`.`cnki_index`"
-                        f"(`UUID`, `source_language`, `title`, `insert_time`, `from`) "
-                        f"VALUES ('{uuid}', 'cn', '{title}', '{insert_time}', '{keyword}');")
+                        f"(`UUID`, `title`, `receive_time`, `from`) "
+                        f"VALUES ('{uuid}', '{title}', '{date}', '{keyword}');")
 
                 sql1 = TrSQL(sql1)
                 sql2 = TrSQL(sql2)
                 sql3 = TrSQL(sql3)
 
-                # Date_base().insert_all(sql1)
-                # Date_base().insert_all(sql2)
-                # Date_base().insert_all(sql3)
+                Date_base().insert_all(sql1)
+                Date_base().insert_all(sql2)
+                Date_base().insert_all(sql3)
 
                 logger.write_log(f"已获取 ： {new_title}, UUID : {uuid}")
                 random_sleep = round(random.uniform(0, 3), 2)
                 print(f"sleep {random_sleep}s")
-                time.sleep(1000000000)
+                time.sleep(random_sleep)
 
             except:
                 logger.write_log(f"错误 ： {new_title}, UUID : {uuid}")

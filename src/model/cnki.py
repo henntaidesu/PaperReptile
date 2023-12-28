@@ -1,3 +1,9 @@
+def keyword():
+    a = '人工智能'
+    L = [a]
+    return L
+
+
 def positioned_element():  # 定位元素
     xpaths = {
         'pe': '''div.sort-list''',
@@ -9,6 +15,7 @@ def positioned_element():  # 定位元素
     }
 
     return xpaths
+
 
 def crawl_xpath():
     xpaths = {
@@ -30,6 +37,9 @@ def crawl_xpath():
         'paper_size4': '''//*[@id="DownLoadParts"]/div[2]/div/div/p/span[4]''',
         'paper_size5': '''//*[@id="DownLoadParts"]/div[2]/div/div/p/span[5]''',
         'paper_size6': '''//*[@id="DownLoadParts"]/div[2]/div/div/p/span[6]''',
+        'paper_size7': '''//*[@id="DownLoadParts"]/div[2]/div/div/p/span[7]''',
+        'paper_size8': '''//*[@id="DownLoadParts"]/div[2]/div/div/p/span[8]''',
+        'paper_size9': '''//*[@id="DownLoadParts"]/div[2]/div/div/p/span[9]''',
     }
 
     return xpaths
@@ -72,16 +82,15 @@ class QuotePaper:
         paper = [journa, master, PhD, international_journals, book, Chinese_and_foreign, newpaper]
         return paper
 
-
     @staticmethod
     def paper_list():
-        journal = []
-        master = []
-        PhD = []
-        international = []
-        book = []
-        Chinese_and_foreign = []
-        newpaper = []
+        journal = None
+        master = None
+        PhD = None
+        international = None
+        book = None
+        Chinese_and_foreign = None
+        newpaper = None
         paper = [journal, master, PhD, international, book, Chinese_and_foreign, newpaper]
         return paper
 
