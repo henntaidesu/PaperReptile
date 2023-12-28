@@ -74,6 +74,16 @@ class read_conf:
         #     path = path.replace('\\','\\\\')
         return path
 
+    def cnki_proxy(self):
+        path = self.config.get('Paper File Path', 'path')
+        # if '\\' in path:
+        #     path = path.replace('\\','\\\\')
+        return path
+
+    def cnki_paper_passkey(self):
+        passkey = self.config.get('cnki paper passkey', 'passkey')
+        return passkey
+
 
 class ArxivYYMM:
     def __init__(self):

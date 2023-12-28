@@ -9,13 +9,18 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.webdriver.common.action_chains import ActionChains
 import os
+import re
 from src.module.execution_db import Date_base
 from src.module.UUID import UUID
 from src.module.now_time import now_time
-from src.model.cnki import xpath_inf, xpath_base
+from src.model.cnki import Crawl, positioned_element, crawl_xpath
 from src.module.log import log
 import random
+
+open_page_data = positioned_element()
+crawl_xp = Crawl()
 logger = log()
+cp = crawl_xpath()
 
 
 def TrimString(Str):
@@ -66,27 +71,21 @@ def open_page(driver, keyword):
     time.sleep(random_sleep)
 
     # 修改属性，使下拉框显示
-    opt = driver.find_element(By.CSS_SELECTOR, 'div.sort-list')  # 定位元素
-    driver.execute_script("arguments[0].setAttribute('style', 'display: block;')",
-                          opt)  # 执行 js 脚本进行属性的修改；arguments[0]代表第一个属性
+    opt = driver.find_element(By.CSS_SELECTOR, open_page_data['pe'])  # 定位元素
+    driver.execute_script(open_page_data['js'], opt)  # 执行 js 脚本进行属性的修改；arguments[0]代表第一个属性
 
     # 鼠标移动到下拉框中的[通讯作者]
-    ActionChains(driver).move_to_element(driver.find_element(By.CSS_SELECTOR, 'li[data-val="RP"]')).perform()
+    ActionChains(driver).move_to_element(driver.find_element(By.CSS_SELECTOR, open_page_data['ca'])).perform()
 
     # # 找到[关键词]选项并点击
     # WebDriverWait(driver, 100).until(
     #     EC.visibility_of_element_located((By.CSS_SELECTOR, 'li[data-val="KY"]'))).click()
 
     # 传入关键字
-    WebDriverWait(driver, 100).until(
-        EC.presence_of_element_located((By.XPATH, '''//*[@id="gradetxt"]/dd[1]/div[2]/input'''))
-    ).send_keys(keyword)
+    WebDriverWait(driver, 100).until(EC.presence_of_element_located((By.XPATH, open_page_data['ik']))).send_keys(keyword)
 
     # 点击搜索
-    WebDriverWait(driver, 100).until(
-        EC.presence_of_element_located(
-            (By.XPATH, '''//*[@id="ModuleSearch"]/div[1]/div/div[2]/div/div[1]/div[1]/div[2]/div[3]/input'''))
-    ).click()
+    WebDriverWait(driver, 100).until(EC.presence_of_element_located((By.XPATH, open_page_data['cs']))).click()
 
     print("正在搜索，请稍后...")
 
@@ -96,9 +95,7 @@ def open_page(driver, keyword):
     # ).click()
 
     # 获取总文献数和页数
-    res_unm = WebDriverWait(driver, 100).until(EC.presence_of_element_located(
-        (By.XPATH, '''//*[@id="countPageDiv"]/span[1]/em'''))
-    ).text
+    res_unm = WebDriverWait(driver, 100).until(EC.presence_of_element_located((By.XPATH, open_page_data['gn']))).text
 
     # 去除千分位里的逗号
     res_unm = int(res_unm.replace(",", ''))
@@ -127,7 +124,7 @@ def get_choose_info(driver, xpath1, xpath2, str):
 
 def crawl(driver, papers_need, keyword):
     count = 1
-    xpath_information = xpath_inf()
+    xpath_information = crawl_xp.xpath_inf()
 
     sql = f"select title from `cnki_index` where `from` = '{keyword}'"
     flag, paper_title = Date_base().select_all(sql)
@@ -137,7 +134,7 @@ def crawl(driver, papers_need, keyword):
         random_sleep = round(random.uniform(0, 3), 2)
         print(f"sleep {random_sleep}s")
         time.sleep(random_sleep)
-        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, "//*[@id='PageNext']"))).click()
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, cp['get_next_page']))).click()
 
     print(f"从第 {count} 条开始爬取\n")
 
@@ -151,11 +148,11 @@ def crawl(driver, papers_need, keyword):
         for i in range((count - 1) % 20 + 1, 21):
             if_title = False
             print(
-                f"\n###正在爬取第 {count} 条(第{(count - 1) // 20 + 1}页第{i}条)#######################################\n")
+                f"\n#################正在爬取第 {count} 条(第{(count - 1) // 20 + 1}页第{i}条)##########################\n")
 
             try:
                 term = (count - 1) % 20 + 1  # 本页的第几个条目
-                xpaths = xpath_base(term)
+                xpaths = crawl_xp.xpath_base(term)
 
                 with concurrent.futures.ThreadPoolExecutor() as executor:
                     future_elements = [executor.submit(get_info, driver, xpath) for xpath in xpaths]
@@ -190,7 +187,7 @@ def crawl(driver, papers_need, keyword):
                 # 点击展开
                 try:
                     WebDriverWait(driver, 3).until(
-                        EC.presence_of_element_located((By.XPATH, '''//*[@id="ChDivSummaryMore"]'''))
+                        EC.presence_of_element_located((By.XPATH, cp['WebDriverWait']))
                     ).click()
                 except:
                     pass
@@ -199,7 +196,9 @@ def crawl(driver, papers_need, keyword):
                 print('正在获取作者单位')
                 try:
                     institute = WebDriverWait(driver, 3).until(EC.presence_of_element_located(
-                        (By.XPATH, "/html/body/div[2]/div[1]/div[3]/div/div/div[3]/div/h3[2]"))).text
+                        (By.XPATH, cp['institute']))).text
+                    if '.' in institute:
+                        institute = re.sub(r'\d*\.', ';', institute)[1:].replace(' ', '')
                 except:
                     institute = None
                 print(institute)
@@ -207,7 +206,7 @@ def crawl(driver, papers_need, keyword):
                 print('正在获取摘要')
                 try:
                     abstract = WebDriverWait(driver, 3).until(
-                        EC.presence_of_element_located((By.CLASS_NAME, "abstract-text"))).text
+                        EC.presence_of_element_located((By.CLASS_NAME, cp['abstract']))).text
                 except:
                     abstract = None
                 print(abstract)
@@ -216,7 +215,7 @@ def crawl(driver, papers_need, keyword):
                 # print('正在获取keywords...')
                 try:
                     classification_zh = WebDriverWait(driver, 3).until(
-                        EC.presence_of_element_located((By.CLASS_NAME, "keywords"))).text[:-1]
+                        EC.presence_of_element_located((By.CLASS_NAME, cp['keywords']))).text[:-1]
                 except:
                     classification_zh = None
                     print("无法获取TAG")
@@ -246,13 +245,19 @@ def crawl(driver, papers_need, keyword):
                     logger.write_log(f"获取专题错误 ： {title}")
                 print(topic)
 
-                # 获取分类号
+                # 获取分类号 版名
                 print('获取分类号')
                 with concurrent.futures.ThreadPoolExecutor() as executor:
                     futures = [executor.submit(get_choose_info, driver, xpath1, xpath2, '分类号：') for xpath1, xpath2 in
                                xpath_information]
                     results = [future.result() for future in concurrent.futures.as_completed(futures)]
                 classification_number = next((result for result in results if result is not None), None)
+                if classification_number is None:
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        futures = [executor.submit(get_choose_info, driver, xpath1, xpath2, '版名：') for xpath1, xpath2 in
+                                   xpath_information]
+                        results = [future.result() for future in concurrent.futures.as_completed(futures)]
+                    classification_number = next((result for result in results if result is not None), None)
                 if classification_number is None:
                     logger.write_log(f"获取分类号错误 ： {title}")
                 print(classification_number)
@@ -261,7 +266,7 @@ def crawl(driver, papers_need, keyword):
                 print('获取资金资助')
                 try:
                     funding = WebDriverWait(driver, 3).until(
-                        EC.presence_of_element_located((By.CLASS_NAME, "funds"))).text
+                        EC.presence_of_element_located((By.CLASS_NAME, cp['funds']))).text
                 except:
                     funding = None
                 print(funding)
@@ -269,7 +274,7 @@ def crawl(driver, papers_need, keyword):
                 print('获取论文大小')
                 try:
                     paper_size = WebDriverWait(driver, 0).until(EC.presence_of_element_located(
-                        (By.XPATH, '''//*[@id="DownLoadParts"]/div[2]/div/div/p/span[4]'''))).text
+                        (By.XPATH, cp['paper_size']))).text
                     paper_size = int(paper_size[3:][:-1])
                 except:
                     paper_size = None
@@ -279,7 +284,7 @@ def crawl(driver, papers_need, keyword):
                 print("获取文章目录")
                 try:
                     article_directory = WebDriverWait(driver, 0).until(
-                        EC.presence_of_element_located((By.CLASS_NAME, "catalog-list"))).text
+                        EC.presence_of_element_located((By.CLASS_NAME, cp['catalog']))).text
                 except:
                     article_directory = None
                 print(article_directory)
@@ -287,12 +292,12 @@ def crawl(driver, papers_need, keyword):
                 url = driver.current_url[46:][:-32]
 
                 # 获取下载链接
-                try:
-                    down_url = WebDriverWait(driver, 0).until(EC.presence_of_all_elements_located
-                                                              ((By.CLASS_NAME, "btn-dlpdf")))[0].get_attribute('href')
-                    down_url = urljoin(driver.current_url, down_url)
-                except:
-                    down_url = None
+                # try:
+                #     down_url = WebDriverWait(driver, 0).until(EC.presence_of_all_elements_located
+                #                                               ((By.CLASS_NAME, "btn-dlpdf")))[0].get_attribute('href')
+                #     down_url = urljoin(driver.current_url, down_url)
+                # except:
+                #     down_url = None
 
                 print("获取new_title")
                 try:
@@ -323,11 +328,11 @@ def crawl(driver, papers_need, keyword):
                 sql2 = (f"INSERT INTO `Paper`.`cnki_paper_information`"
                         f"(`UUID`, `institute`, `paper_from`, `db_type`, `down_sun`, `quote`, `insert_time`, "
                         f"`update_time`, `funding`, `album`, `classification_number`, "
-                        f"`article_directory`, `Topics`, `down_url`) "
+                        f"`article_directory`, `Topics`) "
                         f"VALUES "
                         f"('{uuid}', '{institute}', '{source}', '{db_type}',' {down_sun}', '{quote}', '{insert_time}',"
                         f" '{update_time}', '{funding}', '{publication}', '{classification_number}',"
-                        f" '{article_directory}', '{topic}', '{down_url}');")
+                        f" '{article_directory}', '{topic}');")
 
                 sql3 = (f"INSERT INTO `Paper`.`cnki_index`"
                         f"(`UUID`, `source_language`, `title`, `insert_time`, `from`) "
@@ -361,7 +366,7 @@ def crawl(driver, papers_need, keyword):
                 if count == papers_need: break
 
         # 切换到下一页
-        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, "//a[@id='PageNext']"))).click()
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, cp['paper_next_page']))).click()
 
 
 def cnki_run(keyword, papers_need):
