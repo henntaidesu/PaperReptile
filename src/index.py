@@ -40,12 +40,10 @@ class index:
 
         if flag == '4':
             while True:
-                sql = (f"SELECT UUID, web_site_id, version, withdrawn "
+                sql = (f"SELECT UUIDs, web_site_id, version, withdrawn "
                        f"FROM `Paper`.`index`WHERE state = '02' and classification_zh "
                        f" like '%cs%' ORDER BY receive_time desc limit 10000")
                 self.Arxiv_paper_down.paper_down(sql)
 
         if flag == '5':
-            keyword = "人工智能"
-            papers_need = 2147483647
-            cnki_run(keyword, papers_need)
+            cnki_run()

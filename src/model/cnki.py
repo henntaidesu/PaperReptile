@@ -10,20 +10,80 @@ def positioned_element():  # 定位元素
 
     return xpaths
 
-
 def crawl_xpath():
     xpaths = {
         'abstract': "abstract-text",
         'keywords': "keywords",
         'funds': "funds",
-        'catalog': "catalog",
+        'catalog': "catalog-list",
         'get_next_page': '''//*[@id='PageNext']''',
         'WebDriverWait': '''//*[@id="ChDivSummaryMore"]''',
-        'paper_size': '''//*[@id="DownLoadParts"]/div[2]/div/div/p/span[4]''',
         'institute': "/html/body/div[2]/div[1]/div[3]/div/div/div[3]/div/h3[2]",
         'paper_next_page': "//a[@id='PageNext']",
+        'level': '//*[@id="func610"]/div/span',
+        'references': '//*[@id="references"]',
+        'literature_if_true': '//*[@id="refpartdiv"]/h5/span/b',
+        'if_literature_reference': '//*[@id="refpartdiv"]/h5/span/b',
+        'paper_size1': '''//*[@id="DownLoadParts"]/div[2]/div/div/p/span[1]''',
+        'paper_size2': '''//*[@id="DownLoadParts"]/div[2]/div/div/p/span[2]''',
+        'paper_size3': '''//*[@id="DownLoadParts"]/div[2]/div/div/p/span[3]''',
+        'paper_size4': '''//*[@id="DownLoadParts"]/div[2]/div/div/p/span[4]''',
+        'paper_size5': '''//*[@id="DownLoadParts"]/div[2]/div/div/p/span[5]''',
+        'paper_size6': '''//*[@id="DownLoadParts"]/div[2]/div/div/p/span[6]''',
     }
+
     return xpaths
+
+
+def reference_papers():
+    xpaths = {
+        # 通用
+        'next_page': 'next',
+        'paper_num': 'pc_JOURNAL',
+        # 期刊
+        'journal': 'quotation-journal',
+        # 硕士论文
+        'master': 'quotation-dissertation-m',
+        # 博士论文
+        'PhD': 'quotation-dissertation-d',
+        # 国际期刊
+        'international_journals': 'quotation-journal-w',
+        # 图书
+        'book': 'quotation-book',
+        # 中外文题录
+        'Chinese_and_foreign': 'quotation-crldeng',
+        # 报纸
+        'newpaper': 'quotation-newpaper',
+    }
+
+    return xpaths
+
+
+class QuotePaper:
+    @staticmethod
+    def reference_name():
+        journa = 'journal'
+        master = 'master'
+        PhD = 'PhD'
+        international_journals = 'international_journals'
+        book = 'book'
+        Chinese_and_foreign = 'Chinese_and_foreign'
+        newpaper = 'newpaper'
+        paper = [journa, master, PhD, international_journals, book, Chinese_and_foreign, newpaper]
+        return paper
+
+
+    @staticmethod
+    def paper_list():
+        journal = []
+        master = []
+        PhD = []
+        international = []
+        book = []
+        Chinese_and_foreign = []
+        newpaper = []
+        paper = [journal, master, PhD, international, book, Chinese_and_foreign, newpaper]
+        return paper
 
 
 class Crawl:
@@ -60,6 +120,31 @@ class Crawl:
             # 版号
             ("/html/body/div[2]/div[1]/div[3]/div[1]/div/div[6]/span",
              "/html/body/div[2]/div[1]/div[3]/div[1]/div/div[6]/p"),
+            # DOI
+            ("/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[1]/span",
+             "/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[1]/p"),
+            # list
+            ("/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[1]/span",
+             "/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[1]/p"),
+            ("/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[2]/span",
+             "/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[2]/p"),
+            ("/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[1]/span",
+             "/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[1]/p"),
+            ("/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[2]/span",
+             "/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[2]/p"),
+            ("/html/body/div[2]/div[1]/div[3]/div/div/div[4]/ul/li[1]/span",
+             "/html/body/div[2]/div[1]/div[3]/div/div/div[4]/ul/li[1]/p"),
+            ("/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[2]/span",
+             "/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[2]/p"),
+            ("/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[3]/span",
+             "/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[3]/p"),
+            ("/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[2]/span",
+             "/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[2]/p"),
+            ("/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[3]/span",
+             "/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[3]/p"),
+            ("/html/body/div[2]/div[1]/div[3]/div/div/div[4]/ul/li[2]/span",
+             "/html/body/div[2]/div[1]/div[3]/div/div/div[4]/ul/li[2]/p"),
+
         ]
 
         return xpaths

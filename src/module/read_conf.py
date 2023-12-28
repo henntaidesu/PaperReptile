@@ -75,15 +75,27 @@ class read_conf:
         return path
 
     def cnki_proxy(self):
-        path = self.config.get('Paper File Path', 'path')
-        # if '\\' in path:
-        #     path = path.replace('\\','\\\\')
-        return path
+        true = self.config.get('Paper File Path', 'true')
+        host = self.config.get('Paper File Path', 'host')
+        port = self.config.get('Paper File Path', 'port')
+        proxy_url = "http://" + host + ":" + port
 
-    def cnki_paper_passkey(self):
-        passkey = self.config.get('cnki paper passkey', 'passkey')
-        return passkey
+        proxies = {
+            "http": proxy_url,
+            "https": proxy_url,
+        }
 
+        # print(type(if_true))
+        if true == "True":
+            return True, proxies
+        else:
+            return False, proxies
+
+    def cnki_paper(self):
+        web_zoom = self.config.get('cnki paper passkey', 'web_zoom')
+        keyword = self.config.get('cnki paper passkey', 'keyword')
+        papers_need = int(self.config.get('cnki paper passkey', 'papers_need'))
+        return web_zoom, keyword, papers_need
 
 class ArxivYYMM:
     def __init__(self):
