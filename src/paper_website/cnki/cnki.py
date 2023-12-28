@@ -176,6 +176,13 @@ def crawl(driver, papers_need, keyword):
             international_journals_list = None
             book_list = None
             Chinese_and_foreign_list = None
+            title = None
+            authors = None
+            source = None
+            date = None
+            db_type = None
+            quote = None
+            down_sun = None
 
             print(
                 f"\n#################正在爬取第 {count} 条(第{(count - 1) // 20 + 1}页第{i}条)##########################\n")
@@ -225,7 +232,7 @@ def crawl(driver, papers_need, keyword):
                 # 开始获取页面信息
                 # 点击展开
                 try:
-                    WebDriverWait(driver, 0).until(
+                    WebDriverWait(driver, 1).until(
                         EC.presence_of_element_located((By.XPATH, cp['WebDriverWait']))
                     ).click()
                 except:
@@ -234,7 +241,7 @@ def crawl(driver, papers_need, keyword):
                 # 获取作者单位
                 # print('正在获取作者单位')
                 try:
-                    institute = WebDriverWait(driver, 0).until(EC.presence_of_element_located(
+                    institute = WebDriverWait(driver, 1).until(EC.presence_of_element_located(
                         (By.XPATH, cp['institute']))).text
                     if '.' in institute:
                         institute = re.sub(r'\d*\.', ';', institute)[1:].replace(' ', '')
@@ -244,7 +251,7 @@ def crawl(driver, papers_need, keyword):
 
                 # print('正在获取摘要')
                 try:
-                    abstract = WebDriverWait(driver, 0).until(
+                    abstract = WebDriverWait(driver, 1).until(
                         EC.presence_of_element_located((By.CLASS_NAME, cp['abstract']))).text
                 except:
                     abstract = None
@@ -253,12 +260,12 @@ def crawl(driver, papers_need, keyword):
                 # 获取关键词
                 # print('获取关键词')
                 try:
-                    classification_zh = WebDriverWait(driver, 0).until(
+                    classification_zh = WebDriverWait(driver, 1).until(
                         EC.presence_of_element_located((By.CLASS_NAME, cp['keywords']))).text[:-1]
                 except:
                     classification_zh = None
-                    print("无法获取关键词")
-                    sys.exit()
+                    # print("无法获取关键词")
+
                 classification_zh = Trim_passkey(classification_zh).replace('  ', ';')
                 print(f"关键词 : {classification_zh}")
 
@@ -280,8 +287,6 @@ def crawl(driver, papers_need, keyword):
                                xpath_information]
                     results = [future.result() for future in concurrent.futures.as_completed(futures)]
                 topic = next((result for result in results if result is not None), None)
-                if topic is None:
-                    logger.write_log(f"获取专题错误 ： {title}")
                 print(f"专题 : {topic}")
 
                 # 拉取页面到最低端
@@ -323,14 +328,14 @@ def crawl(driver, papers_need, keyword):
                                xpath_information]
                     results = [future.result() for future in concurrent.futures.as_completed(futures)]
                 DOI = next((result for result in results if result is not None), None)
-                if DOI is None:
-                    logger.write_log(f"DOI ： {title}")
+                # if DOI is None:
+                #     logger.write_log(f"DOI ： {title}")
                 print(f"DOI: {DOI}")
 
                 # 获取资金资助
                 # print('获取资金资助')
                 try:
-                    funding = WebDriverWait(driver, 0).until(
+                    funding = WebDriverWait(driver, 1).until(
                         EC.presence_of_element_located((By.CLASS_NAME, cp['funds']))).text
                     funding = funding.replace(' ', '').replace('；', ';')
                 except:
@@ -341,7 +346,7 @@ def crawl(driver, papers_need, keyword):
                 paper_size_flag = 0
                 while True:
                     paper_size_flag += 1
-                    paper_size = WebDriverWait(driver, 0).until(EC.presence_of_element_located(
+                    paper_size = WebDriverWait(driver, 1).until(EC.presence_of_element_located(
                         (By.XPATH, cp[f'paper_size{paper_size_flag}']))).text
                     if '大小' in paper_size:
                         paper_size = int(paper_size[3:][:-1])
@@ -355,7 +360,7 @@ def crawl(driver, papers_need, keyword):
                 paper_page_flag = 0
                 while True:
                     paper_page_flag += 1
-                    page_sum = WebDriverWait(driver, 0).until(EC.presence_of_element_located(
+                    page_sum = WebDriverWait(driver, 1).until(EC.presence_of_element_located(
                         (By.XPATH, cp[f'paper_size{paper_page_flag}']))).text
                     if '页数' in page_sum:
                         page_sum = int(page_sum[3:])
@@ -368,7 +373,7 @@ def crawl(driver, papers_need, keyword):
                 level = None
                 if '报' in db_type or '报纸' in db_type:
                     try:
-                        level = WebDriverWait(driver, 10).until(EC.presence_of_element_located(
+                        level = WebDriverWait(driver, 3).until(EC.presence_of_element_located(
                             (By.XPATH, cp['level']))).text
                         # paper_size = int(paper_size[3:][:-1])
                     except:
@@ -379,9 +384,11 @@ def crawl(driver, papers_need, keyword):
                 # driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.END)
 
                 # 判断是否有参考文献
+                rn = qp.reference_name()
+                pl_list = qp.paper_list()
                 journal_reference = None
                 try:
-                    if_journal_reference = WebDriverWait(driver, 10).until(EC.presence_of_element_located(
+                    if_journal_reference = WebDriverWait(driver, 3).until(EC.presence_of_element_located(
                         (By.XPATH, cp['if_literature_reference']))).text
                     if if_journal_reference:
                         print("存在引文网络")
@@ -391,12 +398,9 @@ def crawl(driver, papers_need, keyword):
                     print("该论文无引用文章")
 
                 if if_journal_reference == '引文网络':
-                    el = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, cp['references'])))
+                    el = WebDriverWait(driver, 3).until(EC.element_to_be_clickable((By.XPATH, cp['references'])))
                     el.click()
                     paper_flag = 0
-
-                    rn = qp.reference_name()
-                    pl_list = qp.paper_list()
 
                     while True:
                         if paper_flag == len(pl_list):
@@ -778,7 +782,7 @@ def crawl(driver, papers_need, keyword):
                 # 获取文章目录
                 # print("获取文章目录")
                 try:
-                    article_directory = WebDriverWait(driver, 10).until(
+                    article_directory = WebDriverWait(driver, 1).until(
                         EC.presence_of_element_located((By.CLASS_NAME, cp['catalog']))).text
                 except:
                     article_directory = None
@@ -786,7 +790,7 @@ def crawl(driver, papers_need, keyword):
 
                 # print("获取报纸层级")
 
-                url = driver.current_url[46:][:-32]
+                # url = driver.current_url[46:][:-32]
 
                 # 获取下载链接
                 # try:
@@ -843,17 +847,30 @@ def crawl(driver, papers_need, keyword):
                 sql2 = TrSQL(sql2)
                 sql3 = TrSQL(sql3)
 
+                flag = Date_base().insert_all(sql3)
+                if flag == '重复数据':
+                    logger.write_log(f"重复数据 ： {new_title}, UUID : {uuid}")
+                    random_sleep = round(random.uniform(0, 3), 2)
+                    print(f"sleep {random_sleep}s")
+                    time.sleep(random_sleep)
+                    continue
+
                 Date_base().insert_all(sql1)
                 Date_base().insert_all(sql2)
-                Date_base().insert_all(sql3)
 
                 logger.write_log(f"已获取 ： {new_title}, UUID : {uuid}")
                 random_sleep = round(random.uniform(0, 3), 2)
                 print(f"sleep {random_sleep}s")
                 time.sleep(random_sleep)
 
-            except:
+            except Exception as e:
                 logger.write_log(f"错误 ： {new_title}, UUID : {uuid}")
+                logger.write_log(f"Err Message:,{str(e)}")
+                logger.write_log(f"Err Type:, {type(e).__name__}")
+                _, _, tb = sys.exc_info()
+                logger.write_log(
+                    f"Err Local:, {tb.tb_frame.f_code.co_filename}, {tb.tb_lineno}")
+
                 continue
 
             finally:

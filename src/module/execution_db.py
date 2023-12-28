@@ -20,7 +20,7 @@ class Date_base:
         except Exception as e:
             if "index.PRIMARY" in str(e):
                 self.print_log.write_log("重复数据 " + sql)
-                return True
+                return '重复数据'
             if "timed out" in str(e):
                 self.print_log.write_log("连接数据库超时")
                 sys.exit()
@@ -28,8 +28,6 @@ class Date_base:
             self.print_log.write_log(f"错误类型:, {type(e).__name__}")
             _, _, tb = sys.exc_info()
             self.print_log.write_log(f"发生错误的位置:, {tb.tb_frame.f_code.co_filename}+ '第', {tb.tb_lineno}, '行'")
-
-
             self.print_log.write_log(sql)
             return False
 
