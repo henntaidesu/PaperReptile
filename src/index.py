@@ -46,4 +46,4 @@ class index:
                 self.Arxiv_paper_down.paper_down(sql)
 
         if flag == '5':
-            cnki_run()
+            cnki_run(0)

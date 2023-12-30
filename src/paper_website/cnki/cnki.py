@@ -17,12 +17,14 @@ from src.module.now_time import now_time
 from src.model.cnki import Crawl, positioned_element, crawl_xpath, reference_papers, QuotePaper
 from src.module.log import log
 from src.module.read_conf import read_conf
+from src.module.err_message import err
 import random
 
 open_page_data = positioned_element()
 crawl_xp = Crawl()
 logger = log()
 read_conf = read_conf()
+
 
 
 def TrimString(Str):
@@ -123,7 +125,7 @@ def get_info(driver, xpath):
         element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, xpath)))
         return element.text
     except:
-        return '无'
+        return None
 
 
 def get_choose_info(driver, xpath1, xpath2, str):
@@ -136,7 +138,7 @@ def get_choose_info(driver, xpath1, xpath2, str):
         return None
 
 
-def crawl(driver, papers_need, keyword):
+def crawl(driver, papers_need, keyword, paper_sum_flag):
     number = None
     pl_list = None
     new_title = None
@@ -151,6 +153,8 @@ def crawl(driver, papers_need, keyword):
 
     sql = f"select title from `cnki_index` where `from` = '{keyword}'"
     flag, paper_title = Date_base().select_all(sql)
+
+    new_paper_sum = 0
 
     for i in range((count - 1) // 20):
         # 切换到下一页
@@ -169,6 +173,13 @@ def crawl(driver, papers_need, keyword):
         title_list = WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.CLASS_NAME, "fz14")))
         # 循环网页一页中的条目
         for i in range((count - 1) % 20 + 1, 21):
+
+            paper_sum_flag += 1
+
+            if count < paper_sum_flag:
+                count += 1
+                continue
+
             if_title = False
             journal_list = None
             master_list = None
@@ -184,8 +195,9 @@ def crawl(driver, papers_need, keyword):
             quote = None
             down_sun = None
 
-            print(
-                f"\n#################正在爬取第 {count} 条(第{(count - 1) // 20 + 1}页第{i}条)##########################\n")
+            print(f"\n#################################"
+                  f"正在爬取第{count - new_paper_sum}条,跳过{new_paper_sum}条(第{(count - 1) // 20 + 1}页第{i}条 总{count}条)"
+                  f"#################################\n")
 
             try:
                 term = (count - 1) % 20 + 1  # 本页的第几个条目
@@ -203,6 +215,27 @@ def crawl(driver, papers_need, keyword):
                         break
 
                 if if_title is True:
+                    new_paper_sum += 1
+                    continue
+
+                if db_type == '报纸':
+                    new_paper_sum += 1
+                    print("continue 报纸")
+                    continue
+
+                uuid = UUID()
+                sql3 = (f"INSERT INTO `Paper`.`cnki_index`"
+                        f"(`UUID`, `title`, `receive_time`, `from`) "
+                        f"VALUES ('{uuid}', '{title}', '{date}', '{keyword}');")
+
+                sql3 = TrSQL(sql3)
+                flag = Date_base().insert_all(sql3)
+                if flag == '重复数据':
+                    logger.write_log(f"重复数据 ： {new_title}, UUID : {uuid}")
+                    random_sleep = round(random.uniform(0, 3), 2)
+                    print(f"sleep {random_sleep}s")
+                    time.sleep(random_sleep)
+                    # crawl(driver, papers_need, keyword)
                     continue
 
                 if not quote.isdigit():
@@ -217,7 +250,15 @@ def crawl(driver, papers_need, keyword):
                       f"下载次数：{down_sun}")
 
                 # 点击条目
-                title_list[i - 1].click()
+                try:
+                    title_list[i - 1].click()
+                except Exception as e:
+                    driver.refresh()
+                    re_run(count, driver)
+                    # count += 1
+                    err(e)
+                    continue
+
 
                 # 获取driver的句柄
                 n = driver.window_handles
@@ -262,11 +303,11 @@ def crawl(driver, papers_need, keyword):
                 try:
                     classification_zh = WebDriverWait(driver, 1).until(
                         EC.presence_of_element_located((By.CLASS_NAME, cp['keywords']))).text[:-1]
+                    classification_zh = Trim_passkey(classification_zh).replace('  ', ';')
                 except:
                     classification_zh = None
                     # print("无法获取关键词")
 
-                classification_zh = Trim_passkey(classification_zh).replace('  ', ';')
                 print(f"关键词 : {classification_zh}")
 
                 # 获取专辑
@@ -397,6 +438,7 @@ def crawl(driver, papers_need, keyword):
                     if_journal_reference = None
                     print("该论文无引用文章")
 
+                # if_journal_reference = None
                 if if_journal_reference == '引文网络':
                     el = WebDriverWait(driver, 3).until(EC.element_to_be_clickable((By.XPATH, cp['references'])))
                     el.click()
@@ -418,7 +460,7 @@ def crawl(driver, papers_need, keyword):
                             continue_flag = True
                         if continue_flag is True:
                             try:
-                                print(f"$$$本论文没有引用{rn[paper_flag]} Paper$$$")
+                                # print(f"$$$本论文没有引用{rn[paper_flag]} Paper$$$")
                                 continue
                             except:
                                 break
@@ -456,342 +498,22 @@ def crawl(driver, papers_need, keyword):
                                     time.sleep(3)
 
                             for iii in paper_list:
-                                print(f"引用期刊 :{iii}")
+                                print(f"引用期刊 :[{iii[1:]}")
 
                         paper_list = trim_quote(paper_list)
                         pl_list[paper_flag] = paper_list
                         paper_flag += 1
 
-                    # # 硕士论文
-                    # try:
-                    #     paper_sum = funding = WebDriverWait(driver, 3).until(
-                    #         EC.presence_of_element_located((By.CLASS_NAME, rp['master'])))
-                    #     paper_sum = int(paper_sum.find_element(By.ID, rp['paper_num']).text)
-                    # except:
-                    #     paper_sum = None
-                    # if paper_sum:
-                    #     print(f"存在引用硕士论文{paper_sum}篇")
-                    #     paper_sum = int((paper_sum / 10) + 1)
-                    #     if paper_sum > 1:
-                    #         logger.write_log(f"发现硕士论文大于10 {title}")
-                    #         sys.exit()
-                    #     flag = 0
-                    #     master_list = []
-                    #     while True:
-                    #         funding = None
-                    #         # 获取参考文献
-                    #
-                    #         funding = WebDriverWait(driver, 3).until(
-                    #             EC.presence_of_element_located((By.CLASS_NAME, rp['master'])))
-                    #         li_elements = funding.find_elements(By.TAG_NAME, 'li')
-                    #
-                    #         for li in li_elements:
-                    #             li_text = li.text.replace('[', ';', 1)
-                    #             master_list.append(li_text)
-                    #
-                    #         flag += 1
-                    #         if flag > paper_sum:
-                    #             break
-                    #
-                    #         try:
-                    #             if_next_page = WebDriverWait(driver, 3).until(
-                    #                 EC.presence_of_element_located((By.CLASS_NAME, rp['master'])))
-                    #             if_next_page = if_next_page.find_element(By.CLASS_NAME, rp['next_page']).text
-                    #         except:
-                    #             break
-                    #         if if_next_page == '下一页':
-                    #             el = WebDriverWait(driver, 3).until(
-                    #                 EC.presence_of_element_located((By.CLASS_NAME, rp['master'])))
-                    #             el.find_element(By.CLASS_NAME, rp['next_page']).click()
-                    #             time.sleep(3)
-                    #
-                    #     master_list = sorted(set(master_list), key=extract_number)
-                    #
-                    #     for iii in master_list:
-                    #         print(f"引用硕士论文 :{iii}")
-                    #     master_list = trim_quote(master_list)
-                    # else:
-                    #     print("$$$本论文没有引用硕士论文$$$")
-                    #
-                    # # 博士论文
-                    # try:
-                    #     paper_sum = funding = WebDriverWait(driver, 3).until(
-                    #         EC.presence_of_element_located((By.CLASS_NAME, rp['PhD'])))
-                    #     paper_sum = int(paper_sum.find_element(By.ID, rp['paper_num']).text)
-                    # except:
-                    #     paper_sum = None
-                    # if paper_sum:
-                    #     print(f"存在引用博士论文{paper_sum}篇")
-                    #     paper_sum = int((paper_sum / 10) + 1)
-                    #     if paper_sum > 1:
-                    #         logger.write_log(f"发现博士论文大于10 {title}")
-                    #         sys.exit()
-                    #     flag = 0
-                    #     PhD_list = []
-                    #     while True:
-                    #         funding = None
-                    #         # 获取参考文献
-                    #
-                    #         funding = WebDriverWait(driver, 3).until(
-                    #             EC.presence_of_element_located((By.CLASS_NAME, rp['PhD'])))
-                    #         li_elements = funding.find_elements(By.TAG_NAME, 'li')
-                    #
-                    #         for li in li_elements:
-                    #             li_text = li.text.replace('[', ';', 1)
-                    #             PhD_list.append(li_text)
-                    #
-                    #         flag += 1
-                    #         if flag > paper_sum:
-                    #             break
-                    #
-                    #         try:
-                    #             if_next_page = WebDriverWait(driver, 3).until(
-                    #                 EC.presence_of_element_located((By.CLASS_NAME, rp['PhD'])))
-                    #             if_next_page = if_next_page.find_element(By.CLASS_NAME, rp['next_page']).text
-                    #         except:
-                    #             break
-                    #         if if_next_page == '下一页':
-                    #             el = WebDriverWait(driver, 3).until(
-                    #                 EC.presence_of_element_located((By.CLASS_NAME, rp['PhD'])))
-                    #             el.find_element(By.CLASS_NAME, rp['next_page']).click()
-                    #             time.sleep(3)
-                    #
-                    #     PhD_list = sorted(set(PhD_list), key=extract_number)
-                    #
-                    #     for iii in PhD_list:
-                    #         print(f"引用博士论文 :{iii}")
-                    #
-                    #     PhD_list = trim_quote(PhD_list)
-                    #
-                    # else:
-                    #     print("$$$本论文没有引用博士论文$$$")
-                    #
-                    # # 国际期刊
-                    # try:
-                    #     paper_sum = funding = WebDriverWait(driver, 3).until(
-                    #         EC.presence_of_element_located((By.CLASS_NAME, rp['international_journals'])))
-                    #     paper_sum = int(paper_sum.find_element(By.ID, rp['paper_num']).text)
-                    # except:
-                    #     paper_sum = None
-                    # if paper_sum:
-                    #     print(f"存在引用国际期刊{paper_sum}篇")
-                    #     paper_sum = int((paper_sum / 10) + 1)
-                    #     if paper_sum > 1:
-                    #         logger.write_log(f"发现国际期刊10 {title}")
-                    #         sys.exit()
-                    #     flag = 0
-                    #     international_journals_list = []
-                    #     while True:
-                    #         funding = None
-                    #         # 获取参考文献
-                    #
-                    #         funding = WebDriverWait(driver, 3).until(
-                    #             EC.presence_of_element_located((By.CLASS_NAME, rp['international_journals'])))
-                    #         li_elements = funding.find_elements(By.TAG_NAME, 'li')
-                    #
-                    #         for li in li_elements:
-                    #             li_text = li.text.replace('[', ';', 1)
-                    #             international_journals_list.append(li_text)
-                    #
-                    #         flag += 1
-                    #         if flag > paper_sum:
-                    #             break
-                    #
-                    #         try:
-                    #             if_next_page = WebDriverWait(driver, 3).until(
-                    #                 EC.presence_of_element_located((By.CLASS_NAME, rp['international_journals'])))
-                    #             if_next_page = if_next_page.find_element(By.CLASS_NAME, rp['next_page']).text
-                    #         except:
-                    #             break
-                    #         if if_next_page == '下一页':
-                    #             el = WebDriverWait(driver, 3).until(
-                    #                 EC.presence_of_element_located((By.CLASS_NAME, rp['international_journals'])))
-                    #             el.find_element(By.CLASS_NAME, rp['next_page']).click()
-                    #             time.sleep(3)
-                    #
-                    #     international_journals_list = sorted(set(international_journals_list), key=extract_number)
-                    #
-                    #     for iii in international_journals_list:
-                    #         print(f"引用国际期刊 :{iii}")
-                    #
-                    #     international_journals_list = trim_quote(international_journals_list)
-                    #
-                    # else:
-                    #     print("$$$本论文没有引用国际期刊$$$")
-                    #
-                    # # 图书
-                    # try:
-                    #     paper_sum = funding = WebDriverWait(driver, 3).until(
-                    #         EC.presence_of_element_located((By.CLASS_NAME, rp['book'])))
-                    #     paper_sum = int(paper_sum.find_element(By.ID, rp['paper_num']).text)
-                    # except:
-                    #     paper_sum = None
-                    # if paper_sum:
-                    #     print(f"存在引用图书{paper_sum}篇")
-                    #     paper_sum = int((paper_sum / 10) + 1)
-                    #     if paper_sum > 1:
-                    #         logger.write_log(f"发现图书大于10 {title}")
-                    #         sys.exit()
-                    #     flag = 0
-                    #     book_list = []
-                    #     while True:
-                    #         funding = None
-                    #         # 获取参考文献
-                    #
-                    #         funding = WebDriverWait(driver, 3).until(
-                    #             EC.presence_of_element_located((By.CLASS_NAME, rp['book'])))
-                    #         li_elements = funding.find_elements(By.TAG_NAME, 'li')
-                    #
-                    #         for li in li_elements:
-                    #             li_text = li.text.replace('[', ';', 1)
-                    #             book_list.append(li_text)
-                    #
-                    #         flag += 1
-                    #         if flag > paper_sum:
-                    #             break
-                    #
-                    #         try:
-                    #             if_next_page = WebDriverWait(driver, 3).until(
-                    #                 EC.presence_of_element_located((By.CLASS_NAME, rp['book'])))
-                    #             if_next_page = if_next_page.find_element(By.CLASS_NAME, rp['next_page']).text
-                    #         except:
-                    #             break
-                    #         if if_next_page == '下一页':
-                    #             el = WebDriverWait(driver, 3).until(
-                    #                 EC.presence_of_element_located((By.CLASS_NAME, rp['book'])))
-                    #             el.find_element(By.CLASS_NAME, rp['next_page']).click()
-                    #             time.sleep(3)
-                    #
-                    #     book_list = sorted(set(book_list), key=extract_number)
-                    #
-                    #     for iii in book_list:
-                    #         print(f"引用图书 :{iii}")
-                    #
-                    #     book_list = trim_quote(book_list)
-                    #
-                    # else:
-                    #     print("$$$本论文没有引用图书$$$")
-                    #
-                    # # 中外文题录
-                    # try:
-                    #     paper_sum = funding = WebDriverWait(driver, 3).until(
-                    #         EC.presence_of_element_located((By.CLASS_NAME, rp['Chinese_and_foreign'])))
-                    #     paper_sum = int(paper_sum.find_element(By.ID, rp['paper_num']).text)
-                    # except:
-                    #     paper_sum = None
-                    # if paper_sum:
-                    #     print(f"存在引用中外文题录{paper_sum}篇")
-                    #     paper_sum = int((paper_sum / 10) + 1)
-                    #     if paper_sum > 1:
-                    #         logger.write_log(f"发现中外文题录大于10 {title}")
-                    #         sys.exit()
-                    #     flag = 0
-                    #     Chinese_and_foreign_list = []
-                    #     while True:
-                    #         funding = None
-                    #         # 获取参考文献
-                    #
-                    #         funding = WebDriverWait(driver, 3).until(
-                    #             EC.presence_of_element_located((By.CLASS_NAME, rp['Chinese_and_foreign'])))
-                    #         li_elements = funding.find_elements(By.TAG_NAME, 'li')
-                    #
-                    #         for li in li_elements:
-                    #             li_text = li.text.replace('[', ';', 1)
-                    #             Chinese_and_foreign_list.append(li_text)
-                    #
-                    #         flag += 1
-                    #         if flag > paper_sum:
-                    #             break
-                    #
-                    #         try:
-                    #             if_next_page = WebDriverWait(driver, 3).until(
-                    #                 EC.presence_of_element_located((By.CLASS_NAME, rp['Chinese_and_foreign'])))
-                    #             if_next_page = if_next_page.find_element(By.CLASS_NAME, rp['next_page']).text
-                    #         except:
-                    #             break
-                    #         if if_next_page == '下一页':
-                    #             el = WebDriverWait(driver, 3).until(
-                    #                 EC.presence_of_element_located((By.CLASS_NAME, rp['Chinese_and_foreign'])))
-                    #             el.find_element(By.CLASS_NAME, rp['next_page']).click()
-                    #             time.sleep(3)
-                    #
-                    #     Chinese_and_foreign_list = sorted(set(Chinese_and_foreign_list), key=extract_number)
-                    #
-                    #     for iii in Chinese_and_foreign_list:
-                    #         print(f"引用中外文题录 :{iii}")
-                    #
-                    #     Chinese_and_foreign_list = trim_quote(Chinese_and_foreign_list)
-                    #
-                    # else:
-                    #     print("$$$本论文没有引用中外文题录$$$")
-                    #
-                    # # 中外文题录
-                    # try:
-                    #     paper_sum = funding = WebDriverWait(driver, 3).until(
-                    #         EC.presence_of_element_located((By.CLASS_NAME, rp['Chinese_and_foreign'])))
-                    #     paper_sum = int(paper_sum.find_element(By.ID, rp['paper_num']).text)
-                    # except:
-                    #     paper_sum = None
-                    # if paper_sum:
-                    #     print(f"存在引用中外文题录{paper_sum}篇")
-                    #     paper_sum = int((paper_sum / 10) + 1)
-                    #     if paper_sum > 1:
-                    #         logger.write_log(f"发现中外文题录大于10 {title}")
-                    #         sys.exit()
-                    #     flag = 0
-                    #     newpaper_list = []
-                    #     while True:
-                    #         funding = None
-                    #         # 获取参考文献
-                    #
-                    #         funding = WebDriverWait(driver, 3).until(
-                    #             EC.presence_of_element_located((By.CLASS_NAME, rp['newpaper'])))
-                    #         li_elements = funding.find_elements(By.TAG_NAME, 'li')
-                    #
-                    #         for li in li_elements:
-                    #             li_text = li.text.replace('[', ';', 1)
-                    #             newpaper_list.append(li_text)
-                    #
-                    #         flag += 1
-                    #         if flag > paper_sum:
-                    #             break
-                    #
-                    #         try:
-                    #             if_next_page = WebDriverWait(driver, 3).until(
-                    #                 EC.presence_of_element_located((By.CLASS_NAME, rp['newpaper'])))
-                    #             if_next_page = if_next_page.find_element(By.CLASS_NAME, rp['next_page']).text
-                    #         except:
-                    #             break
-                    #         if if_next_page == '下一页':
-                    #             el = WebDriverWait(driver, 3).until(
-                    #                 EC.presence_of_element_located((By.CLASS_NAME, rp['newpaper'])))
-                    #             el.find_element(By.CLASS_NAME, rp['next_page']).click()
-                    #             time.sleep(3)
-                    #
-                    #     newpaper_list = sorted(set(newpaper_list), key=extract_number)
-                    #
-                    #     for iii in newpaper_list:
-                    #         print(f"引用中外文题录 :{iii}")
-                    #
-                    #     newpaper_list = trim_quote(newpaper_list)
-                    #
-                    # else:
-                    #     print("$$$本论文没有引用中外文题录$$$")
-                    #     newpaper_list = None
-
-                # 获取文章目录
                 # print("获取文章目录")
                 try:
                     article_directory = WebDriverWait(driver, 1).until(
                         EC.presence_of_element_located((By.CLASS_NAME, cp['catalog']))).text
+                    print(f"文章目录 : \n{article_directory}")
                 except:
                     article_directory = None
-                print(f"文章目录 : \n{article_directory}")
-
-                # print("获取报纸层级")
+                    print(f"文章目录 : {article_directory}")
 
                 # url = driver.current_url[46:][:-32]
-
                 # 获取下载链接
                 # try:
                 #     down_url = WebDriverWait(driver, 0).until(EC.presence_of_all_elements_located
@@ -810,7 +532,6 @@ def crawl(driver, papers_need, keyword):
                     new_title = None
                 print(f"内页标题 : {new_title}")
 
-                uuid = UUID()
                 insert_time = now_time()
 
                 title_en = None
@@ -818,7 +539,7 @@ def crawl(driver, papers_need, keyword):
                 update_time = None
 
                 sql1 = (
-                    f"INSERT INTO `Paper`.`index`(`UUID`, `web_site_id`, `classification_en`,`classification_zh`,"
+                    f"INSERT INTO `Paper`.`index_copy1`(`UUID`, `web_site_id`, `classification_en`,`classification_zh`,"
                     f"`source_language`, `title_zh`, `title_en`, `update_time`, `insert_time`, `from`, `state`, "
                     f"`authors`, `Introduction`, `receive_time`, `Journal_reference`, `Comments`, `size`, `DOI`, "
                     f"`version`, `withdrawn`) "
@@ -839,21 +560,12 @@ def crawl(driver, papers_need, keyword):
                         f" '{pl_list[1]}', '{pl_list[2]}', '{pl_list[3]}', '{pl_list[4]}',"
                         f" '{pl_list[5]}', '{pl_list[6]}');")
 
-                sql3 = (f"INSERT INTO `Paper`.`cnki_index`"
-                        f"(`UUID`, `title`, `receive_time`, `from`) "
-                        f"VALUES ('{uuid}', '{title}', '{date}', '{keyword}');")
+                # sql3 = (f"INSERT INTO `Paper`.`cnki_index`"
+                #         f"(`UUID`, `title`, `receive_time`, `from`) "
+                #         f"VALUES ('{uuid}', '{title}', '{date}', '{keyword}');")
 
                 sql1 = TrSQL(sql1)
                 sql2 = TrSQL(sql2)
-                sql3 = TrSQL(sql3)
-
-                flag = Date_base().insert_all(sql3)
-                if flag == '重复数据':
-                    logger.write_log(f"重复数据 ： {new_title}, UUID : {uuid}")
-                    random_sleep = round(random.uniform(0, 3), 2)
-                    print(f"sleep {random_sleep}s")
-                    time.sleep(random_sleep)
-                    continue
 
                 Date_base().insert_all(sql1)
                 Date_base().insert_all(sql2)
@@ -864,30 +576,62 @@ def crawl(driver, papers_need, keyword):
                 time.sleep(random_sleep)
 
             except Exception as e:
-                logger.write_log(f"错误 ： {new_title}, UUID : {uuid}")
-                logger.write_log(f"Err Message:,{str(e)}")
-                logger.write_log(f"Err Type:, {type(e).__name__}")
-                _, _, tb = sys.exc_info()
-                logger.write_log(
-                    f"Err Local:, {tb.tb_frame.f_code.co_filename}, {tb.tb_lineno}")
-
+                err(e)
                 continue
 
             finally:
-                # 如果有多个窗口，关闭第二个窗口， 切换回主页
-                n2 = driver.window_handles
-                if len(n2) > 1:
-                    driver.close()
-                    driver.switch_to.window(n2[0])
-                # 计数,判断需求是否足够
                 count += 1
-                if count == papers_need: break
+                if count == papers_need:
+                    break
+
+            try:
+                all_handles = driver.window_handles
+                # 保留第一个窗口的句柄
+                main_window_handle = all_handles[0]
+
+                if len(all_handles) == 1:
+                    print(f"all_handles <= 1")
+                    time.sleep(0.3)
+                    continue
+
+                # 关闭除第一个窗口以外的所有窗口
+                if len(all_handles) > 1:
+                    start_time = time.time()
+
+                    try:
+                        for handle in all_handles[1:]:
+                            driver.switch_to.window(handle)
+                            driver.close()
+                            driver.switch_to.window(main_window_handle)
+
+                            # 检查是否超过2秒
+                            elapsed_time = time.time() - start_time
+                            if elapsed_time > 2:
+                                logger.write_log("超过3秒，未成功关闭浏览器窗口")
+                                continue
+                    except:
+                        logger.write_log("超过2秒，未成功关闭浏览器窗口")
+                        continue
+
+            except Exception as e:
+                logger.write_log(f"错误 ： {new_title}, UUID : {uuid}")
+                err(e)
 
         # 切换到下一页
-        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, cp['paper_next_page']))).click()
+        WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, cp['paper_next_page']))).click()
 
 
-def cnki_run():
+def re_run(paper_sum_flag, driver):
+    web_zoom, keyword, papers_need = read_conf.cnki_paper()
+    # 设置所需篇数
+    res_unm = open_page(driver, keyword)
+    # 判断所需是否大于总篇数
+    papers_need = papers_need if (papers_need <= res_unm) else res_unm
+    # 判断所需是否大于总篇数
+    crawl(driver, papers_need, keyword, paper_sum_flag)
+
+
+def cnki_run(paper_sum_flag):
     web_zoom, keyword, papers_need = read_conf.cnki_paper()
     driver = webserver(web_zoom)
     # 设置所需篇数
@@ -896,6 +640,7 @@ def cnki_run():
     papers_need = papers_need if (papers_need <= res_unm) else res_unm
     # os.system("pause")
     # 开始爬取
-    crawl(driver, papers_need, keyword)
+
+    crawl(driver, papers_need, keyword, paper_sum_flag)
     # 关闭浏览器
-    driver.close()
+    # driver.close()

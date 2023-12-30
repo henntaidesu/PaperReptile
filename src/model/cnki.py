@@ -105,6 +105,12 @@ class Crawl:
              "/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[1]/p"),
             ("/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[2]/span",
              "/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[2]/p"),
+            ("/html/body/div[2]/div[1]/div[3]/div/div/div[5]/ul/li[1]/span",
+             "/html/body/div[2]/div[1]/div[3]/div/div/div[5]/ul/li[1]/p"),
+            ("/html/body/div[2]/div[1]/div[3]/div/div/div[5]/ul/li[2]/span",
+             "/html/body/div[2]/div[1]/div[3]/div/div/div[5]/ul/li[2]/p"),
+            ("/html/body/div[2]/div[1]/div[3]/div/div/div[5]/ul/li[3]/span",
+             "/html/body/div[2]/div[1]/div[3]/div/div/div[5]/ul/li[3]/p"),
             # 专题
             ("/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[1]/span",
              "/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[1]/p"),
@@ -123,6 +129,8 @@ class Crawl:
              "/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[4]/p"),
             ("/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[4]/span",
              "/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[4]/p"),
+            ("/html/body/div[2]/div[1]/div[3]/div/div/div[5]/ul/li[4]/span",
+             "/html/body/div[2]/div[1]/div[3]/div/div/div[5]/ul/li[4]/p"),
             # 版名
             ("/html/body/div[2]/div[1]/div[3]/div[1]/div/div[5]/span",
              "/html/body/div[2]/div[1]/div[3]/div[1]/div/div[5]/p"),
