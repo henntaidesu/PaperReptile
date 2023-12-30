@@ -174,8 +174,6 @@ def crawl(driver, papers_need, keyword, paper_sum_flag):
         # 循环网页一页中的条目
         for i in range((count - 1) % 20 + 1, 21):
 
-            paper_sum_flag += 1
-
             if count < paper_sum_flag:
                 count += 1
                 continue
@@ -196,7 +194,8 @@ def crawl(driver, papers_need, keyword, paper_sum_flag):
             down_sun = None
 
             print(f"\n#################################"
-                  f"正在爬取第{count - new_paper_sum}条,跳过{new_paper_sum}条(第{(count - 1) // 20 + 1}页第{i}条 总{count}条)"
+                  f"正在爬取第{count - new_paper_sum}条,跳过{new_paper_sum + paper_sum_flag}"
+                  f"条(第{(count - 1) // 20 + 1}页第{i}条 总第{count}条)"
                   f"#################################\n")
 
             try:
@@ -254,10 +253,11 @@ def crawl(driver, papers_need, keyword, paper_sum_flag):
                     title_list[i - 1].click()
                 except Exception as e:
                     driver.refresh()
-                    re_run(count, driver)
+                    re_run(paper_sum_flag, driver)
                     # count += 1
                     err(e)
                     continue
+
 
 
                 # 获取driver的句柄

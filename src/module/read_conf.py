@@ -97,6 +97,41 @@ class read_conf:
         papers_need = int(self.config.get('cnki paper passkey', 'papers_need'))
         return web_zoom, keyword, papers_need
 
+    def cnki_skip_db(self):
+        newpaper = self.config.get('cnki skip jump', '报纸')
+        journal = self.config.get('cnki skip jump', '期刊')
+        journal_A = self.config.get('cnki skip jump', '特色期刊')
+        master = self.config.get('cnki skip jump', '硕士')
+        PhD = self.config.get('cnki skip jump', '博士')
+
+        if newpaper == "True":
+            newpaper = True
+        else:
+            newpaper = False
+
+        if journal == "True":
+            journal = True
+        else:
+            journal = False
+
+        if journal_A == "True":
+            journal_A = True
+        else:
+            journal_A = False
+
+        if master == "True":
+            master = True
+        else:
+            master = False
+
+        if PhD == "True":
+            PhD = True
+        else:
+            PhD = False
+
+        return [newpaper, journal, master, PhD]
+
+
 class ArxivYYMM:
     def __init__(self):
         self.config = configparser.ConfigParser()
