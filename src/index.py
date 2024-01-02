@@ -2,7 +2,7 @@ from src.paper_website.arxiv.arxivorg import ArxivOrg, translate_classification,
 from src.module.log import log
 from src.module.multi_process import Process
 from src.paper_website.arxiv.arxiv_paper_down import Arxiv_paper_down
-from src.paper_website.cnki.cnki import cnki_run
+from src.paper_website.cnki.run_cnki import run_paper_main_info
 import asyncio
 
 
@@ -15,23 +15,19 @@ class index:
         self.Arxiv_paper_down = Arxiv_paper_down()
 
     def index(self):
-        print("1:爬论文")
-        print("2:翻译classification")
-        print("3:翻译title")
-        # paper_units = input()
-        # self.arxivorg.get_exhaustive_url(paper_units)
-
-        # flag = input()
         flag = '5'
         if flag == '1':
+            print("爬arxiv论文")
             self.arxivorg.get_exhaustive_url()
 
         if flag == '2':
+            print("翻译classification")
             while True:
                 sql = f"SELECT UUID, classification_en FROM `index` WHERE state = '00'"
                 asyncio.run(self.process.multi_process_as_up_group(sql, translate_classification))
 
         if flag == '3':
+            print("翻译title")
             while True:
                 sql = (f" SELECT UUID, title_en FROM `Paper`.`index`"
                        f" WHERE state = '01' and classification_zh  like '%cs%' "
@@ -39,6 +35,7 @@ class index:
                 self.process.multi_process_as_up_group(sql, translate_title)
 
         if flag == '4':
+            print("下载arxiv论文")
             while True:
                 sql = (f"SELECT UUIDs, web_site_id, version, withdrawn "
                        f"FROM `Paper`.`index`WHERE state = '02' and classification_zh "
@@ -46,4 +43,5 @@ class index:
                 self.Arxiv_paper_down.paper_down(sql)
 
         if flag == '5':
-            cnki_run(0)
+            print("获取cnki论文基础数据")
+            run_paper_main_info(0)

@@ -95,7 +95,8 @@ class read_conf:
         web_zoom = self.config.get('cnki paper passkey', 'web_zoom')
         keyword = self.config.get('cnki paper passkey', 'keyword')
         papers_need = int(self.config.get('cnki paper passkey', 'papers_need'))
-        return web_zoom, keyword, papers_need
+        time_out = int(self.config.get('cnki paper passkey', 'time_out'))
+        return web_zoom, keyword, papers_need, time_out
 
     def cnki_skip_db(self):
         newpaper = self.config.get('cnki skip jump', '报纸')
