@@ -128,6 +128,8 @@ def get_mian_page_info(driver, keyword, paper_sum_flag, time_out):
                 title, authors, source, date, db_type, quote, down_sun = [future.result() for future in
                                                                           future_elements]
 
+                url = None
+
                 if '网络首发' in title:
                     title = title[:-5]
 
@@ -176,9 +178,9 @@ def get_mian_page_info(driver, keyword, paper_sum_flag, time_out):
                         f" '{authors}', NULL, '{date}');")
 
                 sql2 = (f"INSERT INTO `Paper`.`cnki_paper_information`"
-                        f"(`UUID`, `paper_from`, `db_type`, `down_sun`, `quote`, `insert_time`) "
+                        f"(`UUID`, `paper_from`, `db_type`, `down_sun`, `quote`, `insert_time`, `url`) "
                         f"VALUES "
-                        f"('{uuid}', '{source}', '{db_type}',' {down_sun}', '{quote}', '{insert_time}');")
+                        f"('{uuid}', '{source}', '{db_type}',' {down_sun}', '{quote}', '{insert_time}', '{url}');")
 
                 sql1 = TrSQL(sql1)
                 sql2 = TrSQL(sql2)
@@ -195,16 +197,12 @@ def get_mian_page_info(driver, keyword, paper_sum_flag, time_out):
             finally:
                 count += 1
 
-        time.sleep(5)
+        time.sleep(3)
         # 切换到下一页
         WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, cp['paper_next_page']))).click()
 
 
-def get_level2_page(driver, papers_need, keyword, paper_sum_flag, time_out):
-    number = None
-    pl_list = None
-    new_title = None
-    uuid = None
+def get_level2_page(driver, keyword, paper_sum_flag, time_out, uuid, title, db_type):
     paper_db = read_conf.cnki_skip_db()
 
     cp = crawl_xpath()
@@ -213,7 +211,6 @@ def get_level2_page(driver, papers_need, keyword, paper_sum_flag, time_out):
 
     count = 1
     xpath_information = crawl_xp.xpath_inf()
-
 
     new_paper_sum = 0
 
@@ -226,27 +223,24 @@ def get_level2_page(driver, papers_need, keyword, paper_sum_flag, time_out):
     if count < paper_sum_flag:
         count += 1
 
-    if_title = False
-    journal_list = None
-    master_list = None
-    PhD_list = None
-    international_journals_list = None
-    book_list = None
-    Chinese_and_foreign_list = None
-    title = None
-    authors = None
-    source = None
-    date = None
-    db_type = None
-    quote = None
-    down_sun = None
-
+    # if_title = False
+    # journal_list = None
+    # master_list = None
+    # PhD_list = None
+    # international_journals_list = None
+    # book_list = None
+    # Chinese_and_foreign_list = None
+    # title = None
+    # authors = None
+    # source = None
+    # date = None
+    # db_type = None
+    # quote = None
+    # down_sun = None
 
     try:
         term = (count - 1) % 20 + 1  # 本页的第几个条目
         xpaths = crawl_xp.xpath_base(term)
-
-        uuid = UUID()
 
         # 点击条目
         try:
@@ -537,29 +531,34 @@ def get_level2_page(driver, papers_need, keyword, paper_sum_flag, time_out):
 
         title_en = None
         classification_en = None
-        update_time = None
+        update_time = now_time()
 
-        sql1 = (
-            f"INSERT INTO `Paper`.`index_copy1`(`UUID`, `web_site_id`, `classification_en`,`classification_zh`,"
-            f"`source_language`, `title_zh`, `title_en`, `update_time`, `insert_time`, `from`, `state`, "
-            f"`authors`, `Introduction`, `receive_time`, `Journal_reference`, `Comments`, `size`, `DOI`, "
-            f"`version`, `withdrawn`) "
-            f" VALUES ('{uuid}', '{uuid}', '{classification_en}', '{classification_zh}', "
-            f" 'cn', '{new_title}', '{title_en}', '{update_time}', '{insert_time}', 'cnki', '00', "
-            f" '{authors}', NULL, '{date}', NULL, NULL, {paper_size}, '{DOI}', NULL, NULL);")
+        sql1 = (f"UPDATE `Paper`.`index_copy1` SET  "
+                f"`classification_zh` = '{classification_zh}', "
+                f"`update_time` = '{update_time}', "
+                f"`size` = {paper_size}, "
+                f"`DOI` = '{DOI}', "
+                f"WHERE `UUID` = '{uuid}';)")
 
-        sql2 = (f"INSERT INTO `Paper`.`cnki_paper_information`"
-                f"(`UUID`, `institute`, `paper_from`, `db_type`, `down_sun`, `quote`, `insert_time`, "
-                f"`update_time`, `funding`, `album`, `classification_number`, "
-                f"`article_directory`, `Topics`, `level`, `page_sum`, `journal`, "
-                f"`master`, `PhD`, `international_journals`, `book`, "
-                f"`Chinese_and_foreign`, `newpaper`) "
-                f"VALUES "
-                f"('{uuid}', '{institute}', '{source}', '{db_type}',' {down_sun}', '{quote}', '{insert_time}',"
-                f" '{update_time}', '{funding}', '{publication}', '{classification_number}',"
-                f" '{article_directory}', '{topic}', '{level}', '{page_sum}', '{pl_list[0]}',"
-                f" '{pl_list[1]}', '{pl_list[2]}', '{pl_list[3]}', '{pl_list[4]}',"
-                f" '{pl_list[5]}', '{pl_list[6]}');")
+        sql2 = (f"UPDATE `Paper`.`cnki_paper_information` SET "
+                f"`institute` = '{institute}', "
+                f"`update_time` = '{update_time}', "
+                f"`funding` = '{funding}', "
+                f"`album` = '{publication}', "
+                f"`classification_number` = '{classification_number}', "
+                f"`article_directory` = '{article_directory}', "
+                f"`Topics` = '{topic}', "
+                f"`level` = '{level}', "
+                f"`page_sum` = '{page_sum}', "
+                f"`journal` = '{pl_list[0]}', "
+                f"`master` = '{pl_list[1]}', "
+                f"`PhD` = '{pl_list[2]}', "
+                f"`international_journals` = '{pl_list[3]}', "
+                f"`book` = '{pl_list[4]}', "
+                f"`Chinese_and_foreign` = '{pl_list[5]}', "
+                f"`newpaper` = '{pl_list[6]}' "
+                f"WHERE `UUID` = '{uuid}';")
+
 
         # sql3 = (f"INSERT INTO `Paper`.`cnki_index`"
         #         f"(`UUID`, `title`, `receive_time`, `from`) "
@@ -576,42 +575,7 @@ def get_level2_page(driver, papers_need, keyword, paper_sum_flag, time_out):
         print(f"sleep {random_sleep}s")
         time.sleep(random_sleep)
 
-    except Exception as e:
-        err(e)
-
-
-    try:
-        all_handles = driver.window_handles
-        # 保留第一个窗口的句柄
-        main_window_handle = all_handles[0]
-
-        if len(all_handles) == 1:
-            print(f"all_handles <= 1")
-            time.sleep(0.3)
-
-        # 关闭除第一个窗口以外的所有窗口
-        if len(all_handles) > 1:
-            start_time = time.time()
-
-            try:
-                for handle in all_handles[1:]:
-                    driver.switch_to.window(handle)
-                    driver.close()
-                    driver.switch_to.window(main_window_handle)
-
-                    # 检查是否超过2秒
-                    elapsed_time = time.time() - start_time
-                    if elapsed_time > 2:
-                        logger.write_log("超过3秒，未成功关闭浏览器窗口")
-                        WebDriverWait(driver, time_out).until(
-                            EC.presence_of_element_located((By.XPATH, cp['paper_next_page']))).click()
-                        continue
-            except:
-                logger.write_log("超过2秒，未成功关闭浏览器窗口")
-                WebDriverWait(driver, time_out).until(
-                    EC.presence_of_element_located((By.XPATH, cp['paper_next_page']))).click()
 
     except Exception as e:
         logger.write_log(f"错误 ： {new_title}, UUID : {uuid}")
         err(e)
-

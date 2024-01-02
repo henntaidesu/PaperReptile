@@ -2,7 +2,7 @@ from src.paper_website.arxiv.arxivorg import ArxivOrg, translate_classification,
 from src.module.log import log
 from src.module.multi_process import Process
 from src.paper_website.arxiv.arxiv_paper_down import Arxiv_paper_down
-from src.paper_website.cnki.run_cnki import run_paper_main_info
+from src.paper_website.cnki.run_cnki import run_paper_main_info, run_lever2_page
 import asyncio
 
 
@@ -15,7 +15,7 @@ class index:
         self.Arxiv_paper_down = Arxiv_paper_down()
 
     def index(self):
-        flag = '5'
+        flag = '6'
         if flag == '1':
             print("爬arxiv论文")
             self.arxivorg.get_exhaustive_url()
@@ -45,3 +45,8 @@ class index:
         if flag == '5':
             print("获取cnki论文基础数据")
             run_paper_main_info(0)
+
+        if flag == '6':
+            print("获取cnki论文基础数据")
+            run_lever2_page(0)
+
