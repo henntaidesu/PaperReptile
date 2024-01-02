@@ -41,13 +41,6 @@ def open_page(driver, keyword):
     opt = driver.find_element(By.CSS_SELECTOR, open_page_data['pe'])  # 定位元素
     driver.execute_script(open_page_data['js'], opt)  # 执行 js 脚本进行属性的修改；arguments[0]代表第一个属性
 
-    # # 鼠标移动到下拉框中的[通讯作者]
-    # ActionChains(driver).move_to_element(driver.find_element(By.CSS_SELECTOR, open_page_data['ca'])).perform()
-    #
-    # # # 找到[关键词]选项并点击
-    # # WebDriverWait(driver, 100).until(
-    # #     EC.visibility_of_element_located((By.CSS_SELECTOR, 'li[data-val="KY"]'))).click()
-    #
     # # 传入关键字
     WebDriverWait(driver, 100).until(EC.presence_of_element_located((By.XPATH, open_page_data['ik']))).send_keys(
         keyword)
@@ -67,11 +60,42 @@ def open_page(driver, keyword):
     return res_unm
 
 
+def open_level2_page(driver, keyword):
+    # 打开页面，等待两秒
+    crossids = \
+        f"YSTT4HG0%2CLSTPFY1C%2CJUP3MUPD%2CMPMFIG1A%2CWQ0UVIAA%2CBLZOG7CK%2CEMRPGLPA%2PARAGLIDING%2BILBO1Z6R%2CNN3FJMUV"
+    driver.get(f"https://kns.cnki.net/kns8s/defaultresult/index?crossids={crossids}&korder=TI&kw={keyword}")
+    random_sleep = round(random.uniform(2, 3), 2)
+    print(f"sleep {random_sleep}s")
+    time.sleep(random_sleep)
+
+    # 修改属性，使下拉框显示
+    opt = driver.find_element(By.CSS_SELECTOR, open_page_data['pe'])  # 定位元素
+    driver.execute_script(open_page_data['js'], opt)  # 执行 js 脚本进行属性的修改；arguments[0]代表第一个属性
+
+    # # 传入关键字
+    WebDriverWait(driver, 100).until(EC.presence_of_element_located((By.XPATH, open_page_data['ik']))).send_keys(
+        keyword)
+    #
+    # 点击搜索
+    WebDriverWait(driver, 100).until(EC.presence_of_element_located((By.XPATH, open_page_data['cs']))).click()
+
+    print("正在搜索，请稍后...")
+
+
 def run_paper_main_info(paper_sum_flag):
     web_zoom, keyword, papers_need, time_out = read_conf.cnki_paper()
     driver = webserver(web_zoom)
     # 设置所需篇数
-    res_unm = open_page(driver, keyword)
-
+    open_page(driver, keyword)
     get_mian_page_info(driver, keyword, paper_sum_flag, time_out)
+    driver.close()
 
+
+def run_lever2_page(paper_sum_flag):
+    web_zoom, keyword, papers_need, time_out = read_conf.cnki_paper()
+    driver = webserver(web_zoom)
+    # 设置所需篇数
+    open_page(driver, keyword)
+    get_mian_page_info(driver, keyword, paper_sum_flag, time_out)
+    driver.close()
