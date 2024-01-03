@@ -4,6 +4,54 @@ def keyword():
     return L
 
 
+def date_choose_table():
+    table = {
+        '1': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[1]/td[1]',
+        '2': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[1]/td[2]',
+        '3': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[1]/td[3]',
+        '4': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[1]/td[4]',
+        '5': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[1]/td[5]',
+        '6': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[1]/td[6]',
+        '7': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[1]/td[7]',
+        '8': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[2]/td[1]',
+        '9': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[2]/td[2]',
+        '10': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[2]/td[3]',
+        '11': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[2]/td[4]',
+        '12': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[2]/td[5]',
+        '13': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[2]/td[6]',
+        '14': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[2]/td[7]',
+        '15': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[3]/td[1]',
+        '16': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[3]/td[2]',
+        '17': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[3]/td[3]',
+        '18': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[3]/td[4]',
+        '19': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[3]/td[5]',
+        '20': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[3]/td[6]',
+        '21': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[3]/td[7]',
+        '22': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[4]/td[1]',
+        '23': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[4]/td[2]',
+        '24': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[4]/td[3]',
+        '25': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[4]/td[4]',
+        '26': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[4]/td[5]',
+        '27': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[4]/td[6]',
+        '28': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[4]/td[7]',
+        '29': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[5]/td[1]',
+        '30': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[5]/td[2]',
+        '31': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[5]/td[3]',
+        '32': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[5]/td[4]',
+        '33': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[5]/td[5]',
+        '34': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[5]/td[6]',
+        '35': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[5]/td[7]',
+        '36': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[6]/td[1]',
+        '37': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[6]/td[2]',
+        '38': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[6]/td[2]',
+        '39': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[6]/td[2]',
+        '40': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[6]/td[2]',
+        '41': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[6]/td[2]',
+        '42': '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[6]/td[2]',
+    }
+    return table
+
+
 def positioned_element():  # 定位元素
     xpaths = {
         'pe': '''div.sort-list''',
@@ -12,6 +60,10 @@ def positioned_element():  # 定位元素
         'ik': '''//*[@id="gradetxt"]/dd[1]/div[2]/input''',
         'cs': '''//*[@id="ModuleSearch"]/div[1]/div/div[2]/div/div[1]/div[1]/div[2]/div[3]/input''',
         'gn': '''//*[@id="countPageDiv"]/span[1]/em''',
+        'start_yy': '''/html/body/div[5]/div[1]/div[1]/div[2]/span''',
+        'start_mm': '''/html/body/div[5]/div[1]/div[1]/div[1]/span''',
+        'start': '''/html/body/div[5]/div[1]/div[2]''',
+        'end': '''/html/body/div[6]/div[1]/div[1]/div[1]/span''',
     }
 
     return xpaths
@@ -31,6 +83,9 @@ def crawl_xpath():
         'references': '//*[@id="references"]',
         'literature_if_true': '//*[@id="refpartdiv"]/h5/span/b',
         'if_literature_reference': '//*[@id="refpartdiv"]/h5/span/b',
+        'year': '//*[@id="divGroup"]/dl[3]',
+        'start_time': 'datebox0',
+        'end_time': 'datebox1',
         'paper_size1': '''//*[@id="DownLoadParts"]/div[2]/div/div/p/span[1]''',
         'paper_size2': '''//*[@id="DownLoadParts"]/div[2]/div/div/p/span[2]''',
         'paper_size3': '''//*[@id="DownLoadParts"]/div[2]/div/div/p/span[3]''',

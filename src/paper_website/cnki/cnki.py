@@ -69,6 +69,10 @@ def get_info(driver, xpath):
     except:
         return None
 
+def is_english_string(s):
+    # 使用正则表达式判断字符串是否全为英文字符
+    return bool(re.match('^[a-zA-Z\s]+$', s))
+
 
 def get_choose_info(driver, xpath1, xpath2, str):
     try:
@@ -87,28 +91,26 @@ def get_mian_page_info(driver, keyword, paper_sum_flag, time_out):
     qp = QuotePaper()
 
     count = 1
-    xpath_information = crawl_xp.xpath_inf()
+    new_paper_sum = 0
 
+    xpath_information = crawl_xp.xpath_inf()
     sql = f"select title from `cnki_index` where `from` = '{keyword}'"
     flag, paper_title = Date_base().select_all(sql)
 
-    new_paper_sum = 0
-
-    for i in range((count - 1) // 20):
-        # 切换到下一页
-        random_sleep = round(random.uniform(0, 3), 2)
-        print(f"sleep {random_sleep}s")
-        time.sleep(random_sleep)
-        WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.XPATH, cp['get_next_page']))).click()
-
-    print(f"从第 {count} 条开始爬取\n")
+    # for i in range((count - 1) // 20):
+    #     # 切换到下一页
+    #     random_sleep = round(random.uniform(0, 3), 2)
+    #     print(f"sleep {random_sleep}s")
+    #     time.sleep(random_sleep)
+    #     WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.XPATH, cp['get_next_page']))).click()
+    # print(f"从第 {count} 条开始爬取\n")
 
     # 当爬取数量小于需求时，循环网页页码
     while True:
         # 等待加载完全，休眠3S
         time.sleep(3)
 
-        title_list = WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.CLASS_NAME, "fz14")))
+        title_list = WebDriverWait(driver, time_out).until(EC.presence_of_all_elements_located((By.CLASS_NAME, "fz14")))
         # 循环网页一页中的条目
         for i in range((count - 1) % 20 + 1, 21):
 
@@ -143,18 +145,40 @@ def get_mian_page_info(driver, keyword, paper_sum_flag, time_out):
                     new_paper_sum += 1
                     continue
 
+                if db_type == '报纸':
+                    db_type = '0'
+                elif db_type == '期刊':
+                    db_type = '1'
+                elif db_type == '特色期刊':
+                    db_type = '2'
+                elif db_type == '硕士':
+                    db_type = '3'
+                elif db_type == '图书':
+                    db_type = '4'
+                elif db_type == '辑刊':
+                    db_type = '5'
+
+                elif db_type == '国家标准':
+                    db_type = 'a'
+                elif db_type == '国家标准':
+                    db_type = 'b'
+                elif db_type == '中国会议':
+                    db_type = 'c'
+                elif db_type == '国际会议':
+                    db_type = 'd'
+
+                else:
+                    db_type = '9'
+
                 uuid = UUID()
                 sql3 = (f"INSERT INTO `Paper`.`cnki_index`"
-                        f"(`UUID`, `title`, `receive_time`, `from`, `start`) "
-                        f"VALUES ('{uuid}', '{title}', '{date}', '{keyword}', '0');")
+                        f"(`UUID`, `title`, `receive_time`, `from`, `start`, `db_type`) "
+                        f"VALUES ('{uuid}', '{title}', '{date}', '{keyword}', '0', '{db_type}');")
 
                 sql3 = TrSQL(sql3)
                 flag = Date_base().insert_all(sql3)
                 if flag == '重复数据':
                     logger.write_log(f"重复数据 ： {title}, UUID : {uuid}")
-                    random_sleep = round(random.uniform(0, 3), 2)
-                    print(f"sleep {random_sleep}s")
-                    time.sleep(random_sleep)
                     continue
 
                 if not quote.isdigit():
@@ -167,19 +191,25 @@ def get_mian_page_info(driver, keyword, paper_sum_flag, time_out):
                       f"文章来源: {source}\n"
                       f"数据来源: {db_type}\n"
                       f"引用次数: {quote}\n"
-                      f"下载次数: {down_sun}")
+                      f"下载次数: {down_sun}\n")
 
                 insert_time = now_time()
-
-                sql1 = (f"INSERT INTO `Paper`.`index_copy1`(`UUID`, `web_site_id`,`source_language`, `title_zh`,"
-                        f" `insert_time`, `from`, `state`, `authors`, `Introduction`, `receive_time`) "
-                        f" VALUES ('{uuid}', '{uuid}', 'cn', '{title}', '{insert_time}', 'cnki', '00', "
-                        f" '{authors}', NULL, '{date}');")
+                result = is_english_string(title)
+                if result:
+                    sql1 = (f"INSERT INTO `Paper`.`index_copy1`(`UUID`, `web_site_id`,`source_language`, `title_en`,"
+                            f" `insert_time`, `from`, `state`, `authors`, `Introduction`, `receive_time`) "
+                            f" VALUES ('{uuid}', '{uuid}', 'en', '{title}', '{insert_time}', 'cnki', '00', "
+                            f" '{authors}', NULL, '{date}');")
+                else:
+                    sql1 = (f"INSERT INTO `Paper`.`index_copy1`(`UUID`, `web_site_id`,`source_language`, `title_zh`,"
+                            f" `insert_time`, `from`, `state`, `authors`, `Introduction`, `receive_time`) "
+                            f" VALUES ('{uuid}', '{uuid}', 'cn', '{title}', '{insert_time}', 'cnki', '00', "
+                            f" '{authors}', NULL, '{date}');")
 
                 sql2 = (f"INSERT INTO `Paper`.`cnki_paper_information`"
-                        f"(`UUID`, `paper_from`, `db_type`, `down_sun`, `quote`, `insert_time`, `url`) "
+                        f"(`UUID`, `paper_from`, `db_type`, `down_sun`, `quote`, `insert_time`) "
                         f"VALUES "
-                        f"('{uuid}', '{source}', '{db_type}',' {down_sun}', '{quote}', '{insert_time}', '{url}');")
+                        f"('{uuid}', '{source}', '{db_type}',' {down_sun}', '{quote}', '{insert_time}');")
 
                 sql1 = TrSQL(sql1)
                 sql2 = TrSQL(sql2)
@@ -196,8 +226,9 @@ def get_mian_page_info(driver, keyword, paper_sum_flag, time_out):
             finally:
                 count += 1
 
-        time.sleep(3)
+        # time.sleep(1)
         # 切换到下一页
+        time.sleep(2)
         WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, cp['paper_next_page']))).click()
 
 
@@ -231,8 +262,6 @@ def get_level2_page(driver, keyword, time_out, uuid, title1, db_type, paper_from
         with concurrent.futures.ThreadPoolExecutor() as executor:
             future_elements = [executor.submit(get_info, driver, xpath) for xpath in xpaths]
         title, authors, source, date, ndb_type, quote, down_sun = [future.result() for future in future_elements]
-
-
 
         if title:
             if '网络首发' in title:

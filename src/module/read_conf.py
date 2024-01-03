@@ -36,7 +36,7 @@ class read_conf:
             "https": proxy_url,
         }
 
-    # print(type(if_true))
+        # print(type(if_true))
         if if_true == "True":
             return True, proxies
         else:
@@ -148,3 +148,23 @@ class ArxivYYMM:
         self.config.set('arxiv.org', 'code', code)
         with open('conf.ini', 'w', encoding='utf-8') as configfile:
             self.config.write(configfile)
+
+
+class CNKI:
+    def __init__(self):
+        self.config = configparser.ConfigParser()
+        self.config.read('conf.ini', encoding='utf-8')
+
+    def read_cnki_date(self):
+        year = int(self.config.get('cnki date', 'year'))
+        moon = int(self.config.get('cnki date', 'moon'))
+        day = int(self.config.get('cnki date', 'day'))
+        return year, moon, day
+
+    def write_cnki_date(self, year, moon, day):
+        self.config.set('cnki date', 'year', year)
+        self.config.set('cnki date', 'moon', moon)
+        self.config.set('cnki date', 'day', day)
+        with open('conf.ini', 'w', encoding='utf-8') as configfile:
+            self.config.write(configfile)
+

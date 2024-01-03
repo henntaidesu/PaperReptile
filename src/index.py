@@ -15,7 +15,7 @@ class index:
         self.Arxiv_paper_down = Arxiv_paper_down()
 
     def index(self):
-        flag = '6'
+        flag = '5'
         if flag == '1':
             print("爬arxiv论文")
             self.arxivorg.get_exhaustive_url()
