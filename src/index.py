@@ -47,6 +47,6 @@ class index:
             run_paper_main_info(0)
 
         if flag == '6':
-            print("获取cnki论文基础数据")
-            run_lever2_page(0)
+            print("获取cnki论文详细数据")
+            run_lever2_page()
 

@@ -16,7 +16,6 @@ open_page_data = positioned_element()
 crawl_xp = Crawl()
 logger = log()
 read_conf = read_conf()
-db = Date_base()
 
 def webserver(web_zoom):
     # get直接返回，不再等待界面加载完成
@@ -48,7 +47,7 @@ def open_page(driver, keyword):
     #     keyword)
     #
     # 点击搜索
-    WebDriverWait(driver, 100).until(EC.presence_of_element_located((By.XPATH, open_page_data['cs']))).click()
+    # WebDriverWait(driver, 100).until(EC.presence_of_element_located((By.XPATH, open_page_data['cs']))).click()
 
     print("正在搜索，请稍后...")
 
@@ -64,7 +63,7 @@ def open_page(driver, keyword):
 
 def open_level2_page(driver, keyword):
     # 打开页面，等待两秒
-    crossids = f"https://kns.cnki.net/kns8s/defaultresult/index?korder=SU&kw={keyword}"
+    driver.get(f"https://kns.cnki.net/kns8s/defaultresult/index?korder=TI&kw={keyword}")
     random_sleep = round(random.uniform(0, 1), 2)
     print(f"sleep {random_sleep}s")
     time.sleep(random_sleep)
@@ -81,22 +80,41 @@ def run_paper_main_info(paper_sum_flag):
     driver.close()
 
 
-def run_lever2_page(paper_sum_flag):
+def run_lever2_page():
     web_zoom, keyword, papers_need, time_out = read_conf.cnki_paper()
     driver = webserver(web_zoom)
     while True:
-        sql = (f"SELECT cnki_index.UUID, cnki_index.title, cnki_paper_information.db_type "
+        sql = (f"SELECT cnki_index.UUID, "
+               f"cnki_index.title, "
+               f"cnki_paper_information.db_type, "
+               f"cnki_paper_information.paper_from "
                f"from cnki_index, cnki_paper_information "
                f"WHERE "
-               f"cnki_paper_information.db_type != '报纸' "
+               f"cnki_paper_information.db_type IN ('期刊', '博士', '硕士') "
                f"and cnki_index.`start` = '0'  limit 1")
-        flag, data = db.select_all(sql)
+
+        print(sql)
+
+        flag, data = Date_base().select_all(sql)
         data = data[0]
 
         uuid = data[0]
         title = data[1]
         db_type = data[2]
+        paper_from = data[3]
 
-        open_page(driver, title)
-        get_level2_page(driver, keyword, paper_sum_flag, time_out, uuid, title, db_type)
-        driver.close()
+        open_level2_page(driver, title)
+        get_level2_page(driver, keyword, time_out, uuid, title, db_type, paper_from)
+
+        all_handles = driver.window_handles
+
+        # 关闭除第一个窗口以外的所有窗口
+        if len(all_handles) > 1:
+            start_time = time.time()
+
+        for handle in all_handles[1:]:
+            driver.switch_to.window(handle)
+            driver.close()
+            driver.switch_to.window(all_handles[0])
+
+    # driver.close()

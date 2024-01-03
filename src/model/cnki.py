@@ -25,7 +25,7 @@ def crawl_xpath():
         'catalog': "catalog-list",
         'get_next_page': '''//*[@id='PageNext']''',
         'WebDriverWait': '''//*[@id="ChDivSummaryMore"]''',
-        'institute': "/html/body/div[2]/div[1]/div[3]/div/div/div[3]/div/h3[2]",
+        'institute': '//*[@id="authorpart"]/span/a',
         'paper_next_page': "//a[@id='PageNext']",
         'level': '//*[@id="func610"]/div/span',
         'references': '//*[@id="references"]',
