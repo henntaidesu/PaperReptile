@@ -16,6 +16,13 @@ def day():
     return formatted_date
 
 
+def day1():
+    Time = time.time()
+    datetime_obj = datetime.fromtimestamp(Time)
+    formatted_date = datetime_obj.strftime("%d")
+    return formatted_date
+
+
 def year():
     Time = time.time()
     datetime_obj = datetime.fromtimestamp(Time)

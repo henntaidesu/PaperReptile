@@ -69,6 +69,7 @@ def get_info(driver, xpath):
     except:
         return None
 
+
 def is_english_string(s):
     # 使用正则表达式判断字符串是否全为英文字符
     return bool(re.match('^[a-zA-Z\s]+$', s))
@@ -84,7 +85,7 @@ def get_choose_info(driver, xpath1, xpath2, str):
         return None
 
 
-def get_mian_page_info(driver, keyword, paper_sum_flag, time_out):
+def get_mian_page_info(driver, keyword, paper_sum_flag, time_out, res_unm):
     paper_db = read_conf.cnki_skip_db()
     cp = crawl_xpath()
     rp = reference_papers()
@@ -117,6 +118,10 @@ def get_mian_page_info(driver, keyword, paper_sum_flag, time_out):
             if count < paper_sum_flag:
                 count += 1
                 continue
+
+            if res_unm < count:
+                logger.write_log("已获取完数据")
+                break
 
             print(f"正在爬取第{count - new_paper_sum}条基础数据,跳过{new_paper_sum + paper_sum_flag}"
                   f"条(第{(count - 1) // 20 + 1}页第{i}条 总第{count}条):")
@@ -228,7 +233,7 @@ def get_mian_page_info(driver, keyword, paper_sum_flag, time_out):
 
         # time.sleep(1)
         # 切换到下一页
-        time.sleep(2)
+        time.sleep(1)
         WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, cp['paper_next_page']))).click()
 
 

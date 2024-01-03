@@ -6,17 +6,21 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
-from src.model.cnki import Crawl, positioned_element
+from src.model.cnki import Crawl, positioned_element, date_choose_start_table, date_choose_end_table
 from src.module.log import log
 from src.module.read_conf import read_conf
 from src.paper_website.cnki.cnki import get_mian_page_info, get_level2_page
 from src.module.execution_db import Date_base
+from src.module.read_conf import CNKI
+from src.module.now_time import year, moon, day1
 import random
 
 open_page_data = positioned_element()
 crawl_xp = Crawl()
 logger = log()
 read_conf = read_conf()
+dts = date_choose_start_table()
+dte = date_choose_end_table()
 
 
 def webserver(web_zoom):
@@ -33,8 +37,20 @@ def webserver(web_zoom):
     return driver
 
 
-def open_page(driver, keyword, start_time, end_time):
+def open_page(driver, keyword):
+    cnki = CNKI()
 
+    yy, mm, dd = cnki.read_cnki_date()
+    now_yy = int(year())
+    now_mm = int(moon())
+    now_day = int(day1())
+
+    flag_page = 0
+
+    flag_yy = now_yy - yy
+    flag_page += flag_yy * 12
+    flag_mm = now_mm - mm
+    flag_page += flag_mm
 
     # 打开页面，等待两秒
     driver.get("https://kns.cnki.net/kns8/AdvSearch")
@@ -47,65 +63,87 @@ def open_page(driver, keyword, start_time, end_time):
     # 传入关键字
     # WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['ik']))).send_keys(keyword)
 
+    # 设置开始时间
     WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.ID, 'datebox0'))).click()
+    time.sleep(1)
+    for i in range(flag_page):
+        time.sleep(0.2)
+        WebDriverWait(driver, time_out).until(EC.presence_of_element_located
+                                              ((By.XPATH, open_page_data['start_previous_page']))).click()
+
+    time.sleep(1)
+
+    date_list = str(WebDriverWait(driver, time_out).until(
+        EC.presence_of_element_located((By.XPATH, open_page_data['start']))).text)[14:]
+    date_list = date_list.splitlines()
+    # 将每行的内容转化为整数列表
+    date_list = [int(line) for line in date_list]
+
+    list_flag = 0
+
+    list_flag = date_list.index(1)
 
     while True:
-        time.sleep(2)
-        start_yy = WebDriverWait(driver, time_out).until(
-            EC.presence_of_element_located((By.XPATH, open_page_data['start_yy']))).text
-        start_mm = WebDriverWait(driver, time_out).until(
-            EC.presence_of_element_located((By.XPATH, open_page_data['start_mm']))).text
-        start_yy = int(start_yy)
-        if start_mm == '一月':
-            start_mm = 1
-        if start_mm == '二月':
-            start_mm = 2
-        if start_mm == '三月':
-            start_mm = 3
-        if start_mm == '四月':
-            start_mm = 4
-        if start_mm == '五月':
-            start_mm = 5
-        if start_mm == '六月':
-            start_mm = 6
-        if start_mm == '七月':
-            start_mm = 7
-        if start_mm == '八月':
-            start_mm = 8
-        if start_mm == '九月':
-            start_mm = 9
-        if start_mm == '十月':
-            start_mm = 10
-        if start_mm == '十一月':
-            start_mm = 11
-        if start_mm == '十二月':
-            start_mm = 12
-        print(start_yy)
-        print(start_mm, '\n')
+        list_flag += 1
+        if dd == date_list[list_flag - 1]:
+            break
 
+    WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, dts[list_flag]))).click()
 
+    time.sleep(3)
 
+    # 设置结束时间
+    WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.ID, 'datebox1'))).click()
+    for i in range(flag_page):
+        time.sleep(0.2)
+        WebDriverWait(driver, time_out).until(EC.presence_of_element_located
+                                              ((By.XPATH, open_page_data['end_previous_page']))).click()
+    # start_yy = WebDriverWait(driver, time_out).until(
+    #     EC.presence_of_element_located((By.XPATH, open_page_data['start_yy']))).text
+    # start_mm = WebDriverWait(driver, time_out).until(
+    #     EC.presence_of_element_located((By.XPATH, open_page_data['start_mm']))).text
+    # start_yy = int(start_yy)
+    # if start_mm == '一月':
+    #     start_mm = 1
+    # if start_mm == '二月':
+    #     start_mm = 2
+    # if start_mm == '三月':
+    #     start_mm = 3
+    # if start_mm == '四月':
+    #     start_mm = 4
+    # if start_mm == '五月':
+    #     start_mm = 5
+    # if start_mm == '六月':
+    #     start_mm = 6
+    # if start_mm == '七月':
+    #     start_mm = 7
+    # if start_mm == '八月':
+    #     start_mm = 8
+    # if start_mm == '九月':
+    #     start_mm = 9
+    # if start_mm == '十月':
+    #     start_mm = 10
+    # if start_mm == '十一月':
+    #     start_mm = 11
+    # if start_mm == '十二月':
+    #     start_mm = 12
+    # print(start_yy)
+    # print(start_mm, '\n')
+    time.sleep(2)
 
-        date_list = str(WebDriverWait(driver, time_out).until(
-            EC.presence_of_element_located((By.XPATH, open_page_data['start']))).text)[14:]
-        date_list = date_list.splitlines()
-        # 将每行的内容转化为整数列表
-        date_list = [int(line) for line in date_list]
-
-        # 打印结果
-        print(date_list)
-
-
-
-
-
-
-
-
-        time.sleep(3)
-        #
-        WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.ID, 'datebox1'))).click()
-        time.sleep(3)
+    date_list = str(WebDriverWait(driver, time_out).until(
+        EC.presence_of_element_located((By.XPATH, open_page_data['end']))).text)[14:]
+    date_list = date_list.splitlines()
+    # 将每行的内容转化为整数列表
+    date_list = [int(line) for line in date_list]
+    list_flag = 0
+    list_flag = date_list.index(1)
+    while True:
+        list_flag += 1
+        if dd == date_list[list_flag - 1]:
+            break
+    WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, dte[list_flag]))).click()
+    time.sleep(3)
 
     # 点击搜索
     WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['cs']))).click()
@@ -139,8 +177,13 @@ def run_paper_main_info(paper_sum_flag):
     # 设置所需篇数
     start_time = '2024-01-01'
     end_time = '2024-01-01'
-    open_page(driver, keyword, start_time, end_time)
-    get_mian_page_info(driver, keyword, paper_sum_flag, time_out)
+    res_unm = open_page(driver, keyword)
+    # try:
+    get_mian_page_info(driver, keyword, paper_sum_flag, time_out, res_unm)
+    # except:
+    #     run_paper_main_info(0)
+
+    # finally:
     driver.close()
 
 
