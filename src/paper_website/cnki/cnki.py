@@ -117,7 +117,13 @@ def revise_cnki_date():
     return True
 
 
-def get_mian_page_info(driver, keyword, paper_sum_flag, time_out, res_unm, date, paper_type, paper_day):
+def get_mian_page_info(driver, keyword, paper_sum_flag, time_out, res_unm, date, paper_type, paper_day, date_str):
+    title = None
+    db_type = None
+    authors = None
+    source = None
+    aa = None
+
     paper_db = read_conf.cnki_skip_db()
     cp = crawl_xpath()
     rp = reference_papers()
@@ -156,16 +162,28 @@ def get_mian_page_info(driver, keyword, paper_sum_flag, time_out, res_unm, date,
 
             if res_unm < count:
                 logger.write_log("已获取完数据")
-                flag = revise_cnki_date()
+
                 if paper_type == 0:
-                    paper_type = '100000000'
+                    date_str = list(date_str)
+                    date_str[0] = '1'
+                    date_str = str(date_str)
                 if paper_type == 1:
-                    paper_type = '110000000'
+                    date_str = list(date_str)
+                    date_str[1] = '1'
+                    date_str = str(date_str)
                 if paper_type == 2:
-                    paper_type = '111000000'
+                    date_str = list(date_str)
+                    date_str[2] = '1'
+                    date_str = str(date_str)
                 if paper_type == 3:
-                    paper_type = '111100000'
-                sql = f"UPDATE `Paper`.`cnki_page_flag` SET `flag` = '{paper_type}' WHERE `date` = '{paper_day}'"
+                    date_str = list(date_str)
+                    date_str[3] = '1'
+                    date_str = str(date_str)
+                sql = f"UPDATE `Paper`.`cnki_page_flag` SET `flag` = '{date_str}' WHERE `date` = '{paper_day}'"
+                Date_base().update_all(sql)
+                if date_str == '111101011':
+                    flag = revise_cnki_date()
+
                 if flag is True:
                     return True
 
@@ -176,9 +194,24 @@ def get_mian_page_info(driver, keyword, paper_sum_flag, time_out, res_unm, date,
                 term = (count - 1) % paper_sum + 1  # 本页的第几个条目
                 xpaths = crawl_xp.xpath_base(term)
 
-                with concurrent.futures.ThreadPoolExecutor() as executor:
-                    future_elements = [executor.submit(get_info, driver, xpath) for xpath in xpaths]
-                title, authors, source, date, db_type, quote, down_sun = [future.result() for future in future_elements]
+                print(paper_type)
+
+                if paper_type == 0:
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        future_elements = [executor.submit(get_info, driver, xpath) for xpath in xpaths]
+                    title, authors, source, date, quote, down_sun, aa = [future.result() for future in future_elements]
+
+                elif paper_type == 1:
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        future_elements = [executor.submit(get_info, driver, xpath) for xpath in xpaths]
+                    title, authors, source, db_type, date, quote, down_sun = [future.result() for future in
+                                                                              future_elements]
+
+                elif paper_type == 2:
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        future_elements = [executor.submit(get_info, driver, xpath) for xpath in xpaths]
+                    title, authors, source, date, db_type, quote, down_sun = [future.result() for future in
+                                                                              future_elements]
 
                 url = None
 
@@ -201,26 +234,30 @@ def get_mian_page_info(driver, keyword, paper_sum_flag, time_out, res_unm, date,
                         time.sleep(3)
                     continue
 
-                if db_type == '报纸':
-                    db_type = '0'
-                elif db_type == '期刊':
+                # 期刊
+                if paper_type == 0:
                     db_type = '1'
-                elif db_type == '特色期刊':
-                    db_type = '2'
+                # 报纸
+                elif paper_type == 3:
+                    db_type = '0'
+
                 elif db_type == '硕士':
+                    db_type = '2'
+
+                elif db_type == '博士':
                     db_type = '3'
+
                 elif db_type == '图书':
                     db_type = '4'
-                elif db_type == '辑刊':
-                    db_type = '5'
+
+                elif db_type == '中国会议':
+                    db_type = 'a'
+                elif db_type == '国际会议':
+                    db_type = 'b'
 
                 elif db_type == '国家标准':
-                    db_type = 'a'
-                elif db_type == '国家标准':
-                    db_type = 'b'
-                elif db_type == '中国会议':
                     db_type = 'c'
-                elif db_type == '国际会议':
+                elif db_type == '国家标准':
                     db_type = 'd'
 
                 else:

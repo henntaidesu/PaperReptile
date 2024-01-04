@@ -1,5 +1,3 @@
-import os
-import sys
 import time
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
@@ -110,26 +108,30 @@ def choose_banner(driver, time_out, paper_day):
     sql = f"select flag from cnki_page_flag WHERE date = '{paper_day}'"
     flag, data = Date_base().select_all(sql)
     if data:
+        data = data[0][0]
+        # print(data)
+        data = list(data)
+        # print(data)
         if data[0] == '0':
             # 点击学术期刊
             WebDriverWait(driver, time_out).until(
                 EC.presence_of_element_located((By.XPATH, open_page_data['xx']))).click()
-            return 0
+            return 0, str(data)
         if data[1] == '0':
             # 点击学位论文
             WebDriverWait(driver, time_out).until(
                 EC.presence_of_element_located((By.XPATH, open_page_data['xw']))).click()
-            return 1
+            return 1, str(data)
         if data[2] == '0':
             # 点击会议
             WebDriverWait(driver, time_out).until(
                 EC.presence_of_element_located((By.XPATH, open_page_data['hy']))).click()
-            return 2
+            return 2, str(data)
         if data[3] == '0':
             # 点击报纸
             WebDriverWait(driver, time_out).until(
                 EC.presence_of_element_located((By.XPATH, open_page_data['pa']))).click()
-            return 3
+            return 3, str(data)
     else:
         # 判断是否有数据
         xx_sum = int(WebDriverWait(driver, time_out).until(
@@ -182,10 +184,10 @@ def choose_banner(driver, time_out, paper_day):
             a8 = '1'
 
         sql = (f"INSERT INTO `Paper`.`cnki_page_flag`(`date`, `flag`) VALUES "
-               f"('{paper_day}', '{a0}{a1}{a2}{a3}0{a5}0{a7}{a8}');")
+               f"('{paper_day}', '{a0}{a1}{a2}{a3}1{a5}1{a7}{a8}');")
         Date_base().insert_all(sql)
         WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['xx']))).click()
-        return 0
+        return 0, str(f"'{a0}{a1}{a2}{a3}0{a5}0{a7}{a8}'")
 
 
 def open_page(driver, keyword):
@@ -208,8 +210,8 @@ def open_page(driver, keyword):
     time.sleep(2)
 
     # 切换搜索文章类型
-    paper_type = choose_banner(driver, time_out, paper_day)
-    time.sleep(2)
+    paper_type, date_str = choose_banner(driver, time_out, paper_day)
+    time.sleep(5)
 
     # 切换为每页50条
     WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['display']))).click()
@@ -227,7 +229,7 @@ def open_page(driver, keyword):
     page_unm = int(res_unm / 50) + 1
     print(f"共找到 {res_unm} 条结果, {page_unm} 页。")
 
-    return res_unm, paper_type, paper_day
+    return res_unm, paper_type, paper_day, date_str
 
 
 def open_level2_page(driver, keyword):
@@ -245,9 +247,9 @@ def run_paper_main_info(paper_sum_flag):
     yy, mm, dd = CNKI().read_cnki_date()
     driver = webserver(web_zoom)
     # 设置所需篇数
-    res_unm, paper_type, paper_day = open_page(driver, keyword)
+    res_unm, paper_type, paper_day, date_str = open_page(driver, keyword)
     date = f"{yy}-{mm}-{dd}"
-    flag = get_mian_page_info(driver, keyword, paper_sum_flag, time_out, res_unm, date, paper_type, paper_day)
+    flag = get_mian_page_info(driver, keyword, paper_sum_flag, time_out, res_unm, date, paper_type, paper_day, date_str)
 
     if flag is True:
         run_paper_main_info(0)
