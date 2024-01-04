@@ -18,6 +18,7 @@ from src.model.cnki import Crawl, positioned_element, crawl_xpath, reference_pap
 from src.module.log import log
 from src.module.read_conf import read_conf
 from src.module.err_message import err
+from src.module.read_conf import CNKI
 import random
 
 open_page_data = positioned_element()
@@ -85,35 +86,69 @@ def get_choose_info(driver, xpath1, xpath2, str):
         return None
 
 
-def get_mian_page_info(driver, keyword, paper_sum_flag, time_out, res_unm):
+def is_leap_year(year):
+    if (year % 4 == 0 and year % 100 != 0) or (year % 400 == 0):
+        return True
+    else:
+        return False
+
+
+def revise_cnki_date():
+    cnki = CNKI()
+    yy, mm, dd = cnki.read_cnki_date()
+    dd -= 1
+    if dd == 0:
+        mm -= 1
+        if mm in {1, 3, 5, 7, 8, 10, 12}:
+            dd = 31
+        elif mm == 2:
+            if (yy % 4 == 0 and yy % 100 != 0) or (yy % 400 == 0):
+                dd = 29
+            else:
+                dd = 28
+        elif mm == 0:
+            yy -= 1
+            mm = 12
+            dd = 31
+        else:
+            dd = 30
+
+    cnki.write_cnki_date(str(yy), str(mm), str(dd))
+    return True
+
+
+def get_mian_page_info(driver, keyword, paper_sum_flag, time_out, res_unm, date):
     paper_db = read_conf.cnki_skip_db()
     cp = crawl_xpath()
     rp = reference_papers()
     qp = QuotePaper()
 
+    paper_sum = 50
+
     count = 1
     new_paper_sum = 0
 
     xpath_information = crawl_xp.xpath_inf()
-    sql = f"select title from `cnki_index` where `from` = '{keyword}'"
+    sql = f"SELECT title FROM cnki_index where receive_time > '{date} 00:00:00' and receive_time < '{date} 23:59:59'"
     flag, paper_title = Date_base().select_all(sql)
 
-    # for i in range((count - 1) // 20):
-    #     # 切换到下一页
-    #     random_sleep = round(random.uniform(0, 3), 2)
-    #     print(f"sleep {random_sleep}s")
-    #     time.sleep(random_sleep)
-    #     WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.XPATH, cp['get_next_page']))).click()
-    # print(f"从第 {count} 条开始爬取\n")
+    if res_unm > 6000:
+        res_unm = 6000
 
     # 当爬取数量小于需求时，循环网页页码
     while True:
         # 等待加载完全，休眠3S
         time.sleep(3)
+        try:
+            title_list = WebDriverWait(driver, time_out).until(
+                EC.presence_of_all_elements_located((By.CLASS_NAME, "fz14")))
+        except:
+            time.sleep(3)
+            title_list = WebDriverWait(driver, time_out).until(
+                EC.presence_of_all_elements_located((By.CLASS_NAME, "fz14")))
 
-        title_list = WebDriverWait(driver, time_out).until(EC.presence_of_all_elements_located((By.CLASS_NAME, "fz14")))
         # 循环网页一页中的条目
-        for i in range((count - 1) % 20 + 1, 21):
+        for i in range((count - 1) % paper_sum + 1, paper_sum + 1):
 
             if count < paper_sum_flag:
                 count += 1
@@ -121,13 +156,15 @@ def get_mian_page_info(driver, keyword, paper_sum_flag, time_out, res_unm):
 
             if res_unm < count:
                 logger.write_log("已获取完数据")
-                break
+                flag = revise_cnki_date()
+                if flag is True:
+                    return True
 
             print(f"正在爬取第{count - new_paper_sum}条基础数据,跳过{new_paper_sum + paper_sum_flag}"
-                  f"条(第{(count - 1) // 20 + 1}页第{i}条 总第{count}条):")
+                  f"条(第{(count - 1) // paper_sum + 1}页第{i}条 总第{count}条 共{res_unm}条):")
 
             try:
-                term = (count - 1) % 20 + 1  # 本页的第几个条目
+                term = (count - 1) % paper_sum + 1  # 本页的第几个条目
                 xpaths = crawl_xp.xpath_base(term)
 
                 with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -135,6 +172,9 @@ def get_mian_page_info(driver, keyword, paper_sum_flag, time_out, res_unm):
                 title, authors, source, date, db_type, quote, down_sun = [future.result() for future in future_elements]
 
                 url = None
+
+                if '增强出版' in title:
+                    title = title[:-5]
 
                 if '网络首发' in title:
                     title = title[:-5]
@@ -148,6 +188,8 @@ def get_mian_page_info(driver, keyword, paper_sum_flag, time_out, res_unm):
 
                 if if_title is True:
                     new_paper_sum += 1
+                    if i == 50:
+                        time.sleep(3)
                     continue
 
                 if db_type == '报纸':
@@ -177,8 +219,8 @@ def get_mian_page_info(driver, keyword, paper_sum_flag, time_out, res_unm):
 
                 uuid = UUID()
                 sql3 = (f"INSERT INTO `Paper`.`cnki_index`"
-                        f"(`UUID`, `title`, `receive_time`, `from`, `start`, `db_type`) "
-                        f"VALUES ('{uuid}', '{title}', '{date}', '{keyword}', '0', '{db_type}');")
+                        f"(`UUID`, `title`, `receive_time`, `start`, `db_type`) "
+                        f"VALUES ('{uuid}', '{title}', '{date}', '0', '{db_type}');")
 
                 sql3 = TrSQL(sql3)
                 flag = Date_base().insert_all(sql3)
@@ -233,7 +275,7 @@ def get_mian_page_info(driver, keyword, paper_sum_flag, time_out, res_unm):
 
         # time.sleep(1)
         # 切换到下一页
-        time.sleep(1)
+        time.sleep(5)
         WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, cp['paper_next_page']))).click()
 
 
@@ -251,10 +293,6 @@ def get_level2_page(driver, keyword, time_out, uuid, title1, db_type, paper_from
 
     # 等待加载完全，休眠3S
     time.sleep(3)
-    for i in range((count - 1) // 20):
-        # 切换到下一页
-        time.sleep(3)
-        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, "//*[@id='PageNext']"))).click()
 
     title_list = WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.CLASS_NAME, "fz14")))
     # 循环网页一页中的条目

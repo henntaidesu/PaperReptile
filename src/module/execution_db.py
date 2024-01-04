@@ -1,6 +1,7 @@
 import sys
 from src.module.log import log
 from src.module.read_conf import read_conf
+from src.module.err_message import err
 
 
 class Date_base:
@@ -21,15 +22,13 @@ class Date_base:
             if "index.PRIMARY" in str(e):
                 self.print_log.write_log("重复数据 " + sql)
                 return '重复数据'
-            if "timed out" in str(e):
+            elif "timed out" in str(e):
                 self.print_log.write_log("连接数据库超时")
                 sys.exit()
-            self.print_log.write_log(f"错误信息:,{str(e)}")
-            self.print_log.write_log(f"错误类型:, {type(e).__name__}")
-            _, _, tb = sys.exc_info()
-            self.print_log.write_log(f"发生错误的位置:, {tb.tb_frame.f_code.co_filename}+ '第', {tb.tb_lineno}, '行'")
-            self.print_log.write_log(sql)
-            return False
+            else:
+                err(e)
+                self.print_log.write_log(sql)
+                return False
 
     def insert_list(self, sql):
         try:
@@ -41,17 +40,16 @@ class Date_base:
             self.db.close()
             return True
         except Exception as e:
-            self.print_log.write_log(f"错误信息:,{str(e)}")
-            self.print_log.write_log(f"错误类型:, {type(e).__name__}")
-            _, _, tb = sys.exc_info()
-            self.print_log.write_log(f"发生错误的位置:, {tb.tb_frame.f_code.co_filename}+ '第', {tb.tb_lineno}, '行'")
+            err(e)
             if "timed out" in str(e):
                 self.print_log.write_log("连接数据库超时")
-            if "index.PRIMARY" in str(e):
+            elif "index.PRIMARY" in str(e):
                 self.print_log.write_log("重复数据")
                 return True
-            self.print_log.write_log(sql)
-            return False
+            else:
+                err(e)
+                self.print_log.write_log(sql)
+                return False
 
     def update_all(self, sql):
         try:
@@ -61,10 +59,7 @@ class Date_base:
             cursor.close()
             return True
         except Exception as e:
-            self.print_log.write_log(f"错误信息:,{str(e)}")
-            self.print_log.write_log(f"错误类型:, {type(e).__name__}")
-            _, _, tb = sys.exc_info()
-            self.print_log.write_log(f"发生错误的位置:, {tb.tb_frame.f_code.co_filename}+ '第', {tb.tb_lineno}, '行'")
+            err(e)
             if "timed out" in str(e):
                 self.print_log.write_log("连接数据库超时")
             self.print_log.write_log(sql)
@@ -81,10 +76,7 @@ class Date_base:
             cursor.close()
             return True, result
         except Exception as e:
-            self.print_log.write_log(f"错误信息:,{str(e)}")
-            self.print_log.write_log(f"错误类型:, {type(e).__name__}")
-            _, _, tb = sys.exc_info()
-            self.print_log.write_log(f"发生错误的位置:, {tb.tb_frame.f_code.co_filename}+ '第', {tb.tb_lineno}, '行'")
+            err(e)
             if "timed out" in str(e):
                 self.print_log.write_log("连接数据库超时")
             self.print_log.write_log(sql)
@@ -101,10 +93,7 @@ class Date_base:
             self.db.close()
             return result
         except Exception as e:
-            self.print_log.write_log(f"错误信息:,{str(e)}")
-            self.print_log.write_log(f"错误类型:, {type(e).__name__}")
-            _, _, tb = sys.exc_info()
-            self.print_log.write_log(f"发生错误的位置:, {tb.tb_frame.f_code.co_filename}+ '第', {tb.tb_lineno}, '行'")
+            err(e)
             if "timed out" in str(e):
                 self.print_log.write_log("连接数据库超时")
             self.print_log.write_log(sql)

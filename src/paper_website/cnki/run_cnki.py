@@ -22,7 +22,6 @@ read_conf = read_conf()
 dts = date_choose_start_table()
 dte = date_choose_end_table()
 
-
 def webserver(web_zoom):
     # get直接返回，不再等待界面加载完成
     desired_capabilities = DesiredCapabilities.CHROME
@@ -46,7 +45,6 @@ def open_page(driver, keyword):
     now_day = int(day1())
 
     flag_page = 0
-
     flag_yy = now_yy - yy
     flag_page += flag_yy * 12
     flag_mm = now_mm - mm
@@ -143,12 +141,18 @@ def open_page(driver, keyword):
         if dd == date_list[list_flag - 1]:
             break
     WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, dte[list_flag]))).click()
-    time.sleep(3)
+    time.sleep(2)
 
     # 点击搜索
     WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['cs']))).click()
 
-    print("正在搜索，请稍后...")
+    time.sleep(3)
+    # 切换为每页50条
+    WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['display']))).click()
+    time.sleep(3)
+    WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['50']))).click()
+
+    time.sleep(3)
 
     # 获取总文献数和页数
     res_unm = WebDriverWait(driver, time_out).until(
@@ -156,8 +160,11 @@ def open_page(driver, keyword):
 
     # 去除千分位里的逗号
     res_unm = int(res_unm.replace(",", ''))
-    page_unm = int(res_unm / 20) + 1
+    page_unm = int(res_unm / 50) + 1
     print(f"共找到 {res_unm} 条结果, {page_unm} 页。")
+
+
+
     return res_unm
 
 
@@ -173,17 +180,16 @@ def open_level2_page(driver, keyword):
 
 def run_paper_main_info(paper_sum_flag):
     web_zoom, keyword, papers_need, time_out = read_conf.cnki_paper()
+    yy, mm, dd = CNKI().read_cnki_date()
     driver = webserver(web_zoom)
     # 设置所需篇数
-    start_time = '2024-01-01'
-    end_time = '2024-01-01'
     res_unm = open_page(driver, keyword)
-    # try:
-    get_mian_page_info(driver, keyword, paper_sum_flag, time_out, res_unm)
-    # except:
-    #     run_paper_main_info(0)
+    date = f"{yy}-{mm}-{dd}"
+    flag = get_mian_page_info(driver, keyword, paper_sum_flag, time_out, res_unm, date)
 
-    # finally:
+    if flag is True:
+        run_paper_main_info(0)
+
     driver.close()
 
 
