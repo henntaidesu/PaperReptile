@@ -22,6 +22,7 @@ read_conf = read_conf()
 dts = date_choose_start_table()
 dte = date_choose_end_table()
 
+
 def webserver(web_zoom):
     # get直接返回，不再等待界面加载完成
     desired_capabilities = DesiredCapabilities.CHROME
@@ -36,31 +37,20 @@ def webserver(web_zoom):
     return driver
 
 
-def open_page(driver, keyword):
+def setting_select_date(driver, time_out):
     cnki = CNKI()
-
     yy, mm, dd = cnki.read_cnki_date()
     now_yy = int(year())
     now_mm = int(moon())
     now_day = int(day1())
+
+    paper_day = f"{yy}-{mm}-{dd}"
 
     flag_page = 0
     flag_yy = now_yy - yy
     flag_page += flag_yy * 12
     flag_mm = now_mm - mm
     flag_page += flag_mm
-
-    # 打开页面，等待两秒
-    driver.get("https://kns.cnki.net/kns8/AdvSearch")
-    random_sleep = round(random.uniform(0, 3), 2)
-    print(f"sleep {random_sleep}s")
-    time.sleep(random_sleep)
-    time_out = 10
-    # os.system("pause")
-
-    # 传入关键字
-    # WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['ik']))).send_keys(keyword)
-
     # 设置开始时间
     WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.ID, 'datebox0'))).click()
     time.sleep(1)
@@ -96,37 +86,7 @@ def open_page(driver, keyword):
         time.sleep(0.2)
         WebDriverWait(driver, time_out).until(EC.presence_of_element_located
                                               ((By.XPATH, open_page_data['end_previous_page']))).click()
-    # start_yy = WebDriverWait(driver, time_out).until(
-    #     EC.presence_of_element_located((By.XPATH, open_page_data['start_yy']))).text
-    # start_mm = WebDriverWait(driver, time_out).until(
-    #     EC.presence_of_element_located((By.XPATH, open_page_data['start_mm']))).text
-    # start_yy = int(start_yy)
-    # if start_mm == '一月':
-    #     start_mm = 1
-    # if start_mm == '二月':
-    #     start_mm = 2
-    # if start_mm == '三月':
-    #     start_mm = 3
-    # if start_mm == '四月':
-    #     start_mm = 4
-    # if start_mm == '五月':
-    #     start_mm = 5
-    # if start_mm == '六月':
-    #     start_mm = 6
-    # if start_mm == '七月':
-    #     start_mm = 7
-    # if start_mm == '八月':
-    #     start_mm = 8
-    # if start_mm == '九月':
-    #     start_mm = 9
-    # if start_mm == '十月':
-    #     start_mm = 10
-    # if start_mm == '十一月':
-    #     start_mm = 11
-    # if start_mm == '十二月':
-    #     start_mm = 12
-    # print(start_yy)
-    # print(start_mm, '\n')
+
     time.sleep(2)
 
     date_list = str(WebDriverWait(driver, time_out).until(
@@ -143,18 +103,122 @@ def open_page(driver, keyword):
     WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, dte[list_flag]))).click()
     time.sleep(2)
 
+    return paper_day
+
+
+def choose_banner(driver, time_out, paper_day):
+    sql = f"select flag from cnki_page_flag WHERE date = '{paper_day}'"
+    flag, data = Date_base().select_all(sql)
+    if data:
+        if data[0] == '0':
+            # 点击学术期刊
+            WebDriverWait(driver, time_out).until(
+                EC.presence_of_element_located((By.XPATH, open_page_data['xx']))).click()
+            return 0
+        if data[1] == '0':
+            # 点击学位论文
+            WebDriverWait(driver, time_out).until(
+                EC.presence_of_element_located((By.XPATH, open_page_data['xw']))).click()
+            return 1
+        if data[2] == '0':
+            # 点击会议
+            WebDriverWait(driver, time_out).until(
+                EC.presence_of_element_located((By.XPATH, open_page_data['hy']))).click()
+            return 2
+        if data[3] == '0':
+            # 点击报纸
+            WebDriverWait(driver, time_out).until(
+                EC.presence_of_element_located((By.XPATH, open_page_data['pa']))).click()
+            return 3
+    else:
+        # 判断是否有数据
+        xx_sum = int(WebDriverWait(driver, time_out).until(
+            EC.presence_of_element_located((By.XPATH, open_page_data['xx_sum']))).text)
+        xw_sum = int(WebDriverWait(driver, time_out).until(
+            EC.presence_of_element_located((By.XPATH, open_page_data['xw_sum']))).text)
+        hy_sum = int(WebDriverWait(driver, time_out).until(
+            EC.presence_of_element_located((By.XPATH, open_page_data['hy_sum']))).text)
+        pa_sum = int(WebDriverWait(driver, time_out).until(
+            EC.presence_of_element_located((By.XPATH, open_page_data['pa_sum']))).text)
+        ts_sum = int(WebDriverWait(driver, time_out).until(
+            EC.presence_of_element_located((By.XPATH, open_page_data['ts_sum']))).text)
+        bz_sum = int(WebDriverWait(driver, time_out).until(
+            EC.presence_of_element_located((By.XPATH, open_page_data['bz_sum']))).text)
+        cg_sum = int(WebDriverWait(driver, time_out).until(
+            EC.presence_of_element_located((By.XPATH, open_page_data['cg_sum']))).text)
+        if xx_sum > 0:
+            a0 = '0'
+        else:
+            a0 = '1'
+
+        if xw_sum > 0:
+            a1 = '0'
+        else:
+            a1 = '1'
+
+        if hy_sum > 0:
+            a2 = '0'
+        else:
+            a2 = '1'
+
+        if pa_sum > 0:
+            a3 = '0'
+        else:
+            a3 = '1'
+
+        if ts_sum > 0:
+            a5 = '0'
+        else:
+            a5 = '1'
+
+        if bz_sum > 0:
+            a7 = '0'
+        else:
+            a7 = '1'
+
+        if cg_sum > 0:
+            a8 = '0'
+        else:
+            a8 = '1'
+
+        sql = (f"INSERT INTO `Paper`.`cnki_page_flag`(`date`, `flag`) VALUES "
+               f"('{paper_day}', '{a0}{a1}{a2}{a3}0{a5}0{a7}{a8}');")
+        Date_base().insert_all(sql)
+        WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['xx']))).click()
+        return 0
+
+
+def open_page(driver, keyword):
+    # 打开页面，等待两秒
+    driver.get("https://kns.cnki.net/kns8/AdvSearch")
+    random_sleep = round(random.uniform(0, 3), 2)
+    print(f"sleep {random_sleep}s")
+    time.sleep(random_sleep)
+    time_out = 10
+    # os.system("pause")
+
+    # 传入关键字
+    # WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['ik']))).send_keys(keyword)
+
+    # 设置时间
+    paper_day = setting_select_date(driver, time_out)
+
     # 点击搜索
     WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['cs']))).click()
+    time.sleep(2)
 
-    time.sleep(3)
+    # 切换搜索文章类型
+    paper_type = choose_banner(driver, time_out, paper_day)
+    time.sleep(2)
+
     # 切换为每页50条
     WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['display']))).click()
-    time.sleep(3)
+    time.sleep(2)
     WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['50']))).click()
+    time.sleep(2)
 
-    time.sleep(3)
 
-    # 获取总文献数和页数
+    # 文献数和页数
     res_unm = WebDriverWait(driver, time_out).until(
         EC.presence_of_element_located((By.XPATH, open_page_data['gn']))).text
 
@@ -163,9 +227,7 @@ def open_page(driver, keyword):
     page_unm = int(res_unm / 50) + 1
     print(f"共找到 {res_unm} 条结果, {page_unm} 页。")
 
-
-
-    return res_unm
+    return res_unm, paper_type, paper_day
 
 
 def open_level2_page(driver, keyword):
@@ -183,9 +245,9 @@ def run_paper_main_info(paper_sum_flag):
     yy, mm, dd = CNKI().read_cnki_date()
     driver = webserver(web_zoom)
     # 设置所需篇数
-    res_unm = open_page(driver, keyword)
+    res_unm, paper_type, paper_day = open_page(driver, keyword)
     date = f"{yy}-{mm}-{dd}"
-    flag = get_mian_page_info(driver, keyword, paper_sum_flag, time_out, res_unm, date)
+    flag = get_mian_page_info(driver, keyword, paper_sum_flag, time_out, res_unm, date, paper_type, paper_day)
 
     if flag is True:
         run_paper_main_info(0)

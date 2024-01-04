@@ -117,7 +117,7 @@ def revise_cnki_date():
     return True
 
 
-def get_mian_page_info(driver, keyword, paper_sum_flag, time_out, res_unm, date):
+def get_mian_page_info(driver, keyword, paper_sum_flag, time_out, res_unm, date, paper_type, paper_day):
     paper_db = read_conf.cnki_skip_db()
     cp = crawl_xpath()
     rp = reference_papers()
@@ -157,6 +157,15 @@ def get_mian_page_info(driver, keyword, paper_sum_flag, time_out, res_unm, date)
             if res_unm < count:
                 logger.write_log("已获取完数据")
                 flag = revise_cnki_date()
+                if paper_type == 0:
+                    paper_type = '100000000'
+                if paper_type == 1:
+                    paper_type = '110000000'
+                if paper_type == 2:
+                    paper_type = '111000000'
+                if paper_type == 3:
+                    paper_type = '111100000'
+                sql = f"UPDATE `Paper`.`cnki_page_flag` SET `flag` = '{paper_type}' WHERE `date` = '{paper_day}'"
                 if flag is True:
                     return True
 
