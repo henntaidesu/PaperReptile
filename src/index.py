@@ -2,7 +2,7 @@ from src.paper_website.arxiv.arxivorg import ArxivOrg, translate_classification,
 from src.module.log import log
 from src.module.multi_process import Process
 from src.paper_website.arxiv.arxiv_paper_down import Arxiv_paper_down
-from src.paper_website.cnki.run_cnki import run_paper_main_info, run_lever2_page
+from src.paper_website.cnki.run_cnki import run_get_paper_title, run_get_paper_info
 import asyncio
 
 
@@ -44,9 +44,14 @@ class index:
 
         if flag == '5':
             print("获取cnki论文基础数据")
-            run_paper_main_info(0)
+            run_get_paper_title()
 
         if flag == '6':
             print("获取cnki论文详细数据")
-            run_lever2_page()
+            while True:
+                sql = (f"SELECT * FROM `cnki_index` WHERE `start` = '0'  AND db_type > '0' "
+                       f"ORDER BY receive_time DESC LIMIT 2000, 1000")
+                self.process.multi_process_as_up_group(sql, run_get_paper_info)
+
+            # run_get_paper_info()
 
