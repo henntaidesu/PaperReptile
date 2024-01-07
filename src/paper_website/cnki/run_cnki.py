@@ -112,26 +112,20 @@ def choose_banner(driver, time_out, paper_day):
         # print(data)
         data = list(data)
         # print(data)
-        if data[0] == '0':
-            # 点击学术期刊
-            WebDriverWait(driver, time_out).until(
-                EC.presence_of_element_located((By.XPATH, open_page_data['xx']))).click()
-            return 0, date_temp
-        if data[1] == '0':
-            # 点击学位论文
-            WebDriverWait(driver, time_out).until(
-                EC.presence_of_element_located((By.XPATH, open_page_data['xw']))).click()
-            return 1, date_temp
-        if data[2] == '0':
-            # 点击会议
-            WebDriverWait(driver, time_out).until(
-                EC.presence_of_element_located((By.XPATH, open_page_data['hy']))).click()
-            return 2, date_temp
-        if data[3] == '0':
-            # 点击报纸
-            WebDriverWait(driver, time_out).until(
-                EC.presence_of_element_located((By.XPATH, open_page_data['pa']))).click()
-            return 3, date_temp
+
+        WebDriverWait(driver, time_out).until(
+            EC.presence_of_element_located((By.XPATH, open_page_data['all_item']))).click()
+        time.sleep(1)
+
+        for i in range(9):
+            if data[i] == '0':
+                # 点击学术期刊
+                WebDriverWait(driver, time_out).until(
+                    EC.presence_of_element_located((By.XPATH, open_page_data[i]))).click()
+                return i, date_temp
+            pass
+
+
     else:
         # 判断是否有数据
         xx_sum = WebDriverWait(driver, time_out).until(
@@ -148,6 +142,15 @@ def choose_banner(driver, time_out, paper_day):
             EC.presence_of_element_located((By.XPATH, open_page_data['bz_sum']))).text
         cg_sum = WebDriverWait(driver, time_out).until(
             EC.presence_of_element_located((By.XPATH, open_page_data['cg_sum']))).text
+        WebDriverWait(driver, time_out).until(
+            EC.presence_of_element_located((By.XPATH, open_page_data['all_item']))).click()
+        time.sleep(2)
+        kj_sum = WebDriverWait(driver, time_out).until(
+            EC.presence_of_element_located((By.XPATH, open_page_data['kj_sum']))).text
+        tsqk_sum = WebDriverWait(driver, time_out).until(
+            EC.presence_of_element_located((By.XPATH, open_page_data['tsqk_sum']))).text
+        sp_sum = WebDriverWait(driver, time_out).until(
+            EC.presence_of_element_located((By.XPATH, open_page_data['sp_sum']))).text
 
         if '万' in xx_sum:
             xx_sum = int(f"{xx_sum[:-1].replace('.','')}00")
@@ -212,13 +215,46 @@ def choose_banner(driver, time_out, paper_day):
         else:
             a8 = '1'
 
-        item_flag = f"{a0}{a1}{a2}{a3}00000"
+        if '万' in kj_sum:
+            kj_sum = int(f"{kj_sum[:-1].replace('.', '')}00")
+        else:
+            kj_sum = int(kj_sum)
+        if kj_sum > 0:
+            a9 = '0'
+        else:
+            a9 = '1'
+
+        if '万' in tsqk_sum:
+            tsqk_sum = int(f"{tsqk_sum[:-1].replace('.', '')}00")
+        else:
+            tsqk_sum = int(tsqk_sum)
+        if tsqk_sum > 0:
+            a10 = '0'
+        else:
+            a10 = '1'
+
+        if '万' in sp_sum:
+            sp_sum = int(f"{sp_sum[:-1].replace('.', '')}00")
+        else:
+            sp_sum = int(sp_sum)
+        if sp_sum > 0:
+            a11 = '0'
+        else:
+            a11 = '1'
+
+        item_flag = f"{a0}{a1}{a2}{a3}{a5}{a7}{a8}{a9}{a10}{a11}"
         print(item_flag)
 
         sql = (f"INSERT INTO `Paper`.`cnki_page_flag`(`date`, `flag`) VALUES "
                f"('{paper_day}', '{item_flag}');")
+
+        sql = (f"INSERT INTO `Paper`.`cnki_page_flag`"
+               f"(`date`, `flag`, `xxkq`, `xwlw`, `hy`, `bz`, `ts`, `bs`, `cg`, `xxkj`, `tsqk`, `sp`) "
+               f"VALUES ('{paper_day}', '{item_flag}', '{xx_sum}', '{xw_sum}', '{hy_sum}', '{pa_sum}', '{ts_sum}', "
+               f"'{bz_sum}', '{cg_sum}', '{kj_sum}', '{tsqk_sum}', '{sp_sum}');").replace("'0'", "NULL")
+
         Date_base().insert_all(sql)
-        WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['xx']))).click()
+        WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data[0]))).click()
         return 0, item_flag
 
 
@@ -300,15 +336,94 @@ def run_get_paper_title():
     yy, mm, dd = CNKI().read_cnki_date()
     res_unm, paper_type, paper_day, date_str, paper_sum = open_page(driver, keyword)
     date = f"{yy}-{mm}-{dd}"
-    flag = get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_day, date_str, paper_sum)
+
+    page_flag = 0
+    count = 1
+    flag, page_flag, click_flag, count = get_paper_title(driver, keyword, time_out, res_unm, date, paper_type,
+                                                         paper_day, date_str, paper_sum, page_flag, count)
 
     if flag is True:
-        # driver.refresh()
+        driver.close()
+        run_get_paper_title()
+
+    driver.close()
+    driver = webserver(web_zoom)
+    time.sleep(3)
+    count -= 5950
+    res_unm, paper_type, paper_day, date_str, paper_sum = open_page(driver, keyword)
+    WebDriverWait(driver, time_out).until(
+        EC.presence_of_element_located((By.XPATH, '//*[@id="PT"]'))).click()
+    flag, page_flag, click_flag, count = get_paper_title(driver, keyword, time_out, res_unm, date, paper_type,
+                                                         paper_day, date_str, paper_sum, page_flag, count)
+
+    if flag is True:
+        driver.close()
+        run_get_paper_title()
+
+    driver.close()
+    driver = webserver(web_zoom)
+    time.sleep(3)
+    count -= 5950
+    res_unm, paper_type, paper_day, date_str, paper_sum = open_page(driver, keyword)
+    WebDriverWait(driver, time_out).until(
+        EC.presence_of_element_located((By.XPATH, '//*[@id="CF"]'))).click()
+    flag, page_flag, click_flag, count = get_paper_title(driver, keyword, time_out, res_unm, date, paper_type,
+                                                         paper_day, date_str, paper_sum, page_flag, count)
+
+    if flag is True:
+        driver.close()
+        run_get_paper_title()
+
+    driver.close()
+    driver = webserver(web_zoom)
+    time.sleep(3)
+    res_unm, paper_type, paper_day, date_str, paper_sum = open_page(driver, keyword)
+    WebDriverWait(driver, time_out).until(
+        EC.presence_of_element_located((By.XPATH, '//*[@id="CF"]'))).click()
+    time.sleep(3)
+    count -= 5950
+    WebDriverWait(driver, time_out).until(
+        EC.presence_of_element_located((By.XPATH, '//*[@id="CF"]'))).click()
+    flag, page_flag, click_flag, count = get_paper_title(driver, keyword, time_out, res_unm, date, paper_type,
+                                                         paper_day, date_str, paper_sum, page_flag, count)
+
+    if flag is True:
+        driver.close()
+        run_get_paper_title()
+
+    driver.close()
+    driver = webserver(web_zoom)
+    time.sleep(3)
+    count -= 5950
+    res_unm, paper_type, paper_day, date_str, paper_sum = open_page(driver, keyword)
+    WebDriverWait(driver, time_out).until(
+        EC.presence_of_element_located((By.XPATH, '//*[@id="DFR"]'))).click()
+    flag, page_flag, click_flag, count = get_paper_title(driver, keyword, time_out, res_unm, date, paper_type,
+                                                         paper_day, date_str, paper_sum, page_flag, count)
+
+    if flag is True:
+        driver.close()
+        run_get_paper_title()
+
+    driver.close()
+    driver = webserver(web_zoom)
+    time.sleep(3)
+    res_unm, paper_type, paper_day, date_str, paper_sum = open_page(driver, keyword)
+    WebDriverWait(driver, time_out).until(
+        EC.presence_of_element_located((By.XPATH, '//*[@id="DFR"]'))).click()
+    time.sleep(3)
+    count -= 5950
+    WebDriverWait(driver, time_out).until(
+        EC.presence_of_element_located((By.XPATH, '//*[@id="DFR"]'))).click()
+    flag, page_flag, click_flag, count = get_paper_title(driver, keyword, time_out, res_unm, date, paper_type,
+                                                         paper_day, date_str, paper_sum, page_flag, count)
+
+
+    if flag is True:
         driver.close()
         run_get_paper_title()
 
     # driver.close()
-
 
 def run_get_paper_info(date):
     web_zoom, keyword, papers_need, time_out = read_conf.cnki_paper()

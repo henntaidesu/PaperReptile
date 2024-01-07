@@ -125,32 +125,33 @@ def whit_file(date_str, paper_type, paper_day):
     flag = False
     sql = f"UPDATE `Paper`.`cnki_page_flag` SET `flag` = '{date_str}' WHERE `date` = '{paper_day}'"
     Date_base().update_all(sql)
-    if date_str == '111100000':
+    if date_str == '1111111111':
         flag = revise_cnki_date()
+    else:
+        return True
 
     if flag is True:
         return True
 
 
-def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_day, date_str, paper_sum):
-    global quote, down_sun
+def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_day, date_str, paper_sum, page_flag,
+                    count):
     title = None
     db_type = None
     authors = None
     source = None
     aa = None
 
-    paper_db = read_conf.cnki_skip_db()
+    # paper_db = read_conf.cnki_skip_db()
     cp = crawl_xpath()
     rp = reference_papers()
     qp = QuotePaper()
-
-    count = 1
     new_paper_sum = 0
 
     xpath_information = crawl_xp.xpath_inf()
 
-    sql = f"SELECT title FROM cnki_index where receive_time >= '{date} 00:00:00' and receive_time <= '{date} 23:59:59'"
+    sql = (f"SELECT title FROM cnki_index where receive_time >= "
+           f"'{date} 00:00:00' and receive_time <= '{date} 23:59:59'")
     flag, paper_title = Date_base().select_all(sql)
     len_data = len(paper_title)
 
@@ -163,60 +164,33 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
     if res_unm > 5950:
         issuing_time_flag = True
 
-    page_flag = 0
-
     # 当爬取数量小于需求时，循环网页页码
     while True:
         page_flag += 1
         if issuing_time_flag is True:
             if page_flag == 120:
-                issuing_time_flag = False
-                quote1_flag = True
-                # 按发表顺序倒
-                WebDriverWait(driver, time_out).until(EC.presence_of_element_located((
-                    By.XPATH, '//*[@id="PT"]'))).click()
-                flag, paper_title = Date_base().select_all(sql)
-
-        if quote1_flag is True:
-            if page_flag == 239:
-                quote1_flag = False
-                quote2_flag = True
                 # 按引用倒序
-                WebDriverWait(driver, time_out).until(
-                    EC.presence_of_element_located((By.XPATH, '//*[@id="CF"]'))).click()
-                flag, paper_title = Date_base().select_all(sql)
+                return False, page_flag, 1, count
 
-        if quote2_flag is True:
-            if page_flag == 358:
-                quote2_flag = False
-                down1_flag = True
-                # 按引用正序
-                WebDriverWait(driver, time_out).until(
-                    EC.presence_of_element_located((By.XPATH, '//*[@id="CF"]'))).click()
-                flag, paper_title = Date_base().select_all(sql)
-
-        if down1_flag is True:
-            if page_flag == 477:
-                down1_flag = False
-                down2_flag = True
-                # 按下载倒序
-                WebDriverWait(driver, time_out).until(
-                    EC.presence_of_element_located((By.XPATH, '//*[@id="DFR"]'))).click()
-                flag, paper_title = Date_base().select_all(sql)
-
-        if down2_flag is True:
-            if page_flag == 596:
-                down2_flag = False
-                return_flag = True
+            if page_flag == 240:
                 # 按下载正序
-                WebDriverWait(driver, time_out).until(
-                    EC.presence_of_element_located((By.XPATH, '//*[@id="DFR"]'))).click()
-                flag, paper_title = Date_base().select_all(sql)
+                return False, page_flag, 2, count
 
-        if page_flag == 716:
-            flag333 = whit_file(date_str, paper_type, paper_day)
-            if flag333 is True:
-                return True
+            if page_flag == 360:
+                # 按引用正序
+                return False, page_flag, 3, count
+
+            if page_flag == 480:
+                return False, page_flag, 4, count
+                # 按下载倒序
+            if page_flag == 600:
+                # 按发表顺序倒
+                return False, page_flag, 5, count
+
+            if page_flag == 720:
+                flag333 = whit_file(date_str, paper_type, paper_day)
+                if flag333 is True:
+                    return True, False, -1, count
 
         # 等待加载完全，休眠3S
         time.sleep(3)
@@ -231,21 +205,21 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
                 title_list = WebDriverWait(driver, time_out).until(
                     EC.presence_of_all_elements_located((By.CLASS_NAME, "fz14")))
             except:
-                return True
+                return True, False, -1, count
 
         # 循环网页一页中的条目
         for i in range((count - 1) % paper_sum + 1, paper_sum + 1):
-
-            if res_unm < count - new_paper_sum:
+            print(f"{res_unm} ------- {count}")
+            if res_unm < count:
                 logger.write_log("已获取完数据")
 
                 flag333 = whit_file(date_str, paper_type, paper_day)
 
                 if flag333 is True:
-                    return True
+                    return True, False, -1, count
 
             print(f"正在爬取第{count - new_paper_sum}条基础数据,跳过{new_paper_sum}"
-                  f"条(第{(count - 1) // paper_sum + 1}页第{i}条 总第{count}条 共{res_unm}条):")
+                  f"条(第{(count - 1) // paper_sum + 1}页第{i}条 总第{count}次查询 共{res_unm}条):")
 
             try:
                 term = (count - 1) % paper_sum + 1  # 本页的第几个条目
@@ -262,18 +236,53 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
                         future_elements = [executor.submit(get_info, driver, xpath) for xpath in xpaths]
                     title, authors, source, db_type, date, quote, down_sun = [future.result() for future in
                                                                               future_elements]
-                    date = f"{date}-01-01"
+                    if len(date) == 4:
+                        date = f"{date}-01-01"
 
                 elif paper_type == 2:
                     with concurrent.futures.ThreadPoolExecutor() as executor:
                         future_elements = [executor.submit(get_info, driver, xpath) for xpath in xpaths]
                     title, authors, source, db_type, date, quote, down_sun = [future.result() for future in
                                                                               future_elements]
-                elif paper_type == 3:
+                elif paper_type in (3, 8):
                     with concurrent.futures.ThreadPoolExecutor() as executor:
                         future_elements = [executor.submit(get_info, driver, xpath) for xpath in xpaths]
                     title, authors, source, date, quote, down_sun, aa = [future.result() for future in future_elements]
 
+                elif paper_type == 4:
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        future_elements = [executor.submit(get_info, driver, xpath) for xpath in xpaths]
+                    title, authors, source, date, quote, down_sun = [future.result() for future in future_elements]
+                    yy = date[:4]
+                    mm = date[-2:]
+                    date = f"{yy}-{mm}-01"
+
+                elif paper_type == 5:
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        future_elements = [executor.submit(get_info, driver, xpath) for xpath in xpaths]
+                    title, authors, aa, date, quote = [future.result() for future in future_elements]
+                    date = f"{date}-01-01"
+
+                elif paper_type == 6:
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        future_elements = [executor.submit(get_info, driver, xpath) for xpath in xpaths]
+                    title, authors, date, aa, quote = [future.result() for future in future_elements]
+
+                elif paper_type == 7:
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        future_elements = [executor.submit(get_info, driver, xpath) for xpath in xpaths]
+                    title, authors, source, date, quote, down_sun, aa = [future.result() for future in future_elements]
+
+                    if date[-2:] == '00':
+                        date = f"{(str(date[:4]).replace('/', '-'))}-01-01"
+
+                    else:
+                        date = f"{(str(date).replace('/', '-'))}-01"
+
+                elif paper_type == 9:
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        future_elements = [executor.submit(get_info, driver, xpath) for xpath in xpaths]
+                    title, authors, source, date, quote, down_sun, aa = [future.result() for future in future_elements]
 
                 if '增强出版' in title:
                     title = title[:-5]
@@ -294,12 +303,32 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
                         time.sleep(3)
                     continue
 
-                # 期刊
                 if paper_type == 0:
+                    # 期刊
                     db_type = '1'
-                # 报纸
                 elif paper_type == 3:
+                    # 报纸
                     db_type = '0'
+
+                elif paper_type == 4:
+                    # 图书
+                    db_type = '4'
+
+                elif paper_type == 5:
+                    # 标准
+                    db_type = 'a'
+
+                elif paper_type == 7:
+                    # 辑刊
+                    db_type = '6'
+
+                elif paper_type == 8:
+                    # 特色期刊
+                    db_type = '5'
+
+                elif paper_type == 9:
+                    # 视频
+                    db_type = '7'
 
                 elif db_type == '硕士':
                     db_type = '2'
@@ -307,18 +336,6 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
                 elif db_type == '博士':
                     db_type = '3'
 
-                elif db_type == '图书':
-                    db_type = '4'
-
-                elif db_type == '中国会议':
-                    db_type = 'a'
-                elif db_type == '国际会议':
-                    db_type = 'b'
-
-                elif db_type == '国家标准':
-                    db_type = 'c'
-                elif db_type == '国家标准':
-                    db_type = 'd'
 
                 else:
                     db_type = '9'
@@ -454,7 +471,6 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time, start)
               f"数据来源: {db_flag}\n"
               f"引用次数: {quote}\n"
               f"下载次数: {down_sun}")
-
 
         try:
             term = (count - 1) % 20 + 1  # 本页的第几个条目
@@ -666,7 +682,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time, start)
                         try:
                             # print(f"$$$本论文没有引用{rn[paper_flag]} Paper$$$")
                             continue
-                        except:
+                        except Exception as e:
                             break
 
                     if paper_sum:
@@ -746,7 +762,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time, start)
             classification_en = None
             update_time = now_time()
 
-            sql1 =(
+            sql1 = (
                 f"INSERT INTO `Paper`.`index`(`UUID`, `web_site_id`, `classification_en`,`classification_zh`,"
                 f"`source_language`, `title_zh`, `title_en`, `update_time`, `insert_time`, `from`, `state`, "
                 f"`authors`, `Introduction`, `receive_time`, `Journal_reference`, `Comments`, `size`, `DOI`, "
