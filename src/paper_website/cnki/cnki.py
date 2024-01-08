@@ -171,7 +171,6 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
     elif paper_type == 9:
         dt = '7'
 
-
     sql = (f"SELECT title FROM cnki_index where receive_time >= "
            f"'{date} 00:00:00' and receive_time <= '{date} 23:59:59' and db_type in ({dt})")
     flag, paper_title = Date_base().select_all(sql)
