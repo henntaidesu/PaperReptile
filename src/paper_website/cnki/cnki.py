@@ -149,11 +149,34 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
     new_paper_sum = 0
 
     xpath_information = crawl_xp.xpath_inf()
+    dt = None
+    if paper_type == 0:
+        dt = '1'
+    elif paper_type == 1:
+        dt = '2 , 3'
+    elif paper_type == 2:
+        dt = 'c'
+    elif paper_type == 3:
+        dt = '0'
+    elif paper_type == 4:
+        dt = '4'
+    elif paper_type == 5:
+        dt = 'a'
+    elif paper_type == 6:
+        dt = 'b'
+    elif paper_type == 7:
+        dt = '6'
+    elif paper_type == 8:
+        dt = '5'
+    elif paper_type == 9:
+        dt = '7'
+
 
     sql = (f"SELECT title FROM cnki_index where receive_time >= "
-           f"'{date} 00:00:00' and receive_time <= '{date} 23:59:59'")
+           f"'{date} 00:00:00' and receive_time <= '{date} 23:59:59' and db_type in ({dt})")
     flag, paper_title = Date_base().select_all(sql)
     len_data = len(paper_title)
+    print(len_data)
 
     issuing_time_flag = False
     quote1_flag = False
@@ -209,8 +232,8 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
 
         # 循环网页一页中的条目
         for i in range((count - 1) % paper_sum + 1, paper_sum + 1):
-            print(f"{res_unm} ------- {count}")
-            if res_unm < count:
+            print(f"{res_unm} ------- {count + len_data - new_paper_sum}")
+            if res_unm < count + len_data - new_paper_sum:
                 logger.write_log("已获取完数据")
 
                 flag333 = whit_file(date_str, paper_type, paper_day)
@@ -218,7 +241,7 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
                 if flag333 is True:
                     return True, False, -1, count
 
-            print(f"正在爬取第{count - new_paper_sum}条基础数据,跳过{new_paper_sum}"
+            print(f"正在爬取第{count + len_data}条基础数据,跳过{new_paper_sum}"
                   f"条(第{(count - 1) // paper_sum + 1}页第{i}条 总第{count}次查询 共{res_unm}条):")
 
             try:
@@ -306,6 +329,11 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
                 if paper_type == 0:
                     # 期刊
                     db_type = '1'
+
+                elif paper_type == 2:
+                    # 会议
+                    db_type = 'c'
+
                 elif paper_type == 3:
                     # 报纸
                     db_type = '0'
@@ -317,6 +345,10 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
                 elif paper_type == 5:
                     # 标准
                     db_type = 'a'
+
+                elif paper_type == 6:
+                    # 成果
+                    db_type = 'b'
 
                 elif paper_type == 7:
                     # 辑刊

@@ -123,7 +123,6 @@ def choose_banner(driver, time_out, paper_day):
                 WebDriverWait(driver, time_out).until(
                     EC.presence_of_element_located((By.XPATH, open_page_data[i]))).click()
                 return i, date_temp
-            pass
 
 
     else:
@@ -339,6 +338,7 @@ def run_get_paper_title():
 
     page_flag = 0
     count = 1
+    db = 111
     flag, page_flag, click_flag, count = get_paper_title(driver, keyword, time_out, res_unm, date, paper_type,
                                                          paper_day, date_str, paper_sum, page_flag, count)
 
