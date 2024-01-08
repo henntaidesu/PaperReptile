@@ -147,35 +147,47 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
     rp = reference_papers()
     qp = QuotePaper()
     new_paper_sum = 0
-
+    sql = None
     xpath_information = crawl_xp.xpath_inf()
     dt = None
     if paper_type == 0:
-        dt = '1'
+        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `xxkq` = {res_unm} WHERE `flag` = {date};"
+        dt = "'1'"
     elif paper_type == 1:
-        dt = '2 , 3'
+        dt = "'2', '3'"
+        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `xwlw` = {res_unm} WHERE `flag` = {date};"
     elif paper_type == 2:
-        dt = 'c'
+        dt = "'c'"
+        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `hy` = {res_unm} WHERE `flag` = {date};"
     elif paper_type == 3:
-        dt = '0'
+        dt = "'0'"
+        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `bz` = {res_unm} WHERE `flag` = {date};"
     elif paper_type == 4:
-        dt = '4'
+        dt = "'4'"
+        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `ts` = {res_unm} WHERE `flag` = {date};"
     elif paper_type == 5:
-        dt = 'a'
+        dt = "'a'"
+        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `bs` = {res_unm} WHERE `flag` = {date};"
     elif paper_type == 6:
-        dt = 'b'
+        dt = "'b'"
+        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `cg` = {res_unm} WHERE `flag` = {date};"
     elif paper_type == 7:
-        dt = '6'
+        dt = "'6'"
+        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `xxkj` = {res_unm} WHERE `flag` = {date};"
     elif paper_type == 8:
-        dt = '5'
+        dt = "'5'"
+        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `tsqk` = {res_unm} WHERE `flag` = {date};"
     elif paper_type == 9:
-        dt = '7'
+        dt = "'7'"
+        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `sp` = {res_unm} WHERE `flag` = {date};"
+
+    Date_base().update_all(sql)
 
     sql = (f"SELECT title FROM cnki_index where receive_time >= "
            f"'{date} 00:00:00' and receive_time <= '{date} 23:59:59' and db_type in ({dt})")
     flag, paper_title = Date_base().select_all(sql)
+
     len_data = len(paper_title)
-    print(len_data)
 
     issuing_time_flag = False
     quote1_flag = False
@@ -232,15 +244,8 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
         # 循环网页一页中的条目
         for i in range((count - 1) % paper_sum + 1, paper_sum + 1):
             print(f"{res_unm} ------- {count + len_data - new_paper_sum}")
-            if res_unm < count + len_data - new_paper_sum:
-                logger.write_log("已获取完数据")
 
-                flag333 = whit_file(date_str, paper_type, paper_day)
-
-                if flag333 is True:
-                    return True, False, -1, count
-
-            print(f"正在爬取第{count + len_data}条基础数据,跳过{new_paper_sum}"
+            print(f"正在爬取第{count + len_data - new_paper_sum}条基础数据,跳过{new_paper_sum}"
                   f"条(第{(count - 1) // paper_sum + 1}页第{i}条 总第{count}次查询 共{res_unm}条):")
 
             try:
@@ -407,6 +412,14 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
                 count += 1
             continue_flag = False
             # time.sleep(1)
+
+            if res_unm <= count + len_data - new_paper_sum:
+                logger.write_log("已获取完数据")
+
+                flag333 = whit_file(date_str, paper_type, paper_day)
+
+                if flag333 is True:
+                    return True, False, -1, count
 
         time.sleep(3)
 
@@ -832,7 +845,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time, start)
 
             # 关闭除第一个窗口以外的所有窗口
             if len(all_handles) > 1:
-                start_time = time.time()
+                pass
 
             for handle in all_handles[1:]:
                 driver.switch_to.window(handle)

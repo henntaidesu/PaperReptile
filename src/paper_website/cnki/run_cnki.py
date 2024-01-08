@@ -11,6 +11,7 @@ from src.paper_website.cnki.cnki import get_paper_title, get_paper_info
 from src.module.execution_db import Date_base
 from src.module.read_conf import CNKI
 from src.module.now_time import year, moon, day1
+from src.module.err_message import err
 from webdriver_manager.chrome import ChromeDriverManager
 import random
 
@@ -31,8 +32,11 @@ def webserver(web_zoom):
     # 设置浏览器不加载图片，提高速度
     # options.add_experimental_option("prefs", {"profile.managed_default_content_settings.images": 2})
     options.add_argument(f"--force-device-scale-factor={web_zoom}")
+    options.add_argument("--disable-gpu")
+    # options.add_argument("--proxy-server=http://127.0.0.1:10809")
     # 创建一个微软驱动器
     driver = webdriver.Chrome(options=options)
+
     return driver
 
 
@@ -115,7 +119,7 @@ def choose_banner(driver, time_out, paper_day):
 
         WebDriverWait(driver, time_out).until(
             EC.presence_of_element_located((By.XPATH, open_page_data['all_item']))).click()
-        time.sleep(1)
+        time.sleep(3)
 
         for i in range(9):
             if data[i] == '0':
@@ -123,7 +127,6 @@ def choose_banner(driver, time_out, paper_day):
                 WebDriverWait(driver, time_out).until(
                     EC.presence_of_element_located((By.XPATH, open_page_data[i]))).click()
                 return i, date_temp
-
 
     else:
         # 判断是否有数据
@@ -330,98 +333,101 @@ def open_paper_info(driver, keyword):
 
 def run_get_paper_title():
     web_zoom, keyword, papers_need, time_out = read_conf.cnki_paper()
-    driver = webserver(web_zoom)
-    # 设置所需篇数
-    yy, mm, dd = CNKI().read_cnki_date()
-    res_unm, paper_type, paper_day, date_str, paper_sum = open_page(driver, keyword)
-    date = f"{yy}-{mm}-{dd}"
+    try:
+        driver = webserver(web_zoom)
+        # 设置所需篇数
+        yy, mm, dd = CNKI().read_cnki_date()
+        res_unm, paper_type, paper_day, date_str, paper_sum = open_page(driver, keyword)
+        date = f"{yy}-{mm}-{dd}"
 
-    page_flag = 0
-    count = 1
-    db = 111
-    flag, page_flag, click_flag, count = get_paper_title(driver, keyword, time_out, res_unm, date, paper_type,
-                                                         paper_day, date_str, paper_sum, page_flag, count)
+        page_flag = 0
+        count = 1
+        db = 111
+        flag, page_flag, click_flag, count = get_paper_title(driver, keyword, time_out, res_unm, date, paper_type,
+                                                             paper_day, date_str, paper_sum, page_flag, count)
 
-    if flag is True:
+        if flag is True:
+            driver.close()
+            run_get_paper_title()
+
         driver.close()
-        run_get_paper_title()
+        driver = webserver(web_zoom)
+        time.sleep(3)
+        count -= 5950
+        res_unm, paper_type, paper_day, date_str, paper_sum = open_page(driver, keyword)
+        WebDriverWait(driver, time_out).until(
+            EC.presence_of_element_located((By.XPATH, '//*[@id="PT"]'))).click()
+        flag, page_flag, click_flag, count = get_paper_title(driver, keyword, time_out, res_unm, date, paper_type,
+                                                             paper_day, date_str, paper_sum, page_flag, count)
 
-    driver.close()
-    driver = webserver(web_zoom)
-    time.sleep(3)
-    count -= 5950
-    res_unm, paper_type, paper_day, date_str, paper_sum = open_page(driver, keyword)
-    WebDriverWait(driver, time_out).until(
-        EC.presence_of_element_located((By.XPATH, '//*[@id="PT"]'))).click()
-    flag, page_flag, click_flag, count = get_paper_title(driver, keyword, time_out, res_unm, date, paper_type,
-                                                         paper_day, date_str, paper_sum, page_flag, count)
+        if flag is True:
+            driver.close()
+            run_get_paper_title()
 
-    if flag is True:
         driver.close()
-        run_get_paper_title()
+        driver = webserver(web_zoom)
+        time.sleep(3)
+        count -= 5950
+        res_unm, paper_type, paper_day, date_str, paper_sum = open_page(driver, keyword)
+        WebDriverWait(driver, time_out).until(
+            EC.presence_of_element_located((By.XPATH, '//*[@id="CF"]'))).click()
+        flag, page_flag, click_flag, count = get_paper_title(driver, keyword, time_out, res_unm, date, paper_type,
+                                                             paper_day, date_str, paper_sum, page_flag, count)
 
-    driver.close()
-    driver = webserver(web_zoom)
-    time.sleep(3)
-    count -= 5950
-    res_unm, paper_type, paper_day, date_str, paper_sum = open_page(driver, keyword)
-    WebDriverWait(driver, time_out).until(
-        EC.presence_of_element_located((By.XPATH, '//*[@id="CF"]'))).click()
-    flag, page_flag, click_flag, count = get_paper_title(driver, keyword, time_out, res_unm, date, paper_type,
-                                                         paper_day, date_str, paper_sum, page_flag, count)
+        if flag is True:
+            driver.close()
+            run_get_paper_title()
 
-    if flag is True:
         driver.close()
-        run_get_paper_title()
+        driver = webserver(web_zoom)
+        time.sleep(3)
+        res_unm, paper_type, paper_day, date_str, paper_sum = open_page(driver, keyword)
+        WebDriverWait(driver, time_out).until(
+            EC.presence_of_element_located((By.XPATH, '//*[@id="CF"]'))).click()
+        time.sleep(3)
+        count -= 5950
+        WebDriverWait(driver, time_out).until(
+            EC.presence_of_element_located((By.XPATH, '//*[@id="CF"]'))).click()
+        flag, page_flag, click_flag, count = get_paper_title(driver, keyword, time_out, res_unm, date, paper_type,
+                                                             paper_day, date_str, paper_sum, page_flag, count)
 
-    driver.close()
-    driver = webserver(web_zoom)
-    time.sleep(3)
-    res_unm, paper_type, paper_day, date_str, paper_sum = open_page(driver, keyword)
-    WebDriverWait(driver, time_out).until(
-        EC.presence_of_element_located((By.XPATH, '//*[@id="CF"]'))).click()
-    time.sleep(3)
-    count -= 5950
-    WebDriverWait(driver, time_out).until(
-        EC.presence_of_element_located((By.XPATH, '//*[@id="CF"]'))).click()
-    flag, page_flag, click_flag, count = get_paper_title(driver, keyword, time_out, res_unm, date, paper_type,
-                                                         paper_day, date_str, paper_sum, page_flag, count)
+        if flag is True:
+            driver.close()
+            run_get_paper_title()
 
-    if flag is True:
         driver.close()
-        run_get_paper_title()
+        driver = webserver(web_zoom)
+        time.sleep(3)
+        count -= 5950
+        res_unm, paper_type, paper_day, date_str, paper_sum = open_page(driver, keyword)
+        WebDriverWait(driver, time_out).until(
+            EC.presence_of_element_located((By.XPATH, '//*[@id="DFR"]'))).click()
+        flag, page_flag, click_flag, count = get_paper_title(driver, keyword, time_out, res_unm, date, paper_type,
+                                                             paper_day, date_str, paper_sum, page_flag, count)
 
-    driver.close()
-    driver = webserver(web_zoom)
-    time.sleep(3)
-    count -= 5950
-    res_unm, paper_type, paper_day, date_str, paper_sum = open_page(driver, keyword)
-    WebDriverWait(driver, time_out).until(
-        EC.presence_of_element_located((By.XPATH, '//*[@id="DFR"]'))).click()
-    flag, page_flag, click_flag, count = get_paper_title(driver, keyword, time_out, res_unm, date, paper_type,
-                                                         paper_day, date_str, paper_sum, page_flag, count)
+        if flag is True:
+            driver.close()
+            run_get_paper_title()
 
-    if flag is True:
         driver.close()
-        run_get_paper_title()
+        driver = webserver(web_zoom)
+        time.sleep(3)
+        res_unm, paper_type, paper_day, date_str, paper_sum = open_page(driver, keyword)
+        WebDriverWait(driver, time_out).until(
+            EC.presence_of_element_located((By.XPATH, '//*[@id="DFR"]'))).click()
+        time.sleep(3)
+        count -= 5950
+        WebDriverWait(driver, time_out).until(
+            EC.presence_of_element_located((By.XPATH, '//*[@id="DFR"]'))).click()
+        flag, page_flag, click_flag, count = get_paper_title(driver, keyword, time_out, res_unm, date, paper_type,
+                                                             paper_day, date_str, paper_sum, page_flag, count)
 
-    driver.close()
-    driver = webserver(web_zoom)
-    time.sleep(3)
-    res_unm, paper_type, paper_day, date_str, paper_sum = open_page(driver, keyword)
-    WebDriverWait(driver, time_out).until(
-        EC.presence_of_element_located((By.XPATH, '//*[@id="DFR"]'))).click()
-    time.sleep(3)
-    count -= 5950
-    WebDriverWait(driver, time_out).until(
-        EC.presence_of_element_located((By.XPATH, '//*[@id="DFR"]'))).click()
-    flag, page_flag, click_flag, count = get_paper_title(driver, keyword, time_out, res_unm, date, paper_type,
-                                                         paper_day, date_str, paper_sum, page_flag, count)
+        if flag is True:
+            driver.close()
+            run_get_paper_title()
 
-
-    if flag is True:
-        driver.close()
-        run_get_paper_title()
+    except Exception as e:
+        err(e)
 
     # driver.close()
 
