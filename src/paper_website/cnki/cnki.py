@@ -1,16 +1,10 @@
-import sys
 import time
-import os
 import re
 import concurrent.futures
-from urllib.parse import urljoin
-from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
-from selenium.webdriver.common.action_chains import ActionChains
 from src.module.execution_db import Date_base
 from src.module.UUID import UUID
 from src.module.now_time import now_time
@@ -243,8 +237,14 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
 
         # 循环网页一页中的条目
         for i in range((count - 1) % paper_sum + 1, paper_sum + 1):
-            print(f"{res_unm} ------- {count + len_data - new_paper_sum}")
+            print(f"{res_unm} ------- {count + len_data - new_paper_sum + 1}")
+            if res_unm < count + len_data - new_paper_sum:
+                logger.write_log("已获取完数据")
 
+                flag333 = whit_file(date_str, paper_type, paper_day)
+
+                if flag333 is True:
+                    return True, False, -1, count
             print(f"正在爬取第{count + len_data - new_paper_sum}条基础数据,跳过{new_paper_sum}"
                   f"条(第{(count - 1) // paper_sum + 1}页第{i}条 总第{count}次查询 共{res_unm}条):")
 

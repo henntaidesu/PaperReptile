@@ -13,6 +13,8 @@ from src.module.read_conf import CNKI
 from src.module.now_time import year, moon, day1
 from src.module.err_message import err
 from webdriver_manager.chrome import ChromeDriverManager
+from src.paper_website.cnki.cnki import revise_cnki_date
+
 import random
 
 open_page_data = positioned_element()
@@ -41,70 +43,73 @@ def webserver(web_zoom):
 
 
 def setting_select_date(driver, time_out):
-    cnki = CNKI()
-    yy, mm, dd = cnki.read_cnki_date()
-    now_yy = int(year())
-    now_mm = int(moon())
-    now_day = int(day1())
+    try:
+        cnki = CNKI()
+        yy, mm, dd = cnki.read_cnki_date()
+        now_yy = int(year())
+        now_mm = int(moon())
+        now_day = int(day1())
 
-    paper_day = f"{yy}-{mm}-{dd}"
+        paper_day = f"{yy}-{mm}-{dd}"
 
-    flag_page = 0
-    flag_yy = now_yy - yy
-    flag_page += flag_yy * 12
-    flag_mm = now_mm - mm
-    flag_page += flag_mm
-    # 设置开始时间
-    WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.ID, 'datebox0'))).click()
-    time.sleep(1)
-    for i in range(flag_page):
+        flag_page = 0
+        flag_yy = now_yy - yy
+        flag_page += flag_yy * 12
+        flag_mm = now_mm - mm
+        flag_page += flag_mm
+        # 设置开始时间
+        WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.ID, 'datebox0'))).click()
         time.sleep(1)
-        WebDriverWait(driver, time_out).until(EC.presence_of_element_located
-                                              ((By.XPATH, open_page_data['start_previous_page']))).click()
+        for i in range(flag_page):
+            time.sleep(3)
+            WebDriverWait(driver, time_out).until(EC.presence_of_element_located
+                                                  ((By.XPATH, open_page_data['start_previous_page']))).click()
 
-    time.sleep(1)
-
-    date_list = str(WebDriverWait(driver, time_out).until(
-        EC.presence_of_element_located((By.XPATH, open_page_data['start']))).text)[14:]
-    date_list = date_list.splitlines()
-    # 将每行的内容转化为整数列表
-    date_list = [int(line) for line in date_list]
-    list_flag = 0
-    list_flag = date_list.index(1)
-
-    while True:
-        list_flag += 1
-        if dd == date_list[list_flag - 1]:
-            break
-
-    WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, dts[list_flag]))).click()
-
-    time.sleep(3)
-
-    # 设置结束时间
-    WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.ID, 'datebox1'))).click()
-    for i in range(flag_page):
         time.sleep(1)
-        WebDriverWait(driver, time_out).until(EC.presence_of_element_located
-                                              ((By.XPATH, open_page_data['end_previous_page']))).click()
 
-    time.sleep(2)
+        date_list = str(WebDriverWait(driver, time_out).until(
+            EC.presence_of_element_located((By.XPATH, open_page_data['start']))).text)[14:]
+        date_list = date_list.splitlines()
+        # 将每行的内容转化为整数列表
+        date_list = [int(line) for line in date_list]
+        list_flag = 0
+        list_flag = date_list.index(1)
 
-    date_list = str(WebDriverWait(driver, time_out).until(
-        EC.presence_of_element_located((By.XPATH, open_page_data['end']))).text)[14:]
-    date_list = date_list.splitlines()
-    # 将每行的内容转化为整数列表
-    date_list = [int(line) for line in date_list]
-    list_flag = 0
-    list_flag = date_list.index(1)
-    while True:
-        list_flag += 1
-        if dd == date_list[list_flag - 1]:
-            break
-    WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, dte[list_flag]))).click()
-    time.sleep(2)
+        while True:
+            list_flag += 1
+            if dd == date_list[list_flag - 1]:
+                break
 
-    return paper_day
+        WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, dts[list_flag]))).click()
+
+        time.sleep(3)
+
+        # 设置结束时间
+        WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.ID, 'datebox1'))).click()
+        for i in range(flag_page):
+            time.sleep(2)
+            WebDriverWait(driver, time_out).until(EC.presence_of_element_located
+                                                  ((By.XPATH, open_page_data['end_previous_page']))).click()
+
+        time.sleep(2)
+
+        date_list = str(WebDriverWait(driver, time_out).until(
+            EC.presence_of_element_located((By.XPATH, open_page_data['end']))).text)[14:]
+        date_list = date_list.splitlines()
+        # 将每行的内容转化为整数列表
+        date_list = [int(line) for line in date_list]
+        list_flag = 0
+        list_flag = date_list.index(1)
+        while True:
+            list_flag += 1
+            if dd == date_list[list_flag - 1]:
+                break
+        WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, dte[list_flag]))).click()
+        time.sleep(2)
+
+        return paper_day
+    except Exception as e:
+        err(e)
 
 
 def choose_banner(driver, time_out, paper_day):
@@ -113,6 +118,9 @@ def choose_banner(driver, time_out, paper_day):
     if data:
         date_temp = data[0][0]
         data = data[0][0]
+        if data == '1111111111':
+            revise_cnki_date()
+            return False
         # print(data)
         data = list(data)
         # print(data)
@@ -155,7 +163,7 @@ def choose_banner(driver, time_out, paper_day):
             EC.presence_of_element_located((By.XPATH, open_page_data['sp_sum']))).text
 
         if '万' in xx_sum:
-            xx_sum = int(f"{xx_sum[:-1].replace('.','')}00")
+            xx_sum = int(f"{xx_sum[:-1].replace('.', '')}00")
         else:
             xx_sum = int(xx_sum)
         if xx_sum > 0:
@@ -164,7 +172,7 @@ def choose_banner(driver, time_out, paper_day):
             a0 = '1'
 
         if '万' in xw_sum:
-            xw_sum = int(f"{xw_sum[:-1].replace('.','')}00")
+            xw_sum = int(f"{xw_sum[:-1].replace('.', '')}00")
         else:
             xw_sum = int(xw_sum)
         if xw_sum > 0:
@@ -173,7 +181,7 @@ def choose_banner(driver, time_out, paper_day):
             a1 = '1'
 
         if '万' in hy_sum:
-            hy_sum = int(f"{hy_sum[:-1].replace('.','')}00")
+            hy_sum = int(f"{hy_sum[:-1].replace('.', '')}00")
         else:
             hy_sum = int(hy_sum)
         if hy_sum > 0:
@@ -262,49 +270,55 @@ def choose_banner(driver, time_out, paper_day):
 
 def open_page(driver, keyword):
     # 打开页面，等待两秒
-    driver.get("https://kns.cnki.net/kns8/AdvSearch")
-    random_sleep = round(random.uniform(0, 3), 2)
-    print(f"sleep {random_sleep}s")
-    time.sleep(random_sleep)
-    time_out = 10
-    # os.system("pause")
+    # cookie = '''Ecp_notFirstLogin=vcGna2; KNS3COOKIE=1701954218.296.40791.121533|b25e41a932fd162af3b8c5cff4059fc3; KNS2COOKIE=1701954227.259.76988.748366|b25e41a932fd162af3b8c5cff4059fc3; cookiecheck=true; AID_dsr=33; msign_dsr=1701745324287; search_uuid=10c180af%2d5147%2d454f%2dbc6e%2d6954a162d423; DSSTASH_LOG=C%5f9%2dUN%5f33%2dUS%5f0%2dT%5f1701745324288; mqs=19e3b526c24d6396324c5f9fb51024fe3452ab54e90deae287793d7e4e0031dca682df1732c2ee4183fccc602da3be02be4e8fb00cc31963311e04b2e88a83e9986778dbed53f1c225b21bb28f6da16c685c5679c8b570e0a2256b426bcbc243f88898810c51471dae7a669267c061b3; qkindustry=; BAIDUID=5042B832E18E1A0DE743145ED5E0FB35:FG=1; BAIDUID_BFESS=5042B832E18E1A0DE743145ED5E0FB35:FG=1; Ecp_ClientId=2231207210201788939; Ecp_session=1; Ecp_session=1; SID_sug=128005; knsLeftGroupSelectItem=; language=chs; duxiu=userName%5fdsr%2c%3dguangxi%2c%21userid%5fdsr%2c%3d40%2c%21char%5fdsr%2c%3d%u89e6%2c%21metaType%2c%3d785%2c%21dsr%5ffrom%2c%3d1%2c%21logo%5fdsr%2c%3dlogo0408%2ejpg%2c%21logosmall%5fdsr%2c%3dsmall0408%2ejpg%2c%21title%5fdsr%2c%3d%u5e7f%u897f%u6c11%u65cf%u5927%u5b66%2c%21url%5fdsr%2c%3debook%2c%21compcode%5fdsr%2c%3d984%2c%21province%5fdsr%2c%3d%u5e7f%u897f%2c%21readDom%2c%3d0%2c%21isdomain%2c%3d193291%2c%21showcol%2c%3d0%2c%21hu%2c%3d0%2c%21uscol%2c%3d0%2c%21isfirst%2c%3d0%2c%21istest%2c%3d0%2c%21cdb%2c%3d0%2c%21og%2c%3d0%2c%21ogvalue%2c%3d4%2c%21testornot%2c%3d1%2c%21remind%2c%3d0%2c%21datecount%2c%3d2210%2c%21userIPType%2c%3d2%2c%21lt%2c%3d0%2c%21ttt%2c%3dfxlogin%2echaoxing%2c%21enc%5fdsr%2c%3d9905DDE9CD6927FFE232D9C9DE577135; historySearchWord=%25E7%2588%25AC%25E8%2599%25AB%252C1%252C1205%253B%25E7%2588%25AC%25E8%2599%25AB%25E6%2596%2587%25E7%258C%25AE%252C1%252C1205%253B%25E9%259F%25B3%25E9%25A2%2591%25E5%2592%258C%25E8%25AF%25AD%25E9%259F%25B3%25E5%25A4%2584%25E7%2590%2586%252C1%252C1214; SID_restapi=128001; _webvpn_key=eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoiMjAyMjEzMTQzNTAwNDg3IiwiZ3JvdXBzIjpbN10sImlhdCI6MTcwNDc4MTIxNCwiZXhwIjoxNzA0ODY3NjE0fQ.G9DVHB8HEq_R1GVNOOIEbEXCmDenynMGthub3rDLdkc; webvpn_username=202213143500487%7C1704781214%7C0d881658fdb867b858eb85e2be722076195e5a9c; Ecp_LoginStuts={"IsAutoLogin":false,"UserName":"K10306","ShowName":"%e5%b9%bf%e8%a5%bf%e6%b0%91%e6%97%8f%e5%a4%a7%e5%ad%a6","UserType":"bk","BUserName":"","BShowName":"","BUserType":"","r":"vcGna2","Members":null}; c_m_LinID=LinID=WEEvREcwSlJHSldSdmVpb1I4bkcwdTd5OXJISjVhbWtsdjRHbFFRb25tbz0=$9A4hF_YAuvQ5obgVAqNKPCYcEjKensW4IQMovwHtwkF4VYPoHbKxJw!!&ot=01%2f09%2f2024%2015%3a11%3a13; LID=WEEvREcwSlJHSldSdmVpb1I4bkcwdTd5OXJISjVhbWtsdjRHbFFRb25tbz0=$9A4hF_YAuvQ5obgVAqNKPCYcEjKensW4IQMovwHtwkF4VYPoHbKxJw!!; c_m_expire=2024-01-09%2015%3a11%3a13; Ecp_LoginStuts={"IsAutoLogin":false,"UserName":"K10306","ShowName":"%E5%B9%BF%E8%A5%BF%E6%B0%91%E6%97%8F%E5%A4%A7%E5%AD%A6","UserType":"bk","BUserName":"","BShowName":"","BUserType":"","r":"vcGna2","Members":[]}; dblang=both; SID_kns_new=kns25128004; c_m_LinID=LinID=WEEvREcwSlJHSldSdmVpb1I4bkcwdTd5OXJISjVhbWtsdjRHbFFRb25tbz0=$9A4hF_YAuvQ5obgVAqNKPCYcEjKensW4IQMovwHtwkF4VYPoHbKxJw!!&ot=01%2F09%2F2024%2015%3A13%3A30; c_m_expire=2024-01-09%2015%3A13%3A30'''
+    try:
+        url = f"https://kns.cnki.net/kns8/AdvSearch"
+        # url_backup = f"https://kns-cnki-net-443.webvpn.gxmzu.edu.cn/kns8s/AdvSearch"
+        # driver.add_cookie(cookie)
+        driver.get(url)
+        random_sleep = round(random.uniform(0, 3), 2)
+        print(f"sleep {random_sleep}s")
+        time.sleep(random_sleep)
+        time_out = 10
+        # os.system("pause")
 
-    # 传入关键字
-    # WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['ik']))).send_keys(keyword)
+        # 传入关键字
+        # 传入关键字
+        # WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['ik']))).send_keys(keyword)
 
-    # 设置时间
-    paper_day = setting_select_date(driver, time_out)
+        # 设置时间
+        paper_day = setting_select_date(driver, time_out)
 
-    # 点击搜索
-    WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['cs']))).click()
-    time.sleep(2)
+        # 点击搜索
+        WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['cs']))).click()
+        time.sleep(2)
 
-    # 切换搜索文章类型
-    paper_type, date_str = choose_banner(driver, time_out, paper_day)
-    time.sleep(5)
+        # 切换搜索文章类型
+        paper_type, date_str = choose_banner(driver, time_out, paper_day)
+        time.sleep(5)
 
-    # 按发表顺序正
-    WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="PT"]'))).click()
-    time.sleep(2)
-    # 文献数和页数
-    res_unm = WebDriverWait(driver, time_out).until(
-        EC.presence_of_element_located((By.XPATH, open_page_data['gn']))).text
+        # 按发表顺序正
+        WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="PT"]'))).click()
+        time.sleep(2)
+        # 文献数和页数
+        res_unm = WebDriverWait(driver, time_out).until(
+            EC.presence_of_element_located((By.XPATH, open_page_data['gn']))).text
 
-    res_unm = int(res_unm.replace(",", ''))
+        res_unm = int(res_unm.replace(",", ''))
 
+        WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['display']))).click()
+        time.sleep(2)
+        WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['50']))).click()
+        time.sleep(2)
+        paper_sum = 50
 
-    WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['display']))).click()
-    time.sleep(2)
-    WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['50']))).click()
-    time.sleep(2)
-    paper_sum = 50
+        # 去除千分位里的逗号
 
-
-    # 去除千分位里的逗号
-
-    page_unm = int(res_unm / paper_sum) + 1
-    print(f"共找到 {res_unm} 条结果, {page_unm} 页。")
-    return res_unm, paper_type, paper_day, date_str, paper_sum
+        page_unm = int(res_unm / paper_sum) + 1
+        print(f"共找到 {res_unm} 条结果, {page_unm} 页。")
+        return res_unm, paper_type, paper_day, date_str, paper_sum
+    except Exception as e:
+        err(e)
 
 
 def open_paper_info(driver, keyword):
@@ -431,12 +445,12 @@ def run_get_paper_title():
 
     # driver.close()
 
+
 def run_get_paper_info(date):
     web_zoom, keyword, papers_need, time_out = read_conf.cnki_paper()
     driver = webserver(web_zoom)
 
     for i in date:
-
         uuid = i[0]
         title = i[1]
         receive_time = i[2]

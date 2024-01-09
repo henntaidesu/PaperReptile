@@ -50,7 +50,7 @@ class index:
             print("获取cnki论文详细数据")
             while True:
                 sql = (f"SELECT * FROM `cnki_index` WHERE `start` = '0'  AND db_type > '0' "
-                       f"ORDER BY receive_time DESC LIMIT 3000, 1000")
+                       f"ORDER BY receive_time DESC LIMIT 10000, 10000")
                 self.process.multi_process_as_up_group(sql, run_get_paper_info)
 
             # run_get_paper_info()

@@ -1,10 +1,12 @@
 import sys
+import time
+
 from src.module.execution_db import Date_base
 import multiprocessing
 from src.module.read_conf import read_conf
 from src.paper_website.arxiv.arxivorg import ArxivOrg
 from src.module.log import log
-
+from src.module.err_message import err
 
 class Process:
     def __init__(self):
@@ -36,13 +38,16 @@ class Process:
                 print("已完成获取AS UPGroup")
                 return False
             chunks = self.split_list(work_list, processes)
-            # func_with_args = partial(func, *args)
+            # 创建进程池
             pool = multiprocessing.Pool(processes=processes)
-            pool.map(func, chunks)
+            for chunk in chunks:
+                # 每个chunk代表一个线程的工作，这里等待3秒再启动下一个线程
+                time.sleep(3)
+                # 启动线程
+                pool.apply_async(func, args=(chunk,))
+            # 关闭进程池，等待所有线程完成
             pool.close()
             pool.join()
+
         except Exception as e:
-            self.logger.write_log(f"Err Message:,{str(e)}")
-            self.logger.write_log(f"Err Type:, {type(e).__name__}")
-            _, _, tb = sys.exc_info()
-            self.logger.write_log(f"Err Local:, {tb.tb_frame.f_code.co_filename}, {tb.tb_lineno}")
+            err(e)
