@@ -14,6 +14,8 @@ from src.module.now_time import year, moon, day1
 from src.module.err_message import err
 from webdriver_manager.chrome import ChromeDriverManager
 from src.paper_website.cnki.cnki import revise_cnki_date
+from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
 import random
 
@@ -24,8 +26,12 @@ read_conf = read_conf()
 dts = date_choose_start_table()
 dte = date_choose_end_table()
 
+from selenium import webdriver
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+
 
 def webserver(web_zoom):
+    chromedriver_path = r"chromedriver.exe"
     # get直接返回，不再等待界面加载完成
     desired_capabilities = DesiredCapabilities.CHROME
     desired_capabilities["pageLoadStrategy"] = "none"
@@ -36,8 +42,9 @@ def webserver(web_zoom):
     options.add_argument(f"--force-device-scale-factor={web_zoom}")
     options.add_argument("--disable-gpu")
     # options.add_argument("--proxy-server=http://127.0.0.1:10809")
-    # 创建一个微软驱动器
-    driver = webdriver.Chrome(options=options)
+    service = ChromeService(chromedriver_path)
+    # 指定chromedriver.exe的位置
+    driver = webdriver.Chrome(service=service, options=options)
 
     return driver
 
@@ -120,7 +127,8 @@ def choose_banner(driver, time_out, paper_day):
         data = data[0][0]
         if data == '1111111111':
             revise_cnki_date()
-            return False
+            driver.close()
+            run_get_paper_title()
         # print(data)
         data = list(data)
         # print(data)
@@ -357,8 +365,9 @@ def run_get_paper_title():
         page_flag = 0
         count = 1
         db = 111
+        count_sum = 0
         flag, page_flag, click_flag, count = get_paper_title(driver, keyword, time_out, res_unm, date, paper_type,
-                                                             paper_day, date_str, paper_sum, page_flag, count)
+                                                             paper_day, date_str, paper_sum, page_flag, count, count_sum)
 
         if flag is True:
             driver.close()
@@ -367,12 +376,13 @@ def run_get_paper_title():
         driver.close()
         driver = webserver(web_zoom)
         time.sleep(3)
+        count_sum = count
         count -= 5950
         res_unm, paper_type, paper_day, date_str, paper_sum = open_page(driver, keyword)
         WebDriverWait(driver, time_out).until(
             EC.presence_of_element_located((By.XPATH, '//*[@id="PT"]'))).click()
         flag, page_flag, click_flag, count = get_paper_title(driver, keyword, time_out, res_unm, date, paper_type,
-                                                             paper_day, date_str, paper_sum, page_flag, count)
+                                                             paper_day, date_str, paper_sum, page_flag, count, count_sum)
 
         if flag is True:
             driver.close()
@@ -381,6 +391,7 @@ def run_get_paper_title():
         driver.close()
         driver = webserver(web_zoom)
         time.sleep(3)
+        count_sum = count * 2
         count -= 5950
         res_unm, paper_type, paper_day, date_str, paper_sum = open_page(driver, keyword)
         WebDriverWait(driver, time_out).until(
@@ -399,6 +410,7 @@ def run_get_paper_title():
         WebDriverWait(driver, time_out).until(
             EC.presence_of_element_located((By.XPATH, '//*[@id="CF"]'))).click()
         time.sleep(3)
+        count_sum = count * 3
         count -= 5950
         WebDriverWait(driver, time_out).until(
             EC.presence_of_element_located((By.XPATH, '//*[@id="CF"]'))).click()
@@ -412,6 +424,7 @@ def run_get_paper_title():
         driver.close()
         driver = webserver(web_zoom)
         time.sleep(3)
+        count_sum = count * 4
         count -= 5950
         res_unm, paper_type, paper_day, date_str, paper_sum = open_page(driver, keyword)
         WebDriverWait(driver, time_out).until(
@@ -430,6 +443,7 @@ def run_get_paper_title():
         WebDriverWait(driver, time_out).until(
             EC.presence_of_element_located((By.XPATH, '//*[@id="DFR"]'))).click()
         time.sleep(3)
+        count_sum = count * 5
         count -= 5950
         WebDriverWait(driver, time_out).until(
             EC.presence_of_element_located((By.XPATH, '//*[@id="DFR"]'))).click()

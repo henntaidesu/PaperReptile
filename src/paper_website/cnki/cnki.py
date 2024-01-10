@@ -129,7 +129,7 @@ def whit_file(date_str, paper_type, paper_day):
 
 
 def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_day, date_str, paper_sum, page_flag,
-                    count):
+                    count, count_sum):
     title = None
     db_type = None
     authors = None
@@ -145,36 +145,35 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
     xpath_information = crawl_xp.xpath_inf()
     dt = None
     if paper_type == 0:
-        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `xxkq` = {res_unm} WHERE `flag` = {date};"
+        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `xxkq` = {res_unm} WHERE `date` ='{date}';"
         dt = "'1'"
     elif paper_type == 1:
         dt = "'2', '3'"
-        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `xwlw` = {res_unm} WHERE `flag` = {date};"
+        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `xwlw` = {res_unm} WHERE `date` = '{date}';"
     elif paper_type == 2:
         dt = "'c'"
-        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `hy` = {res_unm} WHERE `flag` = {date};"
+        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `hy` = {res_unm} WHERE `date` = '{date}';"
     elif paper_type == 3:
         dt = "'0'"
-        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `bz` = {res_unm} WHERE `flag` = {date};"
+        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `bz` = {res_unm} WHERE `date` = '{date}';"
     elif paper_type == 4:
         dt = "'4'"
-        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `ts` = {res_unm} WHERE `flag` = {date};"
+        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `ts` = {res_unm} WHERE `date` = '{date}';"
     elif paper_type == 5:
         dt = "'a'"
-        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `bs` = {res_unm} WHERE `flag` = {date};"
+        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `bs` = {res_unm} WHERE `date` = '{date}';"
     elif paper_type == 6:
         dt = "'b'"
-        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `cg` = {res_unm} WHERE `flag` = {date};"
+        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `cg` = {res_unm} WHERE `date` = '{date}';"
     elif paper_type == 7:
         dt = "'6'"
-        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `xxkj` = {res_unm} WHERE `flag` = {date};"
+        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `xxkj` = {res_unm} WHERE `date` = '{date}';"
     elif paper_type == 8:
         dt = "'5'"
-        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `tsqk` = {res_unm} WHERE `flag` = {date};"
+        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `tsqk` = {res_unm} WHERE `date` = '{date}';"
     elif paper_type == 9:
         dt = "'7'"
-        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `sp` = {res_unm} WHERE `flag` = {date};"
-
+        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `sp` = {res_unm} WHERE `date` = '{date}';"
     Date_base().update_all(sql)
 
     sql = (f"SELECT title FROM cnki_index where receive_time >= "
@@ -237,7 +236,7 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
 
         # 循环网页一页中的条目
         for i in range((count - 1) % paper_sum + 1, paper_sum + 1):
-            print(f"{res_unm} ------- {count + len_data - new_paper_sum + 1}")
+            print(f"{res_unm} ------- {count + len_data - new_paper_sum}")
             if res_unm < count + len_data - new_paper_sum:
                 logger.write_log("已获取完数据")
 
@@ -246,7 +245,7 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
                 if flag333 is True:
                     return True, False, -1, count
             print(f"正在爬取第{count + len_data - new_paper_sum}条基础数据,跳过{new_paper_sum}"
-                  f"条(第{(count - 1) // paper_sum + 1}页第{i}条 总第{count}次查询 共{res_unm}条):")
+                  f"条(第{(count - 1) // paper_sum + 1}页第{i}条 总第{count_sum + count}次查询 共{res_unm}条):")
 
             try:
                 term = (count - 1) % paper_sum + 1  # 本页的第几个条目
@@ -255,61 +254,34 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
                 if paper_type == 0:
                     with concurrent.futures.ThreadPoolExecutor() as executor:
                         future_elements = [executor.submit(get_info, driver, xpath) for xpath in xpaths]
-                    title, authors, source, date, quote, down_sun, aa = [future.result() for future in
-                                                                         future_elements]
+                    title, authors, source, date1, quote, down_sun, aa = [future.result() for future in
+                                                                          future_elements]
 
-                elif paper_type == 1:
+                elif paper_type in (1, 2):
                     with concurrent.futures.ThreadPoolExecutor() as executor:
                         future_elements = [executor.submit(get_info, driver, xpath) for xpath in xpaths]
-                    title, authors, source, db_type, date, quote, down_sun = [future.result() for future in
-                                                                              future_elements]
-                    if len(date) == 4:
-                        date = f"{date}-01-01"
+                    title, authors, source, db_type, date1, quote, down_sun = [future.result() for future in
+                                                                               future_elements]
 
-                elif paper_type == 2:
+                elif paper_type in (3, 8, 7, 9):
                     with concurrent.futures.ThreadPoolExecutor() as executor:
                         future_elements = [executor.submit(get_info, driver, xpath) for xpath in xpaths]
-                    title, authors, source, db_type, date, quote, down_sun = [future.result() for future in
-                                                                              future_elements]
-                elif paper_type in (3, 8):
-                    with concurrent.futures.ThreadPoolExecutor() as executor:
-                        future_elements = [executor.submit(get_info, driver, xpath) for xpath in xpaths]
-                    title, authors, source, date, quote, down_sun, aa = [future.result() for future in future_elements]
+                    title, authors, source, date1, quote, down_sun, aa = [future.result() for future in future_elements]
 
                 elif paper_type == 4:
                     with concurrent.futures.ThreadPoolExecutor() as executor:
                         future_elements = [executor.submit(get_info, driver, xpath) for xpath in xpaths]
-                    title, authors, source, date, quote, down_sun = [future.result() for future in future_elements]
-                    yy = date[:4]
-                    mm = date[-2:]
-                    date = f"{yy}-{mm}-01"
+                    title, authors, source, date1, quote, down_sun = [future.result() for future in future_elements]
 
                 elif paper_type == 5:
                     with concurrent.futures.ThreadPoolExecutor() as executor:
                         future_elements = [executor.submit(get_info, driver, xpath) for xpath in xpaths]
-                    title, authors, aa, date, quote = [future.result() for future in future_elements]
-                    date = f"{date}-01-01"
+                    title, authors, aa, date1, quote = [future.result() for future in future_elements]
 
                 elif paper_type == 6:
                     with concurrent.futures.ThreadPoolExecutor() as executor:
                         future_elements = [executor.submit(get_info, driver, xpath) for xpath in xpaths]
-                    title, authors, date, aa, quote = [future.result() for future in future_elements]
-
-                elif paper_type == 7:
-                    with concurrent.futures.ThreadPoolExecutor() as executor:
-                        future_elements = [executor.submit(get_info, driver, xpath) for xpath in xpaths]
-                    title, authors, source, date, quote, down_sun, aa = [future.result() for future in future_elements]
-
-                    if date[-2:] == '00':
-                        date = f"{(str(date[:4]).replace('/', '-'))}-01-01"
-
-                    else:
-                        date = f"{(str(date).replace('/', '-'))}-01"
-
-                elif paper_type == 9:
-                    with concurrent.futures.ThreadPoolExecutor() as executor:
-                        future_elements = [executor.submit(get_info, driver, xpath) for xpath in xpaths]
-                    title, authors, source, date, quote, down_sun, aa = [future.result() for future in future_elements]
+                    title, authors, date1, aa, quote = [future.result() for future in future_elements]
 
                 if '增强出版' in title:
                     title = title[:-5]
@@ -406,20 +378,27 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
 
             except Exception as e:
                 err(e)
+                if type(e).__name__ == 'TypeError' and issuing_time_flag is False:
+                    print(f"{res_unm} ------- {count + len_data - new_paper_sum + 1}")
+                    logger.write_log(f"已获取完数据 ，，{res_unm - (count + len_data - new_paper_sum + 1)}条数据无法获取")
+                    flag333 = whit_file(date_str, paper_type, paper_day)
+                    if flag333 is True:
+                        return True, False, -1, count
+                    return True, False, -1, count
                 continue
 
             finally:
                 count += 1
             continue_flag = False
-            # time.sleep(1)
-
-            if res_unm <= count + len_data - new_paper_sum:
+            if res_unm <= count + len_data - new_paper_sum - 1:
                 logger.write_log("已获取完数据")
 
                 flag333 = whit_file(date_str, paper_type, paper_day)
 
                 if flag333 is True:
                     return True, False, -1, count
+            # time.sleep(1)
+
 
         time.sleep(3)
 
