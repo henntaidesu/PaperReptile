@@ -44,7 +44,7 @@ class index:
 
         if flag == '5':
             print("获取cnki论文基础数据")
-            run_get_paper_title()
+            run_get_paper_title(0, 0,0, False)
 
         if flag == '6':
             print("获取cnki论文详细数据")

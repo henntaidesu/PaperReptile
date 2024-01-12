@@ -1,5 +1,19 @@
 from src.paper_website.cnki.cnki_components import *
+import time
+import re
+import concurrent.futures
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.action_chains import ActionChains
+from src.module.execution_db import Date_base
+from src.module.UUID import UUID
+from src.module.now_time import now_time
+from src.model.cnki import Crawl, positioned_element, crawl_xpath, reference_papers, QuotePaper
+from src.module.log import log
 from src.module.read_conf import read_conf
+from src.module.err_message import err
 
 open_page_data = positioned_element()
 crawl_xp = Crawl()
@@ -7,8 +21,9 @@ logger = log()
 read_conf = read_conf()
 
 
-def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_day, date_str, paper_sum, page_flag,
-                    count, count_sum):
+def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum, total_page, total_count, click_flag, None_message):
+    time_out = 5
+    count = 1
     title = None
     db_type = None
     authors = None
@@ -22,82 +37,84 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
     qp = QuotePaper()
     new_paper_sum = 0
     sql = None
-    xpath_information = crawl_xp.xpath_inf()
     dt = None
+    xpath_information = crawl_xp.xpath_inf()
+
     if paper_type == 0:
-        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `xxkq` = {res_unm} WHERE `date` ='{date}';"
+        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `xxkq` = {res_unm} WHERE `date` ='{paper_day}';"
         dt = "'1'"
     elif paper_type == 1:
         dt = "'2', '3'"
-        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `xwlw` = {res_unm} WHERE `date` = '{date}';"
+        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `xwlw` = {res_unm} WHERE `date` = '{paper_day}';"
     elif paper_type == 2:
         dt = "'c'"
-        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `hy` = {res_unm} WHERE `date` = '{date}';"
+        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `hy` = {res_unm} WHERE `date` = '{paper_day}';"
     elif paper_type == 3:
         dt = "'0'"
-        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `bz` = {res_unm} WHERE `date` = '{date}';"
+        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `bz` = {res_unm} WHERE `date` = '{paper_day}';"
     elif paper_type == 4:
         dt = "'4'"
-        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `ts` = {res_unm} WHERE `date` = '{date}';"
+        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `ts` = {res_unm} WHERE `date` = '{paper_day}';"
     elif paper_type == 5:
         dt = "'a'"
-        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `bs` = {res_unm} WHERE `date` = '{date}';"
+        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `bs` = {res_unm} WHERE `date` = '{paper_day}';"
     elif paper_type == 6:
         dt = "'b'"
-        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `cg` = {res_unm} WHERE `date` = '{date}';"
+        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `cg` = {res_unm} WHERE `date` = '{paper_day}';"
     elif paper_type == 7:
         dt = "'6'"
-        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `xxkj` = {res_unm} WHERE `date` = '{date}';"
+        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `xxkj` = {res_unm} WHERE `date` = '{paper_day}';"
     elif paper_type == 8:
         dt = "'5'"
-        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `tsqk` = {res_unm} WHERE `date` = '{date}';"
+        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `tsqk` = {res_unm} WHERE `date` = '{paper_day}';"
     elif paper_type == 9:
         dt = "'7'"
-        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `sp` = {res_unm} WHERE `date` = '{date}';"
+        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `sp` = {res_unm} WHERE `date` = '{paper_day}';"
     Date_base().update_all(sql)
 
     sql = (f"SELECT title FROM cnki_index where receive_time >= "
-           f"'{date} 00:00:00' and receive_time <= '{date} 23:59:59' and db_type in ({dt})")
+           f"'{paper_day} 00:00:00' and receive_time <= '{paper_day} 23:59:59' and db_type in ({dt})")
     flag, paper_title = Date_base().select_all(sql)
 
     len_data = len(paper_title)
 
     issuing_time_flag = False
-    quote1_flag = False
-    quote2_flag = False
-    down1_flag = False
-    down2_flag = False
-    return_flag = False
+    None_message = False
     if res_unm > 5950:
         issuing_time_flag = True
 
     # 当爬取数量小于需求时，循环网页页码
     while True:
-        page_flag += 1
-        if issuing_time_flag is True:
-            if page_flag == 120:
+        total_page += 1
+        print(f'total_page   :   {total_page}')
+        if issuing_time_flag is True and None_message is False:
+            if total_page == 120:
                 # 按引用倒序
-                return False, page_flag, 1, count
+                return False, total_page, 1, count, False
 
-            if page_flag == 240:
+            if total_page == 240 and res_unm > 8000:
                 # 按下载正序
-                return False, page_flag, 2, count
+                return False, total_page, 2, count, False
 
-            if page_flag == 360:
+            if total_page == 360 and res_unm > 10000:
                 # 按引用正序
-                return False, page_flag, 3, count
+                return False, total_page, 3, count, False
 
-            if page_flag == 480:
-                return False, page_flag, 4, count
+            if total_page == 480 and res_unm > 13000:
+                return False, total_page, 4, count, False
                 # 按下载倒序
-            if page_flag == 600:
+            if total_page == 600 and res_unm > 16000:
                 # 按发表顺序倒
-                return False, page_flag, 5, count
+                return False, total_page, 5, count, False
 
-            if page_flag == 720:
+            if total_page == 720:
                 flag333 = whit_file(date_str, paper_type, paper_day)
                 if flag333 is True:
-                    return True, False, -1, count
+                    return True, False, -1, count, False
+        else:
+            flag333 = whit_file(date_str, paper_type, paper_day)
+            if flag333 is True:
+                return True, False, -1, count, False
 
         # 等待加载完全，休眠1S
         time.sleep(1)
@@ -112,9 +129,9 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
                 flag333 = whit_file(date_str, paper_type, paper_day)
 
                 if flag333 is True:
-                    return True, False, -1, count
+                    return True, False, -1, count, False
             print(f"正在爬取第{count + len_data - new_paper_sum}条基础数据,跳过{new_paper_sum}"
-                  f"条(第{(count - 1) // paper_sum + 1}页第{i}条 总第{count_sum + count}次查询 共{res_unm}条):")
+                  f"条(第{(count - 1) // paper_sum + 1}页第{i}条 总第{total_count + count}次查询 共{res_unm}条):")
 
             try:
                 term = (count - 1) % paper_sum + 1  # 本页的第几个条目
@@ -134,8 +151,9 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
                     xpath = f'''//*[@id="briefBox"]/p'''
                     title = WebDriverWait(driver, time_out).until(
                         EC.presence_of_element_located((By.XPATH, xpath))).text
-                    if title == '抱歉，暂无数据，请稍后重试。' and issuing_time_flag is True and page_flag % 120 != 0:
-                        return False, False, 1, count
+                    if title == '抱歉，暂无数据，请稍后重试。' and issuing_time_flag is True and total_page % 120 != 0:
+                        None_message = True
+                        return False, total_page, click_flag + 1, count, None_message
 
                 if '增强出版' in title:
                     title = title[:-5]
@@ -205,7 +223,7 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
                 uuid = UUID()
                 sql3 = (f"INSERT INTO `Paper`.`cnki_index`"
                         f"(`UUID`, `title`, `receive_time`, `start`, `db_type`) "
-                        f"VALUES ('{uuid}', '{title}', '{date}', '0', '{db_type}');")
+                        f"VALUES ('{uuid}', '{title}', '{paper_day}', '0', '{db_type}');")
 
                 sql3 = TrSQL(sql3)
                 flag = Date_base().insert_all(sql3)
@@ -225,7 +243,7 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
                     logger.write_log(f"已获取完数据 ，，{res_unm - (count + len_data - new_paper_sum + 1)}条数据无法获取")
                     flag333 = whit_file(date_str, paper_type, paper_day)
                     if flag333 is True:
-                        return True, False, -1, count
+                        return True, False, -1, count, False
 
             finally:
                 count += 1
@@ -236,7 +254,7 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
                 flag333 = whit_file(date_str, paper_type, paper_day)
 
                 if flag333 is True:
-                    return True, False, -1, count
+                    return True, False, -1, count, False
             # time.sleep(1)
 
         try:
