@@ -1,46 +1,9 @@
-from src.paper_website.cnki.get_cnki_message import get_paper_title, get_paper_info, open_paper_info
+from src.paper_website.cnki.get_cnki_paper_title import get_paper_title, open_paper_info, page_click_sort_type
 from src.paper_website.cnki.cnki_components import webserver, open_page
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
-from src.module.read_conf import CNKI, read_conf
+from src.module.read_conf import read_conf
 from src.module.err_message import err
+from src.paper_website.cnki.get_cnki_paper_infomation import get_paper_info
 import time
-
-
-def page_click_sort_type(driver, flag):
-    time_out = 5
-    try:
-        if flag == 0:
-            pass
-        # 发表时间正序
-        time.sleep(3)
-        if flag == 1:
-            WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="PT"]'))).click()
-        # 下载正序
-        if flag == 2:
-            WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="DFR"]'))).click()
-        # 下载倒序
-        if flag == 3:
-            WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="DFR"]'))).click()
-            time.sleep(1)
-            WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="DFR"]'))).click()
-        # 被引正序
-        if flag == 4:
-            WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="PT"]'))).click()
-        # 被引倒序
-        if flag == 5:
-            WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="PT"]'))).click()
-            time.sleep(1)
-            WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="PT"]'))).click()
-        # 综合
-        if flag == 6:
-            WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="ZH"]'))).click()
-        # 相关度
-        if flag == 7:
-            WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="FFD"]'))).click()
-    except Exception as e:
-        err(e)
 
 
 def run_get_paper_title(click_flag, total_page, total_count, None_message):
