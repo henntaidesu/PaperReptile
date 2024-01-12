@@ -41,9 +41,17 @@ class log:
 
     def write_log(self, text):
         # 输出不同级别的日志
+
+        # if log_type == 'I':
+        #     self.logger.info(text)
+        #
+        # elif log_type == "E":
+        #     self.logger.error(text)
+
         if self.log_level == "debug":
             self.logger.debug(text)
         elif self.log_level == "info":
+
             self.logger.info(text)
         elif self.log_level == "warning":
             self.logger.warning(text)

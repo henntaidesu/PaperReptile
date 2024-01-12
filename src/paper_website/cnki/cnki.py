@@ -353,7 +353,7 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
 
             except Exception as e:
                 err(e)
-                if type(e).__name__ == 'TypeError' and issuing_time_flag is False:
+                if type(e).__name__ == 'TimeoutException' and issuing_time_flag is False:
                     print(f"{res_unm} ------- {count + len_data - new_paper_sum + 1}")
                     logger.write_log(f"已获取完数据 ，，{res_unm - (count + len_data - new_paper_sum + 1)}条数据无法获取")
                     flag333 = whit_file(date_str, paper_type, paper_day)
