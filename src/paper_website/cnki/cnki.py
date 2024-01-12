@@ -135,7 +135,8 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
     authors = None
     source = None
     aa = None
-
+    quote = None
+    down_sun = None
     # paper_db = read_conf.cnki_skip_db()
     cp = crawl_xpath()
     rp = reference_papers()
@@ -190,6 +191,14 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
     return_flag = False
     if res_unm > 5950:
         issuing_time_flag = True
+        if return_flag > 8000:
+            quote1_flag = True
+            if return_flag > 10000:
+                quote2_flag = True
+                if return_flag > 13000:
+                    down1_flag = True
+                    if return_flag > 15000:
+                        down2_flag = True
 
     # 当爬取数量小于需求时，循环网页页码
     while True:
@@ -199,7 +208,7 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
                 # 按引用倒序
                 return False, page_flag, 1, count
 
-            if page_flag == 240:
+            if page_flag == 240 and quote1_flag is True:
                 # 按下载正序
                 return False, page_flag, 2, count
 
@@ -251,37 +260,15 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
                 term = (count - 1) % paper_sum + 1  # 本页的第几个条目
                 xpaths = crawl_xp.xpath_base(term)
 
-                if paper_type == 0:
-                    with concurrent.futures.ThreadPoolExecutor() as executor:
-                        future_elements = [executor.submit(get_info, driver, xpath) for xpath in xpaths]
-                    title, authors, source, date1, quote, down_sun, aa = [future.result() for future in
-                                                                          future_elements]
+                if res_unm == 1:
+                    xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[2]/a'''
+                    title = WebDriverWait(driver, time_out).until(
+                        EC.presence_of_element_located((By.XPATH, xpath))).text
 
-                elif paper_type in (1, 2):
-                    with concurrent.futures.ThreadPoolExecutor() as executor:
-                        future_elements = [executor.submit(get_info, driver, xpath) for xpath in xpaths]
-                    title, authors, source, db_type, date1, quote, down_sun = [future.result() for future in
-                                                                               future_elements]
-
-                elif paper_type in (3, 8, 7, 9):
-                    with concurrent.futures.ThreadPoolExecutor() as executor:
-                        future_elements = [executor.submit(get_info, driver, xpath) for xpath in xpaths]
-                    title, authors, source, date1, quote, down_sun, aa = [future.result() for future in future_elements]
-
-                elif paper_type == 4:
-                    with concurrent.futures.ThreadPoolExecutor() as executor:
-                        future_elements = [executor.submit(get_info, driver, xpath) for xpath in xpaths]
-                    title, authors, source, date1, quote, down_sun = [future.result() for future in future_elements]
-
-                elif paper_type == 5:
-                    with concurrent.futures.ThreadPoolExecutor() as executor:
-                        future_elements = [executor.submit(get_info, driver, xpath) for xpath in xpaths]
-                    title, authors, aa, date1, quote = [future.result() for future in future_elements]
-
-                elif paper_type == 6:
-                    with concurrent.futures.ThreadPoolExecutor() as executor:
-                        future_elements = [executor.submit(get_info, driver, xpath) for xpath in xpaths]
-                    title, authors, date1, aa, quote = [future.result() for future in future_elements]
+                else:
+                    xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr[{i}]/td[2]/a'''
+                    title = WebDriverWait(driver, time_out).until(
+                        EC.presence_of_element_located((By.XPATH, xpath))).text
 
                 if '增强出版' in title:
                     title = title[:-5]
@@ -344,7 +331,6 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
                 elif db_type == '博士':
                     db_type = '3'
 
-
                 else:
                     db_type = '9'
 
@@ -361,18 +347,7 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
                     logger.write_log(f"重复数据 ： {title}, UUID : {uuid}")
                     continue
 
-                if not quote.isdigit():
-                    quote = '0'
-                if not down_sun.isdigit():
-                    down_sun = '0'
-
-                print(f"\n"
-                      f"标题:    {title}\n"
-                      f"作者:    {authors}\n"
-                      f"文章来源: {source}\n"
-                      f"数据来源: {db_type}\n"
-                      f"引用次数: {quote}\n"
-                      f"下载次数: {down_sun}\n")
+                print(f"\n标题:    {title}\n")
 
                 logger.write_log(f"已获取 ： {title}, UUID : {uuid}")
 
@@ -399,13 +374,12 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
                     return True, False, -1, count
             # time.sleep(1)
 
-
         time.sleep(3)
 
         WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, cp['paper_next_page']))).click()
 
 
-def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time, start):
+def get_paper_info(driver, time_out, uuid, title1, db_type):
     paper_db = read_conf.cnki_skip_db()
 
     cp = crawl_xpath()

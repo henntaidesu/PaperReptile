@@ -38,7 +38,7 @@ def webserver(web_zoom):
     # 设置微软驱动器的环境
     options = webdriver.ChromeOptions()
     # 设置浏览器不加载图片，提高速度
-    # options.add_experimental_option("prefs", {"profile.managed_default_content_settings.images": 2})
+    options.add_experimental_option("prefs", {"profile.managed_default_content_settings.images": 2})
     options.add_argument(f"--force-device-scale-factor={web_zoom}")
     options.add_argument("--disable-gpu")
     # options.add_argument("--proxy-server=http://127.0.0.1:10809")
@@ -305,19 +305,22 @@ def open_page(driver, keyword):
         paper_type, date_str = choose_banner(driver, time_out, paper_day)
         time.sleep(5)
 
-        # 按发表顺序正
-        WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="PT"]'))).click()
-        time.sleep(2)
         # 文献数和页数
         res_unm = WebDriverWait(driver, time_out).until(
             EC.presence_of_element_located((By.XPATH, open_page_data['gn']))).text
 
         res_unm = int(res_unm.replace(",", ''))
+        if res_unm > 5950:
+            # 按发表顺序正
+            WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="PT"]'))).click()
+            time.sleep(2)
+        if res_unm > 49:
+            WebDriverWait(driver, time_out).until(
+                EC.presence_of_element_located((By.XPATH, open_page_data['display']))).click()
+            time.sleep(2)
+            WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['50']))).click()
+            time.sleep(2)
 
-        WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['display']))).click()
-        time.sleep(2)
-        WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['50']))).click()
-        time.sleep(2)
         paper_sum = 50
 
         # 去除千分位里的逗号
@@ -353,6 +356,10 @@ def open_paper_info(driver, keyword):
     return res_unm
 
 
+def sort_click():
+    pass
+
+
 def run_get_paper_title():
     web_zoom, keyword, papers_need, time_out = read_conf.cnki_paper()
     try:
@@ -364,10 +371,10 @@ def run_get_paper_title():
 
         page_flag = 0
         count = 1
-        db = 111
         count_sum = 0
         flag, page_flag, click_flag, count = get_paper_title(driver, keyword, time_out, res_unm, date, paper_type,
-                                                             paper_day, date_str, paper_sum, page_flag, count, count_sum)
+                                                             paper_day, date_str, paper_sum, page_flag, count,
+                                                             count_sum)
 
         if flag is True:
             driver.close()
@@ -382,7 +389,8 @@ def run_get_paper_title():
         WebDriverWait(driver, time_out).until(
             EC.presence_of_element_located((By.XPATH, '//*[@id="PT"]'))).click()
         flag, page_flag, click_flag, count = get_paper_title(driver, keyword, time_out, res_unm, date, paper_type,
-                                                             paper_day, date_str, paper_sum, page_flag, count, count_sum)
+                                                             paper_day, date_str, paper_sum, page_flag, count,
+                                                             count_sum)
 
         if flag is True:
             driver.close()
@@ -472,19 +480,6 @@ def run_get_paper_info(date):
         db_type = i[4]
 
         res_unm = open_paper_info(driver, title)
-        flag = get_paper_info(driver, time_out, uuid, title, db_type, res_unm)
-
-        # if flag is True:
-        #
-        #     all_handles = driver.window_handles
-        #
-        #     # 关闭除第一个窗口以外的所有窗口
-        #     if len(all_handles) > 1:
-        #         start_time = time.time()
-        #
-        #     for handle in all_handles[1:]:
-        #         driver.switch_to.window(handle)
-        #         driver.close()
-        #         driver.switch_to.window(all_handles[0])
+        get_paper_info(driver, time_out, uuid, title, db_type)
 
     # driver.close()
