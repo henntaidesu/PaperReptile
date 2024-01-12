@@ -1,131 +1,10 @@
-import time
-import re
-import concurrent.futures
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from src.module.execution_db import Date_base
-from src.module.UUID import UUID
-from src.module.now_time import now_time
-from src.model.cnki import Crawl, positioned_element, crawl_xpath, reference_papers, QuotePaper
-from src.module.log import log
+from src.paper_website.cnki.cnki_components import *
 from src.module.read_conf import read_conf
-from src.module.err_message import err
-from src.module.read_conf import CNKI
-import random
 
 open_page_data = positioned_element()
 crawl_xp = Crawl()
 logger = log()
 read_conf = read_conf()
-
-
-def TrimString(Str):
-    if '\n' in Str:
-        Str = Str.replace('\n', ' ')
-    # if ' ' in Str:
-    #     Str = Str.replace(' ', '')
-    # if '/' in Str:
-    #     Str = Str.replace('/', ' ')
-    if "'" in Str:
-        Str = Str.replace("'", "\\'")
-    if '"' in Str:
-        Str = Str.replace('"', '\\"')
-    return Str
-
-
-def Trim_passkey(Str):
-    Str = Str.replace(";", " ")
-    return Str
-
-
-def trim_quote(Str):
-    Str = str(Str)
-    Str = Str.replace(',', '').replace("'", "").replace('] ', '、')
-    Str = Str.replace(' ', '')[2:][:-1]
-    return Str
-
-
-def extract_number(item):
-    match = re.search(r"(\d+)\]", item)
-    return int(match.group(1)) if match else float('inf')
-
-
-def TrSQL(sql):
-    sql = sql.replace("None", "NULL").replace("'NULL'", "NULL")
-    return sql
-
-
-def get_info(driver, xpath):
-    try:
-        element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, xpath)))
-        return element.text
-    except:
-        return None
-
-
-def is_english_string(s):
-    # 使用正则表达式判断字符串是否全为英文字符
-    return bool(re.match('^[a-zA-Z\s.,;:!?\'"()]+$', s))
-
-
-def get_choose_info(driver, xpath1, xpath2, str):
-    try:
-        if WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, xpath1))).text == str:
-            return WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, xpath2))).text
-        else:
-            return None
-    except:
-        return None
-
-
-def is_leap_year(year):
-    if (year % 4 == 0 and year % 100 != 0) or (year % 400 == 0):
-        return True
-    else:
-        return False
-
-
-def revise_cnki_date():
-    cnki = CNKI()
-    yy, mm, dd = cnki.read_cnki_date()
-    dd -= 1
-    if dd == 0:
-        mm -= 1
-        if mm in {1, 3, 5, 7, 8, 10, 12}:
-            dd = 31
-        elif mm == 2:
-            if (yy % 4 == 0 and yy % 100 != 0) or (yy % 400 == 0):
-                dd = 29
-            else:
-                dd = 28
-        elif mm == 0:
-            yy -= 1
-            mm = 12
-            dd = 31
-        else:
-            dd = 30
-
-    cnki.write_cnki_date(str(yy), str(mm), str(dd))
-    return True
-
-
-def whit_file(date_str, paper_type, paper_day):
-    date_str = list(date_str)
-    date_str[paper_type] = '1'
-    date_str = str(date_str)
-    date_str = date_str[1:][:-1].replace(',', '').replace("'", "").replace(" ", "")
-    flag = False
-    sql = f"UPDATE `Paper`.`cnki_page_flag` SET `flag` = '{date_str}' WHERE `date` = '{paper_day}'"
-    Date_base().update_all(sql)
-    if date_str == '1111111111':
-        flag = revise_cnki_date()
-    else:
-        return True
-
-    if flag is True:
-        return True
 
 
 def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_day, date_str, paper_sum, page_flag,
@@ -191,14 +70,6 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
     return_flag = False
     if res_unm > 5950:
         issuing_time_flag = True
-        if return_flag > 8000:
-            quote1_flag = True
-            if return_flag > 10000:
-                quote2_flag = True
-                if return_flag > 13000:
-                    down1_flag = True
-                    if return_flag > 15000:
-                        down2_flag = True
 
     # 当爬取数量小于需求时，循环网页页码
     while True:
@@ -208,7 +79,7 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
                 # 按引用倒序
                 return False, page_flag, 1, count
 
-            if page_flag == 240 and quote1_flag is True:
+            if page_flag == 240:
                 # 按下载正序
                 return False, page_flag, 2, count
 
@@ -228,20 +99,9 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
                 if flag333 is True:
                     return True, False, -1, count
 
-        # 等待加载完全，休眠3S
-        time.sleep(3)
+        # 等待加载完全，休眠1S
+        time.sleep(1)
         driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.END)
-        try:
-            title_list = WebDriverWait(driver, time_out).until(
-                EC.presence_of_all_elements_located((By.CLASS_NAME, "fz14")))
-        except:
-            try:
-                driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.END)
-                time.sleep(15)
-                title_list = WebDriverWait(driver, time_out).until(
-                    EC.presence_of_all_elements_located((By.CLASS_NAME, "fz14")))
-            except:
-                return True, False, -1, count
 
         # 循环网页一页中的条目
         for i in range((count - 1) % paper_sum + 1, paper_sum + 1):
@@ -260,15 +120,22 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
                 term = (count - 1) % paper_sum + 1  # 本页的第几个条目
                 xpaths = crawl_xp.xpath_base(term)
 
-                if res_unm == 1:
-                    xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[2]/a'''
-                    title = WebDriverWait(driver, time_out).until(
-                        EC.presence_of_element_located((By.XPATH, xpath))).text
+                try:
+                    if res_unm == 1:
+                        xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[2]/a'''
+                        title = WebDriverWait(driver, time_out).until(
+                            EC.presence_of_element_located((By.XPATH, xpath))).text
 
-                else:
-                    xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr[{i}]/td[2]/a'''
+                    else:
+                        xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr[{i}]/td[2]/a'''
+                        title = WebDriverWait(driver, time_out).until(
+                            EC.presence_of_element_located((By.XPATH, xpath))).text
+                except Exception as e:
+                    xpath = f'''//*[@id="briefBox"]/p'''
                     title = WebDriverWait(driver, time_out).until(
                         EC.presence_of_element_located((By.XPATH, xpath))).text
+                    if title == '抱歉，暂无数据，请稍后重试。' and issuing_time_flag is True and page_flag % 120 != 0:
+                        return False, False, 1, count
 
                 if '增强出版' in title:
                     title = title[:-5]
@@ -359,8 +226,6 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
                     flag333 = whit_file(date_str, paper_type, paper_day)
                     if flag333 is True:
                         return True, False, -1, count
-                    return True, False, -1, count
-                continue
 
             finally:
                 count += 1
@@ -374,9 +239,11 @@ def get_paper_title(driver, keyword, time_out, res_unm, date, paper_type, paper_
                     return True, False, -1, count
             # time.sleep(1)
 
-        time.sleep(3)
-
-        WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, cp['paper_next_page']))).click()
+        try:
+            time.sleep(3)
+            ActionChains(driver).key_down(Keys.ARROW_RIGHT).key_up(Keys.ARROW_RIGHT).perform()
+        except Exception as e:
+            err(e)
 
 
 def get_paper_info(driver, time_out, uuid, title1, db_type):

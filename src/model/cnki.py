@@ -157,7 +157,7 @@ def crawl_xpath():
         'get_next_page': '''//*[@id='PageNext']''',
         'WebDriverWait': '''//*[@id="ChDivSummaryMore"]''',
         'institute': '//*[@id="authorpart"]/span/a',
-        'paper_next_page': '''//*[@id="Page_next_top"]''',
+        'paper_next_page': '''//*[@id="PageNext"]''',
         'level': '//*[@id="func610"]/div/span',
         'references': '//*[@id="references"]',
         'literature_if_true': '//*[@id="refpartdiv"]/h5/span/b',
