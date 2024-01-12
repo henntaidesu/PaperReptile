@@ -1,9 +1,3 @@
-def keyword():
-    a = '人工智能'
-    L = [a]
-    return L
-
-
 def date_choose_start_table():
     table = {
         1: '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[1]/td[1]',
