@@ -3,7 +3,6 @@ from src.paper_website.cnki.cnki_components import webserver, open_page
 from src.module.read_conf import read_conf
 from src.module.err_message import err
 from src.paper_website.cnki.get_cnki_paper_infomation import get_paper_info
-import time
 
 
 def run_get_paper_title(click_flag, total_page, total_count, None_message):
@@ -37,11 +36,11 @@ def run_get_paper_info(date):
     for i in date:
         uuid = i[0]
         title = i[1]
-        receive_time = i[2]
-        start = i[3]
+        # receive_time = i[2]
+        # start = i[3]
         db_type = i[4]
 
-        res_unm = open_paper_info(driver, title)
+        open_paper_info(driver, title)
         get_paper_info(driver, time_out, uuid, title, db_type)
 
     # driver.close()

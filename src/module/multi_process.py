@@ -1,18 +1,15 @@
-import sys
 import time
-
 from src.module.execution_db import Date_base
 import multiprocessing
 from src.module.read_conf import read_conf
-from src.paper_website.arxiv.arxivorg import ArxivOrg
 from src.module.log import log
 from src.module.err_message import err
+
 
 class Process:
     def __init__(self):
         self.database = Date_base()
         self.conf = read_conf()
-        self.arxiv = ArxivOrg()
         self.logger = log()
 
     @staticmethod
@@ -41,8 +38,7 @@ class Process:
             # 创建进程池
             pool = multiprocessing.Pool(processes=processes)
             for chunk in chunks:
-                # 每个chunk代表一个线程的工作，这里等待3秒再启动下一个线程
-                time.sleep(3)
+                time.sleep(2)
                 # 启动线程
                 pool.apply_async(func, args=(chunk,))
             # 关闭进程池，等待所有线程完成

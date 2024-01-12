@@ -1,4 +1,3 @@
-import sys
 import time
 import requests
 from tqdm import tqdm
@@ -23,6 +22,7 @@ class Arxiv_paper_down:
     def paper_down(self, sql):
         flag, data = Date_base().select_all(sql)
         file_extension = "pdf"
+        url = None
         for i in data:
             uuid = i[0]
             file_name = i[1]
