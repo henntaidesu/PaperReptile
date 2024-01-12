@@ -10,11 +10,11 @@ import time
 
 def page_click_sort_type(driver, flag):
     time_out = 5
-    time.sleep(3)
     try:
         if flag == 0:
             pass
         # 发表时间正序
+        time.sleep(3)
         if flag == 1:
             WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="PT"]'))).click()
         # 下载正序

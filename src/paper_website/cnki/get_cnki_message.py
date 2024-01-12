@@ -111,11 +111,6 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum,
                 flag333 = whit_file(date_str, paper_type, paper_day)
                 if flag333 is True:
                     return True, False, -1, count, False
-        else:
-            flag333 = whit_file(date_str, paper_type, paper_day)
-            if flag333 is True:
-                return True, False, -1, count, False
-
         # 等待加载完全，休眠1S
         time.sleep(1)
         driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.END)
