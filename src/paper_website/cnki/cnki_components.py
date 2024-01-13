@@ -447,6 +447,7 @@ def whit_file(date_str, paper_type, paper_day):
     else:
         return True
 
+
     if flag is True:
         return True
 
