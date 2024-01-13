@@ -127,11 +127,18 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum,
         # 循环网页一页中的条目
         for i in range((count - 1) % paper_sum + 1, paper_sum + 1):
             print(f"{res_unm} --- {count + len_data - new_paper_sum} --- {total_page}")
-            if res_unm < count + len_data - new_paper_sum or total_page > sum_page:
+            if res_unm < count + len_data - new_paper_sum:
                 logger.write_log("已获取完数据")
                 flag333 = whit_file(date_str, paper_type, paper_day)
                 if flag333 is True:
                     return True, False, -1, count, False
+
+            elif issuing_time_flag is False and total_page > sum_page:
+                logger.write_log("已获取完数据")
+                flag333 = whit_file(date_str, paper_type, paper_day)
+                if flag333 is True:
+                    return True, False, -1, count, False
+
             print(f"正在爬取第{count + len_data - new_paper_sum}条基础数据,跳过{new_paper_sum}"
                   f"条(第{(count - 1) // paper_sum + 1}页第{i}条 总第{total_count + count}次查询 共{res_unm}条):")
 

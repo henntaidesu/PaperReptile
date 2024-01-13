@@ -454,24 +454,27 @@ def whit_file(date_str, paper_type, paper_day):
 def page_click_sort_type(driver, flag):
     time_out = 5
     try:
-        if flag == 0:
-            pass
-        # 发表时间正序
-        time.sleep(3)
-        if flag == 1:
-            WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="PT"]'))).click()
         # 下载正序
-        if flag == 2:
+        if flag == 0:
             WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="DFR"]'))).click()
         # 下载倒序
-        if flag == 3:
+        time.sleep(3)
+        if flag == 1:
             WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="DFR"]'))).click()
             time.sleep(1)
             WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="DFR"]'))).click()
         # 被引正序
+        if flag == 2:
+            WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="CF"]'))).click()
+        # 被引倒序
+        if flag == 3:
+            WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="CF"]'))).click()
+            time.sleep(1)
+            WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="CF"]'))).click()
+        # 发布时间正序
         if flag == 4:
             WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="PT"]'))).click()
-        # 被引倒序
+        # 发布时间倒序
         if flag == 5:
             WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="PT"]'))).click()
             time.sleep(1)
