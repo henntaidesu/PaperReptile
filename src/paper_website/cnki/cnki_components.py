@@ -1,3 +1,4 @@
+import sys
 import time
 import re
 import random
@@ -58,7 +59,7 @@ def setting_select_date(driver, time_out):
         WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.ID, 'datebox0'))).click()
         time.sleep(1)
         for i in range(flag_page):
-            time.sleep(3)
+            # time.sleep(0.5)
             WebDriverWait(driver, time_out).until(EC.presence_of_element_located
                                                   ((By.XPATH, open_page_data['start_previous_page']))).click()
 
@@ -79,12 +80,13 @@ def setting_select_date(driver, time_out):
 
         WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, dts[list_flag]))).click()
 
-        time.sleep(3)
+        time.sleep(2)
 
         # 设置结束时间
         WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.ID, 'datebox1'))).click()
+        time.sleep(1)
         for i in range(flag_page):
-            time.sleep(2)
+            # time.sleep(0.5)
             WebDriverWait(driver, time_out).until(EC.presence_of_element_located
                                                   ((By.XPATH, open_page_data['end_previous_page']))).click()
 
@@ -415,6 +417,7 @@ def revise_cnki_date():
     yy, mm, dd = cnki.read_cnki_date()
     dd -= 1
     if dd == 0:
+        sys.exit()
         mm -= 1
         if mm in {1, 3, 5, 7, 8, 10, 12}:
             dd = 31
@@ -454,33 +457,36 @@ def whit_file(date_str, paper_type, paper_day):
 def page_click_sort_type(driver, flag):
     time_out = 5
     try:
+        # 被引正序
         if flag == 0:
-            pass
-        # 发表时间正序
+            WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="CF"]'))).click()
+        # 下载正序
         time.sleep(3)
         if flag == 1:
-            WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="PT"]'))).click()
-        # 下载正序
+            WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="DFR"]'))).click()
+        # 发表时间正序
         if flag == 2:
             WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="DFR"]'))).click()
-        # 下载倒序
+        # 被引倒序
         if flag == 3:
+            WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="CF"]'))).click()
+            time.sleep(1)
+            WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="CF"]'))).click()
+        # 下载倒序
+        if flag == 4:
             WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="DFR"]'))).click()
             time.sleep(1)
             WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="DFR"]'))).click()
-        # 被引正序
-        if flag == 4:
-            WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="PT"]'))).click()
-        # 被引倒序
+        # 发表时间倒序
         if flag == 5:
             WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="PT"]'))).click()
             time.sleep(1)
             WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="PT"]'))).click()
-        # 综合
-        if flag == 6:
-            WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="ZH"]'))).click()
         # 相关度
-        if flag == 7:
+        if flag == 6:
             WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="FFD"]'))).click()
+        # 综合
+        if flag == 7:
+            WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="ZH"]'))).click()
     except Exception as e:
         err(e)

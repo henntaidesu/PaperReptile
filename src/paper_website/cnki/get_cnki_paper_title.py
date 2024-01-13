@@ -21,7 +21,8 @@ logger = log()
 read_conf = read_conf()
 
 
-def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum, total_page, total_count, click_flag, None_message):
+def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum, total_page, total_count, click_flag,
+                    None_message):
     time_out = 5
     count = 1
     title = None
@@ -256,5 +257,3 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum,
             ActionChains(driver).key_down(Keys.ARROW_RIGHT).key_up(Keys.ARROW_RIGHT).perform()
         except Exception as e:
             err(e)
-
-
