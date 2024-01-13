@@ -108,15 +108,7 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum,
                 # 按发表顺序倒
                 return False, total_page, 5, count, False
 
-            if total_page == 720 and res_unm > 18000:
-                # 按发表顺序倒
-                return False, total_page, 6, count, False
-
-            if total_page == 840 and res_unm > 21000:
-                # 按发表顺序倒
-                return False, total_page, 7, count, False
-
-            if total_page == 960:
+            if total_page == 720:
                 flag333 = whit_file(date_str, paper_type, paper_day)
                 if flag333 is True:
                     return True, False, -1, count, False
@@ -267,7 +259,7 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum,
             # time.sleep(1)
 
         try:
-            time.sleep(2)
+            time.sleep(3)
             ActionChains(driver).key_down(Keys.ARROW_RIGHT).key_up(Keys.ARROW_RIGHT).perform()
         except Exception as e:
             err(e)
