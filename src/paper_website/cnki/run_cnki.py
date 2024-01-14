@@ -43,4 +43,13 @@ def run_get_paper_info(date):
         open_paper_info(driver, title)
         get_paper_info(driver, time_out, uuid, title, db_type)
 
+        all_handles = driver.window_handles
+        if len(all_handles) > 1:
+            pass
+
+        for handle in all_handles[1:]:
+            driver.switch_to.window(handle)
+            driver.close()
+            driver.switch_to.window(all_handles[0])
+
     # driver.close()

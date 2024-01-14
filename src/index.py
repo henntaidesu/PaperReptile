@@ -6,7 +6,7 @@ from src.paper_website.cnki.run_cnki import run_get_paper_title, run_get_paper_i
 import asyncio
 
 
-class index:
+class Index:
 
     def __init__(self):
         self.logger = log()
@@ -15,7 +15,7 @@ class index:
         self.Arxiv_paper_down = Arxiv_paper_down()
 
     def index(self):
-        flag = '6'
+        flag = '5'
         if flag == '1':
             print("获取arxiv论文")
             self.arxivorg.get_exhaustive_url()

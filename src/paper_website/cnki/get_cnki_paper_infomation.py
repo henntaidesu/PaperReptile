@@ -437,14 +437,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type):
 
             all_handles = driver.window_handles
 
-            # 关闭除第一个窗口以外的所有窗口
-            if len(all_handles) > 1:
-                pass
-
-            for handle in all_handles[1:]:
-                driver.switch_to.window(handle)
-                driver.close()
-                driver.switch_to.window(all_handles[0])
+            driver.switch_to.window(all_handles[0])
 
             logger.write_log(f"已获取 ： {new_title}, UUID : {uuid}")
             # return True
