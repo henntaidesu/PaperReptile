@@ -18,7 +18,7 @@ class Index:
         flag = '6'
         if flag == '1':
             print("获取arxiv论文")
-            self.arxivorg.get_exhaustive_url
+            self.arxivorg.get_exhaustive_url()
 
         if flag == '2':
             print("翻译classification")
