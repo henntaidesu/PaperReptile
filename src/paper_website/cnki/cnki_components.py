@@ -336,8 +336,11 @@ def open_paper_info(driver, keyword):
     WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['cs']))).click()
     time.sleep(2)
 
-    res_unm = WebDriverWait(driver, time_out).until(
-        EC.presence_of_element_located((By.XPATH, open_page_data['gn']))).text
+    try:
+        res_unm = WebDriverWait(driver, time_out).until(
+            EC.presence_of_element_located((By.XPATH, open_page_data['gn']))).text
+    except:
+        return False
 
     paper_sum = 20
     res_unm = int(res_unm.replace(",", ''))
@@ -427,6 +430,7 @@ def revise_cnki_date():
             else:
                 dd = 28
         elif mm == 0:
+
             yy -= 1
             mm = 12
             dd = 31

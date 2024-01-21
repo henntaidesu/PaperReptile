@@ -15,7 +15,7 @@ class Index:
         self.Arxiv_paper_down = Arxiv_paper_down()
 
     def index(self):
-        flag = '5'
+        flag = '6'
         if flag == '1':
             print("获取arxiv论文")
             self.arxivorg.get_exhaustive_url()
@@ -48,10 +48,13 @@ class Index:
 
         if flag == '6':
             print("获取cnki论文详细数据")
-            while True:
-                sql = (f"SELECT * FROM `cnki_index` WHERE `start` = '0'  AND db_type > '0' "
-                       f"ORDER BY receive_time DESC LIMIT 0, 10000")
-                self.process.multi_process_as_up_group(sql, run_get_paper_info)
+
+            sql = (f"SELECT * FROM `cnki_index` WHERE `start` = '0'  AND db_type > '0' "
+                   f"ORDER BY receive_time DESC LIMIT 0, 10")
+
+            print(sql)
+
+            self.process.multi_process_as_up_group(sql, run_get_paper_info)
 
             # run_get_paper_info()
 

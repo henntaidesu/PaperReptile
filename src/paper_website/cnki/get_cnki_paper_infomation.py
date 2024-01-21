@@ -32,26 +32,67 @@ def get_paper_info(driver, time_out, uuid, title1, db_type):
 
     new_paper_sum = 0
 
-    # 等待加载完全，休眠3S
-    time.sleep(3)
+    time.sleep(2)
 
     title_list = WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.CLASS_NAME, "fz14")))
     # 循环网页一页中的条目
 
-    for i in range((count - 1) % 20 + 1, 21):
+    for i in range(19):
+
+        if i == len(title_list):
+            driver.close()
+            return True
 
         term = (count - 1) % 20 + 1  # 本页的第几个条目
         count += 1
+        if len(title_list) == 1:
+            title_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[2]/a'''
+            authors_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[3]/a'''
+            source_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[4]/p/a'''
+            date_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[5]'''
+            ndb_type_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[6]/span'''
+            quote_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[7]/div/a'''
+            down_sun_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[8]/div/a'''
 
-        xpaths = crawl_xp.xpath_base(term)
+        else:
+            title_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr[{i + 1}]/td[2]/a'''
+            authors_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr[{i + 1}]/td[3]'''
+            source_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr[{i + 1}]/td[4]/p/a'''
+            date_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr[{i + 1}]/td[5]'''
+            ndb_type_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr[{i + 1}]/td[6]/a/span'''
+            quote_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr[{i + 1}]/td[7]/div/a'''
+            down_sun_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr[{i + 1}]td[8]/div/a'''
 
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            future_elements = [executor.submit(get_info, driver, xpath) for xpath in xpaths]
-        title, authors, source, date, ndb_type, quote, down_sun = [future.result() for future in future_elements]
+        title = WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, title_xpath))).text
+        try:
+            authors = WebDriverWait(driver, time_out).until(
+                EC.presence_of_element_located((By.XPATH, authors_xpath))).text
+        except:
+            authors = None
 
-        if not quote.isdigit():
+        try:
+            source = WebDriverWait(driver, time_out).until(
+                EC.presence_of_element_located((By.XPATH, source_xpath))).text
+        except:
+            source = None
+        try:
+            date = WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, date_xpath))).text
+        except:
+            date = None
+
+        try:
+            ndb_type = WebDriverWait(driver, time_out).until(
+                EC.presence_of_element_located((By.XPATH, ndb_type_xpath))).text
+        except:
+            ndb_type = None
+        try:
+            quote = WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, quote_xpath))).text
+        except:
             quote = '0'
-        if not down_sun.isdigit():
+        try:
+            down_sun = WebDriverWait(driver, time_out).until(
+                EC.presence_of_element_located((By.XPATH, down_sun_xpath))).text
+        except:
             down_sun = '0'
 
         if '增强出版' in title:
@@ -86,18 +127,41 @@ def get_paper_info(driver, time_out, uuid, title1, db_type):
         else:
             ndb_type = '9'
 
+        if ":" in title:
+            title = title.replace(':', '：')
+        elif "：" in title:
+            title = title.replace('：', ':')
+
+        if ":" in title1:
+            title1 = title1.replace(':', '：')
+        elif "：" in title1:
+            title1 = title1.replace('：', ':')
+
+        if "<font color='red'>" in title:
+            title = title.replace("<font color='red'>", "")
+
+        if "——" in title:
+            title = title.replace('——', '—')
+        if "——" in title1:
+            title1 = title1.replace('——', '—')
+
         sql3_flag = False
         if title == title1:
             sql3_flag = True
 
         if sql3_flag is False:
             uuid1 = UUID()
+            title = TrimString(title)
             sql3 = (f"INSERT INTO `Paper`.`cnki_index`"
                     f"(`UUID`, `title`, `receive_time`, `start`, `db_type`) "
                     f"VALUES ('{uuid1}', '{title}', '{date}', '1', '{ndb_type}');")
             sql3 = TrSQL(sql3)
             flag = Date_base().insert_all(sql3)
+            print(sql3)
             if flag == '重复数据':
+                # print("重复数据")
+                # sql3 = f"UPDATE `Paper`.`cnki_index` SET  `start` = '1' WHERE UUID = '{uuid}';"
+                # Date_base().update_all(sql3)
                 continue
             else:
                 uuid = uuid1
@@ -431,16 +495,26 @@ def get_paper_info(driver, time_out, uuid, title1, db_type):
             sql1 = TrSQL(sql1)
             sql2 = TrSQL(sql2)
             sql3 = TrSQL(sql3)
+
             Date_base().insert_all(sql1)
             Date_base().insert_all(sql2)
             Date_base().update_all(sql3)
 
             all_handles = driver.window_handles
 
-            driver.switch_to.window(all_handles[0])
+            if len(all_handles) > 1:
+                # 保留第一个句柄
+                main_handle = all_handles[0]
+
+                # 关闭除第一个页面外的所有页面
+                for handle in all_handles[1:]:
+                    driver.switch_to.window(handle)
+                    driver.close()
+
+                # 切换回第一个页面
+                driver.switch_to.window(main_handle)
 
             logger.write_log(f"已获取 ： {new_title}, UUID : {uuid}")
-            # return True
 
         except Exception as e:
             logger.write_log(f"错误 ： {new_title}, UUID : {uuid}")
