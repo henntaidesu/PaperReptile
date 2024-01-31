@@ -48,9 +48,8 @@ class Index:
 
         if flag == '6':
             print("获取cnki论文详细数据")
-
-            sql = (f"SELECT * FROM `cnki_index` WHERE `start` = '0'  AND db_type > '0' "
-                   f"ORDER BY receive_time DESC LIMIT 0, 10")
+            sql = (f"SELECT * FROM `cnki_index` WHERE `start` = '0'  AND db_type in ('1', '2', '3') "
+                   f"ORDER BY receive_time DESC LIMIT 10")
 
             print(sql)
 
