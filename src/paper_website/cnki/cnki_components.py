@@ -33,6 +33,11 @@ def webserver(web_zoom):
     options.add_experimental_option("prefs", {"profile.managed_default_content_settings.images": 2})
     options.add_argument(f"--force-device-scale-factor={web_zoom}")
     options.add_argument("--disable-gpu")
+    # options.add_argument('--headless')  # 无头模式 不唤起实体浏览器
+    options.add_argument('--log-level=3')  # 设置日志级别为最低，减少输出信息
+    options.add_argument('--silent')  # 完全禁止 DevTools 输出
+    options.add_experimental_option('excludeSwitches', ['enable-logging'])  # 禁用 DevTools 监听输出
+
     # options.add_argument("--proxy-server=http://127.0.0.1:10809")
     service = ChromeService(chromedriver_path)
     # 指定chromedriver.exe的位置
@@ -418,10 +423,36 @@ def is_leap_year(year):
 def revise_cnki_date():
     cnki = CNKI()
     yy, mm, dd = cnki.read_cnki_date()
-    dd -= 1
+    dd += 1
+    if mm in {1, 3, 5, 7, 8, 10} and dd > 31:
+        dd = 1
+
+    elif mm in {2, 4, 6, 9, 11} and dd > 30:
+        dd = 1
+
+    elif mm == 2:
+        if (yy % 4 == 0 and yy % 100 != 0) or (yy % 400 == 0):
+            if dd > 29:
+                dd = 1
+        else:
+            if dd > 28:
+                dd = 1
+
+    elif mm == 12 and dd > 31:
+        yy += 1
+        mm = 1
+        dd = 1
+
+    cnki.write_cnki_date(str(yy), str(mm), str(dd))
+    return True
+
+
+def revise_cnki_date1():
+    cnki = CNKI()
+    yy, mm, dd = cnki.read_cnki_date()
+    dd += 1
     if dd == 0:
-        sys.exit()
-        mm -= 1
+        mm += 1
         if mm in {1, 3, 5, 7, 8, 10, 12}:
             dd = 31
         elif mm == 2:

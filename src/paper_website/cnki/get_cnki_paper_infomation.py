@@ -14,6 +14,7 @@ from src.module.log import log
 from src.module.read_conf import read_conf
 from src.module.err_message import err
 
+
 open_page_data = positioned_element()
 crawl_xp = Crawl()
 logger = log()
@@ -36,6 +37,12 @@ def get_paper_info(driver, time_out, uuid, title1, db_type):
 
     title_list = WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.CLASS_NAME, "fz14")))
     # 循环网页一页中的条目
+
+    if len(title_list) > 1:
+        sql = f"UPDATE `cnki_index` SET `start` = 'a' WHERE `UUID` = '{uuid}';"
+        Date_base().update_all(sql)
+        driver.close()
+        return 'a'
 
     for i in range(19):
 
