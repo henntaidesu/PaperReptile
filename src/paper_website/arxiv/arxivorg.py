@@ -172,13 +172,47 @@ class ArxivOrg:
                     DOI = (soup.find('td', class_='tablecell arxivdoi')).find('a')['href'][16:]
                 except:
                     DOI = None
+            version = None
 
-            if "[v5]" in receive_time:
+            # aaa = receive_time
+            #
+            # for i in range(10):
+            #     if f"[v{i+1}]" in aaa:
+            #         receive_time = receive_time[receive_time.find(f"[v{i+1}]") + 9:]
+            #         receive_time = datetime.strptime(receive_time[:receive_time.find("UTC") - 1], "%d %b %Y %H:%M:%S")
+            #         version = f'{i+1}'
+
+            if "[v10]" in receive_time:
+                receive_time = receive_time[receive_time.find("[v10]") + 9:]
+                receive_time = datetime.strptime(receive_time[:receive_time.find("UTC") - 1], "%d %b %Y %H:%M:%S")
+                version = '10'
+
+            elif "[v9]" in receive_time:
+                receive_time = receive_time[receive_time.find("[v9]") + 9:]
+                receive_time = datetime.strptime(receive_time[:receive_time.find("UTC") - 1], "%d %b %Y %H:%M:%S")
+                version = '9'
+
+            elif "[v8]" in receive_time:
+                receive_time = receive_time[receive_time.find("[v8]") + 9:]
+                receive_time = datetime.strptime(receive_time[:receive_time.find("UTC") - 1], "%d %b %Y %H:%M:%S")
+                version = '8'
+
+            elif "[v7]" in receive_time:
+                receive_time = receive_time[receive_time.find("[v7]") + 9:]
+                receive_time = datetime.strptime(receive_time[:receive_time.find("UTC") - 1], "%d %b %Y %H:%M:%S")
+                version = '7'
+
+            elif "[v6]" in receive_time:
+                receive_time = receive_time[receive_time.find("[v6]") + 9:]
+                receive_time = datetime.strptime(receive_time[:receive_time.find("UTC") - 1], "%d %b %Y %H:%M:%S")
+                version = '6'
+
+            elif "[v5]" in receive_time:
                 receive_time = receive_time[receive_time.find("[v5]") + 9:]
                 receive_time = datetime.strptime(receive_time[:receive_time.find("UTC") - 1], "%d %b %Y %H:%M:%S")
                 version = '5'
 
-            if "[v4]" in receive_time:
+            elif "[v4]" in receive_time:
                 receive_time = receive_time[receive_time.find("[v4]") + 9:]
                 receive_time = datetime.strptime(receive_time[:receive_time.find("UTC") - 1], "%d %b %Y %H:%M:%S")
                 version = '4'
@@ -215,7 +249,6 @@ class ArxivOrg:
             # self.logger.write_log(f"[EN : {classification_en}] -> [CN : {classification_zh}]")
             # print("sleep 2s")
             # time.sleep(2)
-
 
 
 def translate_classification(data):
