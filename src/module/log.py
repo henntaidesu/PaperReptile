@@ -1,5 +1,5 @@
 import logging
-from src.module.now_time import today
+from src.module.now_time import today, now_time
 from src.module.read_conf import read_conf
 import sys
 
@@ -22,7 +22,7 @@ class Log:
             logger.removeHandler(handler)
 
         # 创建一个文件处理器，将日志写入文件
-        file_handler = logging.FileHandler(log_file)
+        file_handler = logging.FileHandler(log_file, encoding='utf-8')
         file_handler.setLevel(logging.DEBUG)
 
         # 创建一个控制台处理器，将日志输出到控制台
@@ -48,11 +48,13 @@ class Log:
 
         if self.log_level == "debug":
             if log_type == 'info':
-                self.logger.info(text)
+                # self.logger.info(text)
+                print(f"{now_time()} - INFO - {text}")
             elif log_type == 'error':
                 self.logger.error(text)
             elif log_type == 'warning':
-                self.logger.warning(text)
+                # self.logger.warning(text)
+                print(f"{now_time()} - warning - {text}")
 
         elif self.log_level == "info" and log_type == 'info':
             self.logger.info(text)
@@ -64,7 +66,7 @@ class Log:
             self.logger.critical(text)
 
         # 检查是否开始了新的一天，如果是，则更新日志文件名
-        new_day = today().today()
+        new_day = today()
         if new_day != self.day:
             self.day = new_day
             # 在创建新处理器之前关闭旧的文件处理器

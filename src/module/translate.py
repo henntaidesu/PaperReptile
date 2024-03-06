@@ -5,7 +5,7 @@ import urllib
 import random
 import json
 from src.module.read_conf import read_conf
-from src.module.log import Log
+from src.module.log import Log, err2
 from pygtrans import Translate
 
 
@@ -51,7 +51,10 @@ class translate:
                 httpClient.close()
 
     def GoogleTR(self, text, to_language):
-        proxy = self.conf.socks5()
-        client = Translate(target=to_language, proxies={'https': proxy}, domain='com')
-        trans_text = client.translate(text).translatedText
-        return trans_text
+        try:
+            proxy = self.conf.socks5()
+            client = Translate(target=to_language, proxies={'https': proxy}, domain='com')
+            trans_text = client.translate(text).translatedText
+            return trans_text
+        except Exception as e:
+            err2(e)
