@@ -1,7 +1,5 @@
 from src.paper_website.cnki.cnki_components import *
 import time
-import re
-import concurrent.futures
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
@@ -9,15 +7,13 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 from src.module.execution_db import Date_base
 from src.module.UUID import UUID
-from src.module.now_time import now_time
-from src.model.cnki import Crawl, positioned_element, crawl_xpath, reference_papers, QuotePaper
-from src.module.log import log
+from src.model.cnki import Crawl, positioned_element
+from src.module.log import Log, err2
 from src.module.read_conf import read_conf
-from src.module.err_message import err
 
 open_page_data = positioned_element()
 crawl_xp = Crawl()
-logger = log()
+logger = Log()
 read_conf = read_conf()
 
 
@@ -25,17 +21,10 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum,
                     None_message):
     time_out = 5
     count = 1
-    title = None
     db_type = None
-    authors = None
-    source = None
-    aa = None
-    quote = None
-    down_sun = None
+
     # paper_db = read_conf.cnki_skip_db()
-    cp = crawl_xpath()
-    rp = reference_papers()
-    qp = QuotePaper()
+
     new_paper_sum = 0
     sql = None
     dt = None
@@ -129,13 +118,13 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum,
         for i in range((count - 1) % paper_sum + 1, paper_sum + 1):
             print(f"{res_unm} --- {count + len_data - new_paper_sum} --- {total_page}")
             if res_unm < count + len_data - new_paper_sum:
-                logger.write_log("已获取完数据")
+                logger.write_log("已获取完数据", 'info')
                 flag333 = whit_file(date_str, paper_type, paper_day)
                 if flag333 is True:
                     return True, False, -1, count, False
 
             if issuing_time_flag is False and total_page > sum_page:
-                logger.write_log("已获取完数据")
+                logger.write_log("已获取完数据", 'info')
                 flag333 = whit_file(date_str, paper_type, paper_day)
                 if flag333 is True:
                     return True, False, -1, count, False
@@ -164,6 +153,7 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum,
                     if title == '抱歉，暂无数据，请稍后重试。' and issuing_time_flag is True and total_page % 120 != 0:
                         None_message = True
                         return False, total_page, click_flag + 1, count, None_message
+                    err2(e)
 
                 if '增强出版' in title:
                     title = title[:-5]
@@ -239,18 +229,18 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum,
                 flag = Date_base().insert_all(sql3)
                 if flag == '重复数据':
                     new_paper_sum += 1
-                    logger.write_log(f"重复数据 ： {title}, UUID : {uuid}")
+                    logger.write_log(f"重复数据 ： {title}, UUID : {uuid}", 'info')
                     continue
 
                 print(f"\n标题:    {title}\n")
 
-                logger.write_log(f"已获取 ： {title}, UUID : {uuid}")
+                logger.write_log(f"已获取 ： {title}, UUID : {uuid}", 'info')
 
             except Exception as e:
-                err(e)
+                err2(e)
                 if type(e).__name__ == 'TimeoutException' and issuing_time_flag is False:
                     print(f"{res_unm} ------- {count + len_data - new_paper_sum + 1}")
-                    logger.write_log(f"已获取完数据 ，，{res_unm - (count + len_data - new_paper_sum + 1)}条数据无法获取")
+                    logger.write_log(f"已获取完数据 ，，{res_unm - (count + len_data - new_paper_sum + 1)}条数据无法获取", 'info')
                     flag333 = whit_file(date_str, paper_type, paper_day)
                     if flag333 is True:
                         return True, False, -1, count, False
@@ -259,7 +249,7 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum,
                 count += 1
             continue_flag = False
             if res_unm <= count + len_data - new_paper_sum - 1:
-                logger.write_log("已获取完数据")
+                logger.write_log("已获取完数据", 'info')
 
                 flag333 = whit_file(date_str, paper_type, paper_day)
 
@@ -271,4 +261,4 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum,
             time.sleep(3)
             ActionChains(driver).key_down(Keys.ARROW_RIGHT).key_up(Keys.ARROW_RIGHT).perform()
         except Exception as e:
-            err(e)
+            err2(e)

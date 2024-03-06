@@ -132,6 +132,10 @@ class read_conf:
 
         return [newpaper, journal, master, PhD]
 
+    def elasticsearch(self):
+        host = self.config.get('elasticsearch', 'host')
+        return host
+
 
 class ArxivYYMM:
     def __init__(self):

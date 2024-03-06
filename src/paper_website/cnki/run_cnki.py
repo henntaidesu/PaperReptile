@@ -4,7 +4,7 @@ from src.module.execution_db import Date_base
 from src.paper_website.cnki.get_cnki_paper_title import get_paper_title, open_paper_info, page_click_sort_type
 from src.paper_website.cnki.cnki_components import webserver, open_page
 from src.module.read_conf import read_conf
-from src.module.err_message import err
+from src.module.log import err2
 from src.paper_website.cnki.get_cnki_paper_infomation import get_paper_info
 from selenium.webdriver.common.by import By
 
@@ -28,7 +28,7 @@ def run_get_paper_title(click_flag, total_page, total_count, None_message):
             run_get_paper_title(0, 0, 0, False)
 
     except Exception as e:
-        err(e)
+        err2(e)
 
     # driver.close()
 

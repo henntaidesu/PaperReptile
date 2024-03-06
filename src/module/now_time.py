@@ -9,14 +9,14 @@ def now_time():
     return formatted_date
 
 
-def day():
+def today():
     Time = time.time()
     datetime_obj = datetime.fromtimestamp(Time)
     formatted_date = datetime_obj.strftime("%Y-%m-%d")
     return formatted_date
 
 
-def day1():
+def day():
     Time = time.time()
     datetime_obj = datetime.fromtimestamp(Time)
     formatted_date = datetime_obj.strftime("%d")

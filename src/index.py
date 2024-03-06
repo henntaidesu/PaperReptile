@@ -1,21 +1,22 @@
 from src.paper_website.arxiv.arxivorg import ArxivOrg, translate_classification, translate_title
-from src.module.log import log
+from src.module.log import Log
 from src.module.multi_process import Process
 from src.paper_website.arxiv.arxiv_paper_down import Arxiv_paper_down
 from src.paper_website.cnki.run_cnki import run_get_paper_title, run_get_paper_info
+from src.ES.index_table import create_arxiv_index
 import asyncio
 
 
 class Index:
 
     def __init__(self):
-        self.logger = log()
+        self.logger = Log()
         self.arxivorg = ArxivOrg()
         self.process = Process()
         self.Arxiv_paper_down = Arxiv_paper_down()
 
     def index(self):
-        flag = '1'
+        flag = '7'
         if flag == '1':
             print("获取arxiv论文")
             self.arxivorg.get_exhaustive_url()
@@ -49,9 +50,15 @@ class Index:
         if flag == '6':
             print("获取cnki论文详细数据")
             sql = (f"SELECT * FROM `cnki_index` WHERE `start` = '0'  AND db_type in ('1', '2', '3') "
-                   f"ORDER BY receive_time DESC LIMIT 100")
+                   f"ORDER BY receive_time DESC LIMIT 1000, 100")
 
             self.process.multi_process_as_up_group(sql, run_get_paper_info)
 
-            # run_get_paper_info()
+        if flag == '7':
+            print("向ES添加数据")
+            sql = f"SELECT * FROM `index` WHERE ES_date is NULL and `state` not in ('00', '01')  limit 10"
+            self.process.multi_process_as_up_group(sql, create_arxiv_index)
+
+
+        # run_get_paper_info()
 

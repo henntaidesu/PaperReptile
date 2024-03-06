@@ -2,7 +2,7 @@ import time
 import requests
 from tqdm import tqdm
 from src.module.execution_db import Date_base
-from src.module.log import log
+from src.module.log import Log
 from src.module.read_conf import read_conf
 from src.module.now_time import now_time
 import os
@@ -17,7 +17,7 @@ class Arxiv_paper_down:
         if self.if_proxy is True:
             self.session.proxies.update(self.proxies)
         self.down_path = self.conf.down_path()
-        self.logger = log()
+        self.logger = Log()
 
     def paper_down(self, sql):
         flag, data = Date_base().select_all(sql)

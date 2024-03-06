@@ -9,16 +9,16 @@ from selenium.webdriver.common.by import By
 from src.module.execution_db import Date_base
 from src.module.read_conf import CNKI, read_conf
 from src.model.cnki import date_choose_end_table, date_choose_start_table
-from src.module.now_time import year, moon, day1
+from src.module.now_time import year, moon, day
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from src.model.cnki import Crawl, positioned_element
-from src.module.log import log
-from src.module.err_message import err
+from src.module.log import Log, err2, err1
+
 
 open_page_data = positioned_element()
 crawl_xp = Crawl()
-logger = log()
+logger = Log()
 read_conf = read_conf()
 dts = date_choose_start_table()
 dte = date_choose_end_table()
@@ -33,7 +33,7 @@ def webserver(web_zoom):
     options.add_experimental_option("prefs", {"profile.managed_default_content_settings.images": 2})
     options.add_argument(f"--force-device-scale-factor={web_zoom}")
     options.add_argument("--disable-gpu")
-    # options.add_argument('--headless')  # 无头模式 不唤起实体浏览器
+    options.add_argument('--headless')  # 无头模式 不唤起实体浏览器
     options.add_argument('--log-level=3')  # 设置日志级别为最低，减少输出信息
     options.add_argument('--silent')  # 完全禁止 DevTools 输出
     options.add_experimental_option('excludeSwitches', ['enable-logging'])  # 禁用 DevTools 监听输出
@@ -51,7 +51,7 @@ def setting_select_date(driver, time_out):
         yy, mm, dd = cnki.read_cnki_date()
         now_yy = int(year())
         now_mm = int(moon())
-        now_day = int(day1())
+        now_day = int(day())
 
         paper_day = f"{yy}-{mm}-{dd}"
 
@@ -113,7 +113,7 @@ def setting_select_date(driver, time_out):
 
         return paper_day
     except Exception as e:
-        err(e)
+        err2(e)
 
 
 def choose_banner(driver, time_out, paper_day):
@@ -325,7 +325,7 @@ def open_page(driver, keyword):
         print(f"共找到 {res_unm} 条结果, {page_unm} 页。")
         return res_unm, paper_type, paper_day, date_str, paper_sum
     except Exception as e:
-        err(e)
+        err2(e)
 
 
 def open_paper_info(driver, keyword):
@@ -524,4 +524,4 @@ def page_click_sort_type(driver, flag):
         if flag == 7:
             WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="ZH"]'))).click()
     except Exception as e:
-        err(e)
+        err2(e)

@@ -1,11 +1,12 @@
 import logging
-from src.module.now_time import day
+from src.module.now_time import today
 from src.module.read_conf import read_conf
+import sys
 
 
-class log:
+class Log:
     def __init__(self):
-        self.day = day()
+        self.day = today()
         self.logger = self.setup_logger()
         self.confing = read_conf()
         self.log_level = self.confing.log_level()
@@ -39,31 +40,51 @@ class log:
 
         return logger
 
-    def write_log(self, text):
+    def print_log(self):
+        pass
+
+    def write_log(self, text, log_type):
         # 输出不同级别的日志
 
-        # if log_type == 'I':
-        #     self.logger.info(text)
-        #
-        # elif log_type == "E":
-        #     self.logger.error(text)
-
         if self.log_level == "debug":
-            self.logger.debug(text)
-        elif self.log_level == "info":
+            if log_type == 'info':
+                self.logger.info(text)
+            elif log_type == 'error':
+                self.logger.error(text)
+            elif log_type == 'warning':
+                self.logger.warning(text)
 
+        elif self.log_level == "info" and log_type == 'info':
             self.logger.info(text)
-        elif self.log_level == "warning":
-            self.logger.warning(text)
-        elif self.log_level == "error":
+
+        elif self.log_level == "error" and log_type == 'error':
             self.logger.error(text)
-        elif self.log_level == "critical":
+
+        elif self.log_level == "critical" and log_type == 'critical':
             self.logger.critical(text)
 
         # 检查是否开始了新的一天，如果是，则更新日志文件名
-        new_day = day()
+        new_day = today().today()
         if new_day != self.day:
             self.day = new_day
             # 在创建新处理器之前关闭旧的文件处理器
             self.logger.handlers[0].close()
             self.logger = self.setup_logger()
+
+
+logger = Log()
+
+
+def err1(e):
+    logger.write_log(f"Err Message:,{str(e)}", "error")
+    logger.write_log(f"Err Type:, {type(e).__name__}", "error")
+    _, _, tb = sys.exc_info()
+    logger.write_log(f"Err Local:, {tb.tb_frame.f_code.co_filename}, {tb.tb_lineno}", "error")
+    logger.write_log(e, "error")
+
+
+def err2(e):
+    logger.write_log(f"Err Message:,{str(e)}", "error")
+    logger.write_log(f"Err Type:, {type(e).__name__}", "error")
+    _, _, tb = sys.exc_info()
+    logger.write_log(f"Err Local:, {tb.tb_frame.f_code.co_filename}, {tb.tb_lineno}", "error")

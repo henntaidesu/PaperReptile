@@ -5,7 +5,7 @@ import urllib
 import random
 import json
 from src.module.read_conf import read_conf
-from src.module.log import log
+from src.module.log import Log
 from pygtrans import Translate
 
 
@@ -13,7 +13,7 @@ class translate:
 
     def __init__(self):
         self.conf = read_conf()
-        self.logger = log()
+        self.logger = Log()
 
     def baiduTR(self, language, to_language, text):
 

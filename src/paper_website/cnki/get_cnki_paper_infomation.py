@@ -1,6 +1,7 @@
 from src.paper_website.cnki.cnki_components import *
 import time
 import re
+import gc
 import concurrent.futures
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -10,14 +11,13 @@ from src.module.execution_db import Date_base
 from src.module.UUID import UUID
 from src.module.now_time import now_time
 from src.model.cnki import Crawl, positioned_element, crawl_xpath, reference_papers, QuotePaper
-from src.module.log import log
+from src.module.log import Log, err1, err2
 from src.module.read_conf import read_conf
-from src.module.err_message import err
 
 
 open_page_data = positioned_element()
 crawl_xp = Crawl()
-logger = log()
+logger = Log()
 read_conf = read_conf()
 
 
@@ -45,6 +45,8 @@ def get_paper_info(driver, time_out, uuid, title1, db_type):
         return 'a'
 
     for i in range(19):
+
+        gc.collect()
 
         if i == len(title_list):
             driver.close()
@@ -247,7 +249,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type):
                 results = [future.result() for future in concurrent.futures.as_completed(futures)]
             publication = next((result for result in results if result is not None), None)
             if publication is None:
-                logger.write_log(f"获取专辑错误 ： {title}")
+                logger.write_log(f"获取专辑错误 ： {title}", 'error')
             print(f"专辑 : {publication}")
 
             # 获取专题
@@ -288,7 +290,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type):
                 else:
                     classification_number = number
             if classification_number is None:
-                logger.write_log(f"获取分类号错误 ： {title}")
+                logger.write_log(f"获取分类号错误 ： {title}", 'error')
             print(f"分类号 : {classification_number}")
 
             # 获取DOI
@@ -299,7 +301,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type):
                 results = [future.result() for future in concurrent.futures.as_completed(futures)]
             DOI = next((result for result in results if result is not None), None)
             # if DOI is None:
-            #     logger.write_log(f"DOI ： {title}")
+            #     logger.write_log(f"DOI ： {title}", 'error')
             print(f"DOI: {DOI}")
 
             # 获取资金资助
@@ -521,8 +523,8 @@ def get_paper_info(driver, time_out, uuid, title1, db_type):
                 # 切换回第一个页面
                 driver.switch_to.window(main_handle)
 
-            logger.write_log(f"已获取 ： {new_title}, UUID : {uuid}")
+            logger.write_log(f"已获取 ： {new_title}, UUID : {uuid}", 'info')
 
         except Exception as e:
-            logger.write_log(f"错误 ： {new_title}, UUID : {uuid}")
-            err(e)
+            logger.write_log(f"错误 ： {new_title}, UUID : {uuid}", 'error')
+            err2(e)

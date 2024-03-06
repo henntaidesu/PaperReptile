@@ -10,7 +10,7 @@ from src.model.arxiv_org import ArxivOrgPageModel
 from src.module.execution_db import Date_base
 from src.module.now_time import now_time, year, moon
 from src.module.UUID import UUID
-from src.module.log import log
+from src.module.log import Log, err1, err2
 from src.module.translate import translate
 from src.module.chatGPT import openAI
 
@@ -24,7 +24,7 @@ class ArxivOrg:
         if self.if_proxy is True:
             self.session.proxies.update(self.proxies)
         self.subject_list = ArxivOrgPageModel
-        self.logger = log()
+        self.logger = Log()
         self.data_base = Date_base()
         self.tr = translate()
         self.GPT = openAI()
@@ -91,27 +91,23 @@ class ArxivOrg:
             # url = f"https://arxiv.org/abs/{paper_units}/{yy_mm}{code}"
             # paper_code = f"{paper_units}/{yy_mm}{code}"
 
-            self.logger.write_log(url)
+            self.logger.write_log(url, 'info')
             try:
                 response = self.session.get(url)
             except Exception as e:
                 if type(e).__name__ == 'SSLError':
-                    self.logger.write_log("SSL Error")
+                    self.logger.write_log("SSL Error", 'error')
                     time.sleep(3)
                     self.get_exhaustive_url()
                 if type(e).__name__ == 'ProxyError':
-                    self.logger.write_log("ProxyError")
+                    self.logger.write_log("ProxyError", 'error')
                     time.sleep(3)
                     self.get_exhaustive_url()
                 if type(e).__name__ == 'ConnectionError':
-                    self.logger.write_log("ConnectionError")
+                    self.logger.write_log("ConnectionError", 'error')
                     time.sleep(3)
                     self.get_exhaustive_url()
-                self.logger.write_log(f"Err Message:,{str(e)}")
-                self.logger.write_log(f"Err Type:, {type(e).__name__}")
-                _, _, tb = sys.exc_info()
-                self.logger.write_log(
-                    f"Err Local:, {tb.tb_frame.f_code.co_filename}, {tb.tb_lineno}")
+                err2(e)
 
             tree = html.fromstring(response.content)
             soup = BeautifulSoup(response.text, 'html.parser')
@@ -122,7 +118,7 @@ class ArxivOrg:
                 if flag:
                     self.get_exhaustive_url()
                 else:
-                    self.logger.write_log(f"   已爬取完{yy_mm}数据   ")
+                    self.logger.write_log(f"   已爬取完{yy_mm}数据   ", 'info')
                     self.get_exhaustive_url()
 
             title_en = str(tree.xpath('//*[@id="abs"]/h1/text()')[0])[2:-2]
@@ -252,7 +248,7 @@ class ArxivOrg:
 
 
 def translate_classification(data):
-    logger = log()
+    logger = Log()
     tr = translate()
     try:
         for i in data:
@@ -265,8 +261,8 @@ def translate_classification(data):
             # classification_cn = self.tr.baiduTR("en", "zh", classification_en)
 
             classification_en = ArxivOrg.TrimString(classification_en)
-            logger.write_log(f"[EN : {classification_en}] -> [CN : {classification_cn}]")
-            # self.logger.write_log(f"[EN : {title_en}] -> [CN : {title_cn}]")
+            logger.write_log(f"[EN : {classification_en}] -> [CN : {classification_cn}]", 'info')
+            # self.logger.write_log(f"[EN : {title_en}] -> [CN : {title_cn}]", 'info')
 
             sql = (f"UPDATE `index` SET `classification_zh` = '{classification_cn}' "
                    f" , `state` = '01', `update_time` = '{Now_time}' WHERE `UUID` = '{uuid}';")
@@ -275,18 +271,14 @@ def translate_classification(data):
 
     except Exception as e:
         if type(e).__name__ == 'SSLError':
-            logger.write_log("SSL Error")
+            logger.write_log("SSL Error", 'error')
             time.sleep(3)
-            translate_classification()
-        logger.write_log(f"Err Message:,{str(e)}")
-        logger.write_log(f"Err Type:, {type(e).__name__}")
-        _, _, tb = sys.exc_info()
-        logger.write_log(
-            f"Err Local:, {tb.tb_frame.f_code.co_filename}, {tb.tb_lineno}")
+            # translate_classification()
+        err2(e)
 
 
 def translate_title(data):
-    logger = log()
+    logger = Log()
     tr = translate()
     GPT = openAI()
     try:
@@ -303,7 +295,7 @@ def translate_title(data):
             # title_cn = tr.GoogleTR(title_en, 'zh-CN')
             # title_cn = self.tr.baiduTR("en", "zh", title_cn)
             title_cn = ArxivOrg.TrimString(title_cn)
-            logger.write_log(f"[EN : {title_en}] -> [CN : {title_cn}]")
+            logger.write_log(f"[EN : {title_en}] -> [CN : {title_cn}]", 'info')
 
             sql = (f"UPDATE `index` SET `title_zh` = '{title_cn}' "
                    f" , `state` = '02', `update_time` = '{Now_time}' WHERE `UUID` = '{uuid}';")
@@ -312,15 +304,11 @@ def translate_title(data):
 
     except Exception as e:
         if type(e).__name__ == 'SSLError':
-            logger.write_log("SSL Error")
+            logger.write_log("SSL Error", 'error')
             time.sleep(3)
         if type(e).__name__ == 'APIStatusError':
-            logger.write_log("APIStatusError")
-            logger.write_log(f"Err Message:,{str(e)}")
+            logger.write_log("APIStatusError", 'error')
+            logger.write_log(f"Err Message:,{str(e)}", 'error')
             sys.exit()
         else:
-            logger.write_log(f"Err Message:,{str(e)}")
-            logger.write_log(f"Err Type:, {type(e).__name__}")
-            _, _, tb = sys.exc_info()
-            logger.write_log(
-                f"Err Local:, {tb.tb_frame.f_code.co_filename}, {tb.tb_lineno}")
+            err2(e)

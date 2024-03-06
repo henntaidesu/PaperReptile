@@ -1,7 +1,7 @@
 import sys
-from src.module.log import log
+from src.module.log import Log, err1, err2
 from src.module.read_conf import read_conf
-from src.module.err_message import err
+
 
 
 class Date_base:
@@ -9,7 +9,7 @@ class Date_base:
     def __init__(self):
         read_db_conf = read_conf()
         self.db = read_db_conf.database()
-        self.print_log = log()
+        self.print_log = Log()
 
     def insert_all(self, sql):
         try:
@@ -20,13 +20,13 @@ class Date_base:
             return True
         except Exception as e:
             if "index.PRIMARY" in str(e):
-                self.print_log.write_log("重复数据 " + sql)
+                self.print_log.write_log(f"重复数据 {sql}", 'warning')
                 return '重复数据'
             elif "timed out" in str(e):
-                self.print_log.write_log("连接数据库超时")
+                self.print_log.write_log("连接数据库超时", 'error')
                 sys.exit()
             else:
-                err(e)
+                err2(e)
                 self.print_log.write_log(sql)
                 return False
 
@@ -40,15 +40,15 @@ class Date_base:
             self.db.close()
             return True
         except Exception as e:
-            err(e)
+            err2(e)
             if "timed out" in str(e):
-                self.print_log.write_log("连接数据库超时")
+                self.print_log.write_log("连接数据库超时", 'error')
             elif "index.PRIMARY" in str(e):
-                self.print_log.write_log("重复数据")
+                self.print_log.write_log("重复数据", 'warning')
                 return True
             else:
-                err(e)
-                self.print_log.write_log(sql)
+                err2(e)
+                self.print_log.write_log(sql, 'warning')
                 return False
 
     def update_all(self, sql):
@@ -59,9 +59,9 @@ class Date_base:
             cursor.close()
             return True
         except Exception as e:
-            err(e)
+            err2(e)
             if "timed out" in str(e):
-                self.print_log.write_log("连接数据库超时")
+                self.print_log.write_log("连接数据库超时", 'error')
             self.print_log.write_log(sql)
             return False
         finally:
@@ -76,9 +76,9 @@ class Date_base:
             cursor.close()
             return True, result
         except Exception as e:
-            err(e)
+            err2(e)
             if "timed out" in str(e):
-                self.print_log.write_log("连接数据库超时")
+                self.print_log.write_log("连接数据库超时", 'error')
             self.print_log.write_log(sql)
         finally:
             if hasattr(self, 'db') and self.db:
@@ -93,10 +93,10 @@ class Date_base:
             self.db.close()
             return result
         except Exception as e:
-            err(e)
+            err2(e)
             if "timed out" in str(e):
-                self.print_log.write_log("连接数据库超时")
-            self.print_log.write_log(sql)
+                self.print_log.write_log(f"连接数据库超时", 'error')
+            self.print_log.write_log(sql, 'error')
         finally:
             if hasattr(self, 'db') and self.db:
                 self.db.close()
