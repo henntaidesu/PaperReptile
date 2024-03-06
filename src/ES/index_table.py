@@ -54,34 +54,45 @@ def create_arxiv_index(data):
                 "size": size,
                 "DOI": DOI
             }
-            # arxiv_index_body = str(arxiv_index_body).replace("'", '"')
-            # print(arxiv_index_body)
 
-            response = requests.post(f"ES_URL/_doc/{UUID}", data=arxiv_index_body)
+            response = requests.post(f"{ES_URL}/arxiv_index/_doc/{UUID}", json=arxiv_index_body,
+                                     headers={'Content-Type': 'application/json'})
 
-            response = response.json()
-            print(response)
+            response_data = response.json()
 
-            sys.exit()
+            print(response_data)
 
+            if response_data.get('result') != 'result' or 'updated':
+                Log().write_log(f"写入失败{UUID}", 'error')
 
             # 写入分类索引
             for classification in classification_zh_list:
                 arxiv_paper_classification_zh_body = {
                     "UUID": UUID,
-                    "classification_zh": classification.strip()  # 去除空格
+                    "classification_zh": classification.strip()
                 }
-                es.index(index="arxiv_classification_zh", body=arxiv_paper_classification_zh_body)
+                response = requests.post(f"{ES_URL}/arxiv_index/_doc/{UUID}", json=arxiv_paper_classification_zh_body,
+                                         headers={'Content-Type': 'application/json'})
+
+                response_data = response.json()
+                print(response_data)
+                if response_data.get('result') != 'result' or 'updated':
+                    Log().write_log(f"写入分类失败{UUID}", 'error')
 
             # 写入作者索引
             for author in authors_list:
                 arxiv_paper_authors_body = {
                     "UUID": UUID,
-                    "authors": author.strip()  # 去除空格
+                    "authors": author.strip()
                 }
-                es.index(index="arxiv_authors", body=arxiv_paper_authors_body)
+                response = requests.post(f"{ES_URL}/arxiv_index/_doc/{UUID}", json=arxiv_paper_authors_body,
+                                         headers={'Content-Type': 'application/json'})
 
-            # 更新 SQL
+                response_data = response.json()
+                print(response_data)
+                if response_data.get('result') != 'result' or 'updated':
+                    Log().write_log(f"写入作者失败{UUID}", 'error')
+
             sql = f"UPDATE `Paper`.`index` SET `ES_date` = '{now_time()}' WHERE `UUID` = '{UUID}';"
             Date_base().update_all(sql)
 
@@ -90,4 +101,3 @@ def create_arxiv_index(data):
     except Exception as e:
         Log().write_log(f'写入Es失败 {UUID}', 'error')
         err1(e)
-
