@@ -5,11 +5,12 @@ from src.module.log import Log, err1
 from src.module.execution_db import Date_base
 from src.module.read_conf import read_conf
 from src.module.now_time import now_time
+from datetime import datetime
 import json
 
 
 def create_arxiv_index(data):
-    es = Elasticsearch([f'http://{read_conf().elasticsearch()}:9200'])
+    ES_URL = f'http://{read_conf().elasticsearch()}:9200'
     UUID = None
     try:
         for paper_index in data:
@@ -28,7 +29,7 @@ def create_arxiv_index(data):
             Comments = paper_index[15]
             size = paper_index[16]
             DOI = paper_index[17]
-            receive_time = str(receive_time)
+            receive_time = f"{int(receive_time.timestamp())}000"
 
             # 处理空值
             classification_zh = classification_zh or ""
@@ -53,12 +54,16 @@ def create_arxiv_index(data):
                 "size": size,
                 "DOI": DOI
             }
-            arxiv_index_body = str(arxiv_index_body).replace("'", '"')
-            print(arxiv_index_body)
+            # arxiv_index_body = str(arxiv_index_body).replace("'", '"')
+            # print(arxiv_index_body)
 
-            re = es.index(index="arxiv_index", id=UUID, body=arxiv_index_body)
+            response = requests.post(f"ES_URL/_doc/{UUID}", data=arxiv_index_body)
 
-            print(re)
+            response = response.json()
+            print(response)
+
+            sys.exit()
+
 
             # 写入分类索引
             for classification in classification_zh_list:
