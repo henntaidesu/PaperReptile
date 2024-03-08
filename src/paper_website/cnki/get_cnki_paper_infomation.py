@@ -11,7 +11,7 @@ from src.module.execution_db import Date_base
 from src.module.UUID import UUID
 from src.module.now_time import now_time
 from src.model.cnki import Crawl, positioned_element, crawl_xpath, reference_papers, QuotePaper
-from src.module.log import Log, err1, err2
+from src.module.log import Log, err2, err3
 from src.module.read_conf import read_conf
 
 
@@ -21,8 +21,9 @@ logger = Log()
 read_conf = read_conf()
 
 
-def get_paper_info(driver, time_out, uuid, title1, db_type):
-    paper_db = read_conf.cnki_skip_db()
+def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
+    new_title = None
+    # paper_db = read_conf.cnki_skip_db()
 
     cp = crawl_xpath()
     rp = reference_papers()
@@ -31,7 +32,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type):
     count = 1
     xpath_information = crawl_xp.xpath_inf()
 
-    new_paper_sum = 0
+    # new_paper_sum = 0
 
     time.sleep(2)
 
@@ -52,7 +53,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type):
             driver.close()
             return True
 
-        term = (count - 1) % 20 + 1  # 本页的第几个条目
+        # term = (count - 1) % 20 + 1  # 本页的第几个条目
         count += 1
         if len(title_list) == 1:
             title_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[2]/a'''
@@ -76,32 +77,38 @@ def get_paper_info(driver, time_out, uuid, title1, db_type):
         try:
             authors = WebDriverWait(driver, time_out).until(
                 EC.presence_of_element_located((By.XPATH, authors_xpath))).text
-        except:
+        except Exception as e:
+            err3(e)
             authors = None
 
         try:
             source = WebDriverWait(driver, time_out).until(
                 EC.presence_of_element_located((By.XPATH, source_xpath))).text
-        except:
+        except Exception as e:
+            err3(e)
             source = None
         try:
             date = WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, date_xpath))).text
-        except:
+        except Exception as e:
+            err3(e)
             date = None
 
         try:
             ndb_type = WebDriverWait(driver, time_out).until(
                 EC.presence_of_element_located((By.XPATH, ndb_type_xpath))).text
-        except:
+        except Exception as e:
+            err3(e)
             ndb_type = None
         try:
             quote = WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, quote_xpath))).text
-        except:
+        except Exception as e:
+            err3(e)
             quote = '0'
         try:
             down_sun = WebDriverWait(driver, time_out).until(
                 EC.presence_of_element_located((By.XPATH, down_sun_xpath))).text
-        except:
+        except Exception as e:
+            err3(e)
             down_sun = '0'
 
         if '增强出版' in title:
@@ -154,11 +161,14 @@ def get_paper_info(driver, time_out, uuid, title1, db_type):
         if "——" in title1:
             title1 = title1.replace('——', '—')
 
-        sql3_flag = False
+        # 判断是否重复数据
+        duplicate_data = False
         if title == title1:
-            sql3_flag = True
+            duplicate_data = True
+        elif len(title_list) == 1 and date == receive_time:
+            duplicate_data = True
 
-        if sql3_flag is False:
+        if duplicate_data is False:
             uuid1 = UUID()
             title = TrimString(title)
             sql3 = (f"INSERT INTO `Paper`.`cnki_index`"
@@ -168,9 +178,9 @@ def get_paper_info(driver, time_out, uuid, title1, db_type):
             flag = Date_base().insert_all(sql3)
             print(sql3)
             if flag == '重复数据':
-                # print("重复数据")
-                # sql3 = f"UPDATE `Paper`.`cnki_index` SET  `start` = '1' WHERE UUID = '{uuid}';"
-                # Date_base().update_all(sql3)
+                print("重复数据")
+                sql3 = f"UPDATE `Paper`.`cnki_index` SET  `start` = '*' WHERE UUID = '{uuid}';"
+                Date_base().update_all(sql3)
                 continue
             else:
                 uuid = uuid1
@@ -184,8 +194,8 @@ def get_paper_info(driver, time_out, uuid, title1, db_type):
               f"下载次数: {down_sun}")
 
         try:
-            term = (count - 1) % 20 + 1  # 本页的第几个条目
-            xpaths = crawl_xp.xpath_base(term)
+            # term = (count - 1) % 20 + 1  # 本页的第几个条目
+            # xpaths = crawl_xp.xpath_base(term)
 
             # 点击条目
             title_list[i - 1].click()
@@ -206,7 +216,8 @@ def get_paper_info(driver, time_out, uuid, title1, db_type):
                 WebDriverWait(driver, time_out).until(
                     EC.presence_of_element_located((By.XPATH, cp['WebDriverWait']))
                 ).click()
-            except:
+            except Exception as e:
+                err3(e)
                 pass
 
             # 获取作者单位
@@ -216,7 +227,8 @@ def get_paper_info(driver, time_out, uuid, title1, db_type):
                     (By.XPATH, cp['institute']))).text
                 if '.' in institute:
                     institute = re.sub(r'\d*\.', ';', institute)[1:].replace(' ', '')
-            except:
+            except Exception as e:
+                err3(e)
                 institute = None
             print(f"作者单位 : {institute}")
 
@@ -224,7 +236,8 @@ def get_paper_info(driver, time_out, uuid, title1, db_type):
             try:
                 abstract = WebDriverWait(driver, time_out).until(
                     EC.presence_of_element_located((By.CLASS_NAME, cp['abstract']))).text
-            except:
+            except Exception as e:
+                err3(e)
                 abstract = None
                 driver.refresh()
             print(f"摘要 : {abstract}")
@@ -235,7 +248,8 @@ def get_paper_info(driver, time_out, uuid, title1, db_type):
                 classification_zh = WebDriverWait(driver, time_out).until(
                     EC.presence_of_element_located((By.CLASS_NAME, cp['keywords']))).text[:-1]
                 classification_zh = Trim_passkey(classification_zh).replace('  ', ';')
-            except:
+            except Exception as e:
+                err3(e)
                 classification_zh = None
                 # print("无法获取关键词")
 
@@ -310,7 +324,8 @@ def get_paper_info(driver, time_out, uuid, title1, db_type):
                 funding = WebDriverWait(driver, time_out).until(
                     EC.presence_of_element_located((By.CLASS_NAME, cp['funds']))).text
                 funding = funding.replace(' ', '').replace('；', ';')
-            except:
+            except Exception as e:
+                err3(e)
                 funding = None
             print(f"资金资助 : {funding}")
 
@@ -348,7 +363,8 @@ def get_paper_info(driver, time_out, uuid, title1, db_type):
                     level = WebDriverWait(driver, time_out).until(EC.presence_of_element_located(
                         (By.XPATH, cp['level']))).text
                     # paper_size = int(paper_size[3:][:-1])
-                except:
+                except Exception as e:
+                    err3(e)
                     level = None
             print(f"报纸层级 : {level}")
 
@@ -358,14 +374,15 @@ def get_paper_info(driver, time_out, uuid, title1, db_type):
             # 判断是否有参考文献
             rn = qp.reference_name()
             pl_list = qp.paper_list()
-            journal_reference = None
+            # journal_reference = None
             try:
                 if_journal_reference = WebDriverWait(driver, time_out).until(EC.presence_of_element_located(
                     (By.XPATH, cp['if_literature_reference']))).text
                 if if_journal_reference:
                     print("存在引文网络")
 
-            except:
+            except Exception as e:
+                err3(e)
                 if_journal_reference = None
                 print("该论文无引用文章")
 
@@ -385,7 +402,8 @@ def get_paper_info(driver, time_out, uuid, title1, db_type):
                         paper_sum = WebDriverWait(driver, time_out).until(
                             EC.presence_of_element_located((By.CLASS_NAME, rp[rn[paper_flag]])))
                         paper_sum = int(paper_sum.find_element(By.ID, 'pc_JOURNAL').text)
-                    except:
+                    except Exception as e:
+                        err3(e)
                         paper_sum = None
                         paper_flag += 1
                         continue_flag = True
@@ -394,11 +412,12 @@ def get_paper_info(driver, time_out, uuid, title1, db_type):
                             # print(f"$$$本论文没有引用{rn[paper_flag]} Paper$$$")
                             continue
                         except Exception as e:
+                            err3(e)
                             break
 
                     if paper_sum:
                         print(f"存在引用{rn[paper_flag]} {paper_sum} 篇")
-                        journal_paper_sum = int((paper_sum / 10) + 1)
+                        # journal_paper_sum = int((paper_sum / 10) + 1)
                         flag = 0
                         paper_list = []
                         while True:
@@ -420,7 +439,8 @@ def get_paper_info(driver, time_out, uuid, title1, db_type):
                                 if_next_page = WebDriverWait(driver, time_out).until(
                                     EC.presence_of_element_located((By.CLASS_NAME, rp[rn[paper_flag]])))
                                 if_next_page = if_next_page.find_element(By.CLASS_NAME, 'next').text
-                            except:
+                            except Exception as e:
+                                err3(e)
                                 break
                             if if_next_page == '下一页':
                                 el = WebDriverWait(driver, time_out).until(
@@ -444,7 +464,8 @@ def get_paper_info(driver, time_out, uuid, title1, db_type):
                 article_directory = WebDriverWait(driver, time_out).until(
                     EC.presence_of_element_located((By.CLASS_NAME, cp['catalog']))).text
                 print(f"文章目录 : \n{article_directory}")
-            except:
+            except Exception as e:
+                err3(e)
                 article_directory = None
                 print(f"文章目录 : {article_directory}")
 
@@ -463,7 +484,8 @@ def get_paper_info(driver, time_out, uuid, title1, db_type):
                     EC.presence_of_element_located((By.TAG_NAME, "h1"))
                 )
                 new_title = new_title.text
-            except:
+            except Exception as e:
+                err3(e)
                 new_title = None
             print(f"内页标题 : {new_title}")
 
@@ -505,9 +527,13 @@ def get_paper_info(driver, time_out, uuid, title1, db_type):
             sql2 = TrSQL(sql2)
             sql3 = TrSQL(sql3)
 
-            Date_base().insert_all(sql1)
-            Date_base().insert_all(sql2)
-            Date_base().update_all(sql3)
+            try:
+                Date_base().insert_all(sql1)
+            finally:
+                try:
+                    Date_base().insert_all(sql2)
+                finally:
+                    Date_base().update_all(sql3)
 
             all_handles = driver.window_handles
 

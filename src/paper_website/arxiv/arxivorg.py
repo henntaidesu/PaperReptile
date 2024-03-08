@@ -284,17 +284,15 @@ def translate_title(data):
     try:
 
         for i in data:
-            title_cn = None
-            Now_time = None
             Now_time = now_time()
             uuid = i[0]
             title_en = i[1]
 
             title_en = f"{title_en}"
-            title_cn = GPT.openai_chat(title_en)
-            # title_cn = tr.GoogleTR(title_en, 'zh-CN')
+            # title_cn = GPT.openai_chat(title_en)
+            title_cn = tr.GoogleTR(title_en, 'zh-CN')
             # title_cn = self.tr.baiduTR("en", "zh", title_cn)
-            title_cn = ArxivOrg.TrimString(title_cn)
+            # title_cn = ArxivOrg.TrimString(title_cn)
             logger.write_log(f"[EN : {title_en}] -> [CN : {title_cn}]", 'info')
 
             sql = (f"UPDATE `index` SET `title_zh` = '{title_cn}' "

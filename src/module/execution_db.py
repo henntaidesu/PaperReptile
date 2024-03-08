@@ -1,7 +1,6 @@
 import sys
-from src.module.log import Log, err1, err2
+from src.module.log import Log, err2
 from src.module.read_conf import read_conf
-
 
 
 class Date_base:
@@ -19,7 +18,7 @@ class Date_base:
             self.db.close()
             return True
         except Exception as e:
-            if "index.PRIMARY" in str(e):
+            if "PRIMARY" in str(e):
                 self.print_log.write_log(f"重复数据 {sql}", 'warning')
                 return '重复数据'
             elif "timed out" in str(e):
@@ -27,7 +26,7 @@ class Date_base:
                 sys.exit()
             else:
                 err2(e)
-                self.print_log.write_log(sql)
+                self.print_log.write_log(f"错误 {sql}", 'warning')
                 return False
 
     def insert_list(self, sql):
@@ -62,7 +61,8 @@ class Date_base:
             err2(e)
             if "timed out" in str(e):
                 self.print_log.write_log("连接数据库超时", 'error')
-            self.print_log.write_log(sql)
+            else:
+                self.print_log.write_log(f'{sql}', 'error')
             return False
         finally:
             if hasattr(self, 'db') and self.db:
@@ -79,7 +79,8 @@ class Date_base:
             err2(e)
             if "timed out" in str(e):
                 self.print_log.write_log("连接数据库超时", 'error')
-            self.print_log.write_log(sql)
+            else:
+                self.print_log.write_log(f'{sql}', 'error')
         finally:
             if hasattr(self, 'db') and self.db:
                 self.db.close()

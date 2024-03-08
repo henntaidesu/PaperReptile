@@ -6,13 +6,13 @@ from src.module.now_time import now_time
 
 
 def create_arxiv_index(data):
-    ES_URL = f'http://{read_conf().elasticsearch()}:9200'
+    ES_URL = read_conf().elasticsearch()
     UUID = None
     try:
         for paper_index in data:
             UUID = paper_index[0]
             WEB_SIDE_ID = paper_index[1]
-            classification_en = paper_index[2]
+            # classification_en = paper_index[2]
             classification_zh = paper_index[3]
             source_language = paper_index[4]
             title_zh = paper_index[5]
@@ -51,20 +51,23 @@ def create_arxiv_index(data):
                                      json=arxiv_index_body,
                                      headers={'Content-Type': 'application/json'})
 
-            status_code = response.status_code
+            # status_code = response.status_code
             response_data = response.json()
 
             if response_data.get('result') == 'created' or response_data.get('result') == 'updated':
-                Log().write_log(f"写入成功 {UUID}", 'info')
+                Log().write_log(f"写入成功 {title_en} - {UUID}", 'info')
             else:
-                Log().write_log(f"写入失败 {UUID}", 'error')
+                Log().write_log(f"写入失败 {title_en} - {UUID}", 'error')
 
             # 写入分类索引
 
             for i in range(len(classification_zh_list)):
+                classification = classification_zh_list[i]
+                if classification.startswith(' '):
+                    classification = classification[1:]
                 arxiv_paper_classification_zh_body = {
                     "UUID": UUID,
-                    "classification_zh": classification_zh_list[i]
+                    "classification_zh": classification
                 }
                 response = requests.post(f"{ES_URL}/arxiv_classification_zh/_doc",
                                          json=arxiv_paper_classification_zh_body,
@@ -72,15 +75,18 @@ def create_arxiv_index(data):
 
                 response_data = response.json()
                 if response_data.get('result') == 'created' or response_data.get('result') == 'updated':
-                    Log().write_log(f"写入分类成功 {classification_zh_list[i]}", 'info')
+                    Log().write_log(f"写入分类成功 {classification}", 'info')
                 else:
-                    Log().write_log(f"写入分类失败 {classification_zh_list[i]}", 'error')
+                    Log().write_log(f"写入分类失败 {classification}", 'error')
 
             # 写入作者索引
             for i in range(len(authors_list)):
+                authors = authors_list[i]
+                if authors[0:1] == ' ':
+                    authors = authors[1:]
                 arxiv_paper_authors_body = {
                     "UUID": UUID,
-                    "authors": authors_list[i]
+                    "authors": authors
                 }
                 response = requests.post(f"{ES_URL}/arxiv_authors/_doc",
                                          json=arxiv_paper_authors_body,
@@ -88,9 +94,9 @@ def create_arxiv_index(data):
 
                 response_data = response.json()
                 if response_data.get('result') == 'created' or response_data.get('result') == 'updated':
-                    Log().write_log(f"写入作者成功 {UUID} - {authors_list[i]}", 'info')
+                    Log().write_log(f"写入作者成功 {UUID} - {authors}", 'info')
                 else:
-                    Log().write_log(f"写入作者失败 {UUID}", 'error')
+                    Log().write_log(f"写入作者失败 {UUID} - {authors}", 'error')
 
             sql = f"UPDATE `Paper`.`index` SET `ES_date` = '{now_time()}', state = '10' WHERE `UUID` = '{UUID}';"
             Date_base().update_all(sql)
@@ -100,3 +106,24 @@ def create_arxiv_index(data):
     except Exception as e:
         Log().write_log(f'写入Es失败 {UUID}', 'error')
         err1(e)
+
+
+def create_cnki_index(data):
+    ES_URL = read_conf().elasticsearch()
+    for paper_index in data:
+        UUID = paper_index[0]
+        WEB_SIDE_ID = paper_index[1]
+        # classification_en = paper_index[2]
+        classification_zh = paper_index[3]
+        source_language = paper_index[4]
+        title_zh = paper_index[5]
+        title_en = paper_index[6]
+        paper_from = paper_index[9]
+        authors = paper_index[11]
+        Introduction = paper_index[12]
+        receive_time = paper_index[13]
+        Journal_reference = paper_index[14]
+        Comments = paper_index[15]
+        size = paper_index[16]
+        DOI = paper_index[17]
+

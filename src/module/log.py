@@ -46,21 +46,29 @@ class Log:
     def write_log(self, text, log_type):
         # 输出不同级别的日志
 
-        if self.log_level == "debug":
+        if self.log_level == "error":
             if log_type == 'info':
-                # self.logger.info(text)
                 print(f"{now_time()} - INFO - {text}")
             elif log_type == 'error':
                 self.logger.error(text)
             elif log_type == 'warning':
-                # self.logger.warning(text)
-                print(f"{now_time()} - warning - {text}")
+                self.logger.warning(text)
 
-        elif self.log_level == "info" and log_type == 'info':
-            self.logger.info(text)
+        elif self.log_level == "info":
+            if log_type == 'info':
+                self.logger.info(text)
+            elif log_type == 'error':
+                print(f"{now_time()} - ERROR - {text}")
+            elif log_type == 'warning':
+                self.logger.warning(text)
 
-        elif self.log_level == "error" and log_type == 'error':
-            self.logger.error(text)
+        elif self.log_level == "debug":
+            if log_type == 'info':
+                self.logger.info(text)
+            elif log_type == 'error':
+                self.logger.error(text)
+            elif log_type == 'warning':
+                self.logger.warning(text)
 
         elif self.log_level == "critical" and log_type == 'critical':
             self.logger.critical(text)
@@ -90,3 +98,7 @@ def err2(e):
     logger.write_log(f"Err Type:, {type(e).__name__}", "error")
     _, _, tb = sys.exc_info()
     logger.write_log(f"Err Local:, {tb.tb_frame.f_code.co_filename}, {tb.tb_lineno}", "error")
+
+
+def err3(e):
+    pass

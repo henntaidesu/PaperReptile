@@ -80,16 +80,11 @@ class read_conf:
         port = self.config.get('Paper File Path', 'port')
         proxy_url = "http://" + host + ":" + port
 
-        proxies = {
-            "http": proxy_url,
-            "https": proxy_url,
-        }
-
         # print(type(if_true))
         if true == "True":
-            return True, proxies
+            return True, proxy_url
         else:
-            return False, proxies
+            return False, proxy_url
 
     def cnki_paper(self):
         web_zoom = self.config.get('cnki paper passkey', 'web_zoom')
@@ -134,7 +129,10 @@ class read_conf:
 
     def elasticsearch(self):
         host = self.config.get('elasticsearch', 'host')
-        return host
+        ES_URL = f'http://{host}:9200'
+        return ES_URL
+
+
 
 
 class ArxivYYMM:

@@ -26,6 +26,7 @@ dte = date_choose_end_table()
 
 def webserver(web_zoom):
     chromedriver_path = r"chromedriver.exe"
+    service = ChromeService(chromedriver_path)
     desired_capabilities = DesiredCapabilities.CHROME
     desired_capabilities["pageLoadStrategy"] = "none"
     options = webdriver.ChromeOptions()
@@ -38,8 +39,9 @@ def webserver(web_zoom):
     options.add_argument('--silent')  # 完全禁止 DevTools 输出
     options.add_experimental_option('excludeSwitches', ['enable-logging'])  # 禁用 DevTools 监听输出
 
-    # options.add_argument("--proxy-server=http://127.0.0.1:10809")
-    service = ChromeService(chromedriver_path)
+    proxy_flag, proxy_url = read_conf.cnki_proxy()
+    if proxy_flag is True:
+        options.add_argument(f"--proxy-server={proxy_url}")
     # 指定chromedriver.exe的位置
     driver = webdriver.Chrome(service=service, options=options)
     return driver
