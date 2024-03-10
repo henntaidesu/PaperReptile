@@ -47,23 +47,31 @@ def arxiv_index_data_processing():
                 classification_type = '数学'
             if '（数学' in i:
                 classification_type = '数学'
+            if '（Math' in i:
+                classification_type = '数学'
 
-            if '（physical'in i:
-                classification_type = '物理'
+            if '（physical' in i:
+                classification_type = '经典物理'
             if '（物理' in i:
-                classification_type = '物理'
+                classification_type = '光学物理'
             if '（astro' in i:
-                classification_type = '物理'
+                classification_type = '天体物理'
             if '（hep' in i:
-                classification_type = '物理'
+                classification_type = '高能物理'
             if '（Quant' in i:
-                classification_type = '物理'
+                classification_type = '量子物理'
+            if '（Cond-Mat' in i:
+                classification_type = '量子物理'
+            if '（gr-qc' in i:
+                classification_type = '量子物理'
             if '（nucl' in i:
-                classification_type = '物理'
+                classification_type = '核物理'
             if '（cond' in i:
-                classification_type = '物理'
+                classification_type = '纳米物理'
             if '（nlin' in i:
-                classification_type = '物理'
+                classification_type = '生物物理'
+            if '（HEP' in i:
+                classification_type = '高能物理'
 
             if '（cs' in i:
                 classification_type = '计算机科学'
@@ -78,7 +86,11 @@ def arxiv_index_data_processing():
                 classification_type = '定量金融'
             if '（econ' in i:
                 classification_type = '经济学'
+
             if '（stat' in i:
+                classification_type = '统计数据'
+            if '（统计' in i:
+
                 classification_type = '统计数据'
             if '（eess' in i:
                 classification_type = '电气工程和系统科学'
