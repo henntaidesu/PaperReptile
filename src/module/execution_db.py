@@ -101,3 +101,19 @@ class Date_base:
         finally:
             if hasattr(self, 'db') and self.db:
                 self.db.close()
+
+    def system_sql(self, sql):
+        try:
+            cursor = self.db.cursor()
+            cursor.execute(sql)
+            cursor.commit()
+            cursor.close()
+            self.db.close()
+        except Exception as e:
+            err2(e)
+            if "timed out" in str(e):
+                self.print_log.write_log(f"连接数据库超时", 'error')
+            self.print_log.write_log(sql, 'error')
+        finally:
+            if hasattr(self, 'db') and self.db:
+                self.db.close()

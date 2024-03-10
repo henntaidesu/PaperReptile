@@ -65,7 +65,7 @@ class Index:
 
         if flag == '7':
             print("向ES添加数据")
-            sql = f"SELECT * FROM `index` WHERE ES_date is NULL and `state` not in ('00', '01')  limit 100000, 50000"
+            sql = f"SELECT * FROM `index` WHERE ES_date is NULL and `state` not in ('00', '01')  limit 5000"
             self.process.multi_process_as_up_group(sql, create_arxiv_index)
 
         if flag == 'a':

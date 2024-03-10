@@ -1,11 +1,11 @@
 import sys
 
 from src.module.execution_db import Date_base
-from src.module.log import err2
+from src.module.log import err2, err1
 
 
 def arxiv_index_data_processing():
-    global classification_zh_list
+    classification_zh_list = []
     sql = f"SELECT classification_zh FROM `index` WHERE ES_date is NULL  and `from` = 'arxiv' and classification_zh is not NULL"
     flag, data = Date_base().select_all(sql)
     class_name_list = []
@@ -39,7 +39,11 @@ def arxiv_index_data_processing():
 
         for i in class_name_list:
             print(i)
-            if i is None:
+
+            if i == 'None':
+                continue
+
+            if ';' in i:
                 continue
 
             classification_type = 'None'
@@ -94,6 +98,7 @@ def arxiv_index_data_processing():
                 classification_type = '统计数据'
             if '（eess' in i:
                 classification_type = '电气工程和系统科学'
+
             sql = (
                 f"INSERT INTO `Paper`.`arxiv_classification_type` (`classification_name`, `classification_type`, `flag`)"
                 f" VALUES ('{i}', '{classification_type}', '0');")
@@ -101,6 +106,5 @@ def arxiv_index_data_processing():
 
         exit()
     except Exception as e:
-        print(classification_zh)
-        err2(e)
+        err1(e)
         exit()
