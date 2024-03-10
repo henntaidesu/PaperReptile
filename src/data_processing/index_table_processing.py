@@ -62,6 +62,8 @@ def arxiv_index_data_processing():
                 classification_type = '天体物理'
             if '（hep' in i:
                 classification_type = '高能物理'
+            if '（quant' in i:
+                classification_type = '量子物理'
             if '（Quant' in i:
                 classification_type = '量子物理'
             if '（Cond-Mat' in i:

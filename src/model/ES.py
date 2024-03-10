@@ -10,8 +10,8 @@ class ArxivModel:
     def ES_classification():
         sql = f"SELECT * FROM arxiv_classification_type"
         flag, data = Date_base().select_all(sql)
-
+        classification_dict = {}
         for i in data:
-            print(i[0])
+            classification_dict[i[0]] = i[1]
 
-        exit()
+        return classification_dict

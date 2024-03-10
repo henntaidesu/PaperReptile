@@ -16,6 +16,7 @@ def create_arxiv_index(data):
 
     dictionary = model.ES_classification()
 
+
     try:
         for paper_index in data:
             UUID = paper_index[0]
@@ -86,8 +87,10 @@ def create_arxiv_index(data):
                 arxiv_paper_classification_zh_body = {
                     "UUID": UUID,
                     "classification_zh": classification,
+                    "classification_type": dictionary[classification],
                     "receive_time": receive_time
                 }
+
                 response = requests.post(f"{ES_URL}/arxiv_classification_zh/_doc",
                                          json=arxiv_paper_classification_zh_body,
                                          headers={'Content-Type': 'application/json'})
