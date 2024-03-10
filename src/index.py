@@ -6,7 +6,9 @@ from src.paper_website.cnki.run_cnki import run_get_paper_title, run_get_paper_i
 from src.ES.index_table import create_arxiv_index
 from src.module.read_conf import read_conf
 from src.module.Re_table_data import compare_data_index_to_cnki_inf
+from src.data_processing.index_table_processing import arxiv_index_data_processing
 import asyncio
+import sys
 
 
 class Index:
@@ -36,6 +38,7 @@ class Index:
                 sql = (f" SELECT UUID, title_en FROM `Paper`.`index`"
                        f" WHERE state = '01' and `from` = 'arxiv' and classification_zh not like '%cs%' "
                        f" ORDER BY receive_time desc limit 10000")
+                print(sql)
                 self.process.multi_process_as_up_group(sql, translate_title)
 
         if flag == '4':
@@ -48,28 +51,24 @@ class Index:
 
         if flag == '5':
             print("获取cnki论文基础数据")
-            run_get_paper_title(0, 0,0, False)
+            run_get_paper_title(0, 0, 0, False)
 
         if flag == '6':
             limit = int(self.conf.processes()) * 10
             print("获取cnki论文详细数据")
             sql = (f"SELECT * FROM `cnki_index` WHERE `start` = '0' AND db_type in ('1', '2', '3') "
-                   f"ORDER BY receive_time DESC LIMIT {limit}")
+                   f"ORDER BY receive_time DESC LIMIT 3000, {limit}")
+
+            sql = f""
 
             self.process.multi_process_as_up_group(sql, run_get_paper_info)
 
         if flag == '7':
             print("向ES添加数据")
-            sql = f"SELECT * FROM `index` WHERE ES_date is NULL and `state` not in ('00', '01')  limit 5000"
+            sql = f"SELECT * FROM `index` WHERE ES_date is NULL and `state` not in ('00', '01')  limit 100000, 50000"
             self.process.multi_process_as_up_group(sql, create_arxiv_index)
 
         if flag == 'a':
-            sql = f"SELECT UUID FROM `index` WHERE `from` = 'cnki'"
-            self.process.multi_process_as_up_group(sql, compare_data_index_to_cnki_inf)
-
-            import sys
-            sys.exit()
-
+            arxiv_index_data_processing()
 
         # run_get_paper_info()
-

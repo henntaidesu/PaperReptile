@@ -1,8 +1,10 @@
+import sys
 import requests
 from src.module.log import Log, err1
 from src.module.execution_db import Date_base
 from src.module.read_conf import read_conf
 from src.module.now_time import now_time
+from datetime import datetime, timezone, timedelta
 
 
 def create_arxiv_index(data):
@@ -20,12 +22,18 @@ def create_arxiv_index(data):
             paper_from = paper_index[9]
             authors = paper_index[11]
             Introduction = paper_index[12]
-            receive_time = paper_index[13]
+            receive_time = str(paper_index[13])
             Journal_reference = paper_index[14]
             Comments = paper_index[15]
             size = paper_index[16]
             DOI = paper_index[17]
-            receive_time = f"{int(receive_time.timestamp())}000"
+
+            # 时间戳转化
+            receive_time = datetime.strptime(receive_time, "%Y-%m-%d %H:%M:%S")
+            utc_offset = timedelta(hours=8)
+            receive_time = receive_time.replace(tzinfo=timezone.utc) + utc_offset
+            # 将datetime对象转换为ISO 8601字符串
+            receive_time = receive_time.isoformat()
 
             # 拆分字段
             classification_zh_list = classification_zh.split('；')
@@ -65,9 +73,14 @@ def create_arxiv_index(data):
                 classification = classification_zh_list[i]
                 if classification.startswith(' '):
                     classification = classification[1:]
+
+                classification = (str(classification).replace('(', '（').replace(')', '）')
+                                  .replace('  ', '').replace(' ', ''))
+
                 arxiv_paper_classification_zh_body = {
                     "UUID": UUID,
-                    "classification_zh": classification
+                    "classification_zh": classification,
+                    "receive_time": receive_time
                 }
                 response = requests.post(f"{ES_URL}/arxiv_classification_zh/_doc",
                                          json=arxiv_paper_classification_zh_body,
@@ -86,7 +99,9 @@ def create_arxiv_index(data):
                     authors = authors[1:]
                 arxiv_paper_authors_body = {
                     "UUID": UUID,
-                    "authors": authors
+                    "authors": authors,
+                    "authors_text": authors,
+                    "receive_time": receive_time
                 }
                 response = requests.post(f"{ES_URL}/arxiv_authors/_doc",
                                          json=arxiv_paper_authors_body,
@@ -127,3 +142,48 @@ def create_cnki_index(data):
         size = paper_index[16]
         DOI = paper_index[17]
 
+        classification_zh_list = classification_zh.split('；')
+        authors_list = authors.split(',')
+
+        cnki_index_body = {
+            "UUID": UUID,
+            "WEB_SIDE_ID": WEB_SIDE_ID,
+            "source_language": source_language,
+            "title_zh": title_zh,
+            "paper_from": paper_from,
+            "Introduction": Introduction,
+            "receive_time": receive_time,
+            "Journal_reference": Journal_reference,
+            "Comments": Comments,
+            "size": size,
+            "DOI": DOI
+        }
+
+        response = requests.post(f"{ES_URL}/cnki_index/_doc/{UUID}",
+                                 json=cnki_index_body,
+                                 headers={'Content-Type': 'application/json'})
+
+        # 写入分类索引
+
+        for i in range(len(classification_zh_list)):
+            classification = classification_zh_list[i]
+            if classification.startswith(' '):
+                classification = classification[1:]
+
+            classification = (str(classification).replace('(', '（').replace(')', '）')
+                              .replace('  ', '').replace(' ', ''))
+
+            arxiv_paper_classification_zh_body = {
+                "UUID": UUID,
+                "classification_zh": classification,
+                "receive_time": receive_time
+            }
+            response = requests.post(f"{ES_URL}/arxiv_classification_zh/_doc",
+                                     json=arxiv_paper_classification_zh_body,
+                                     headers={'Content-Type': 'application/json'})
+
+            response_data = response.json()
+            if response_data.get('result') == 'created' or response_data.get('result') == 'updated':
+                Log().write_log(f"写入分类成功 {classification}", 'info')
+            else:
+                Log().write_log(f"写入分类失败 {classification}", 'error')

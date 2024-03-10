@@ -14,6 +14,8 @@ from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from src.model.cnki import Crawl, positioned_element
 from src.module.log import Log, err2, err1
+from selenium.webdriver.common.proxy import Proxy, ProxyType
+
 
 
 open_page_data = positioned_element()
@@ -41,7 +43,11 @@ def webserver(web_zoom):
 
     proxy_flag, proxy_url = read_conf.cnki_proxy()
     if proxy_flag is True:
-        options.add_argument(f"--proxy-server={proxy_url}")
+        proxy = Proxy()
+        proxy.proxy_type = ProxyType.MANUAL
+        proxy.http_proxy = proxy_url
+        options.add_argument(f"--proxy-server={proxy.http_proxy}")
+
     # 指定chromedriver.exe的位置
     driver = webdriver.Chrome(service=service, options=options)
     return driver
