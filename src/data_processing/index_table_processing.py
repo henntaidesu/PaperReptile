@@ -6,7 +6,7 @@ from src.module.log import err2, err1
 
 def arxiv_index_data_processing():
     classification_zh_list = []
-    sql = f"SELECT classification_zh FROM `index` WHERE ES_date is NULL  and `from` = 'arxiv' and classification_zh is not NULL"
+    sql = f"SELECT classification_zh FROM `index` WHERE `from` = 'arxiv' and classification_zh is not NULL"
     flag, data = Date_base().select_all(sql)
     class_name_list = []
     alist = []
@@ -110,3 +110,56 @@ def arxiv_index_data_processing():
     except Exception as e:
         err1(e)
         exit()
+
+
+def cnki_index_data_processing():
+    classification_zh_list = []
+    sql = f"SELECT album FROM `Paper`.`cnki_paper_information` WHERE `album` IS NOT NULL"
+    flag, data = Date_base().select_all(sql)
+    class_name_list = []
+    alist = []
+    try:
+        for paper_index in data:
+            classification_zh = paper_index[0]
+            if '；' in classification_zh:
+                classification_zh_list = classification_zh.split('；')
+            elif ';' in classification_zh:
+                classification_zh_list = classification_zh.split(';')
+            else:
+                if ';' and '；' in classification_zh:
+                    print(classification_zh)
+                    exit()
+                else:
+                    classification_zh = (str(classification_zh).replace('(', '（').replace(')', '）')
+                                         .replace('  ', '').replace(' ', ''))
+                    alist.append(classification_zh)
+                    alist = list(set(alist))
+
+            for class_name in classification_zh_list:
+                class_name = (str(class_name).replace('(', '（').replace(')', '）')
+                              .replace('  ', '').replace(' ', ''))
+
+                class_name_list.append(class_name)
+                class_name_list = list(set(class_name_list))
+
+        class_name_list = class_name_list + alist
+        class_name_list = list(set(class_name_list))
+
+        for i in class_name_list:
+            print(i)
+
+            if i == 'None':
+                continue
+
+            classification_type = 'None'
+
+            sql = (
+                f"INSERT INTO `Paper`.`cnki_classification_type` (`classification_name`, `classification_type`, `flag`)"
+                f" VALUES ('{i}', '{classification_type}', '0');")
+            Date_base().insert_all(sql)
+
+        exit()
+    except Exception as e:
+        err1(e)
+        exit()
+

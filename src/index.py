@@ -6,7 +6,7 @@ from src.paper_website.cnki.run_cnki import run_get_paper_title, run_get_paper_i
 from src.ES.index_table import create_arxiv_index
 from src.module.read_conf import read_conf
 from src.module.Re_table_data import compare_data_index_to_cnki_inf
-from src.data_processing.index_table_processing import arxiv_index_data_processing
+from src.data_processing.index_table_processing import cnki_index_data_processing
 import asyncio
 import sys
 
@@ -21,7 +21,7 @@ class Index:
         self.Arxiv_paper_down = Arxiv_paper_down()
 
     def index(self):
-        flag = '7'
+        flag = 'a'
         if flag == '1':
             print("获取arxiv论文")
             self.arxivorg.get_exhaustive_url()
@@ -69,6 +69,7 @@ class Index:
             self.process.multi_process_as_up_group(sql, create_arxiv_index)
 
         if flag == 'a':
-            arxiv_index_data_processing()
+            print('数据清洗')
+            cnki_index_data_processing()
 
         # run_get_paper_info()
