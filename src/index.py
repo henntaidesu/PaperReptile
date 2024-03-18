@@ -3,7 +3,8 @@ from src.module.log import Log
 from src.module.multi_process import Process
 from src.paper_website.arxiv.arxiv_paper_down import Arxiv_paper_down
 from src.paper_website.cnki.run_cnki import run_get_paper_title, run_get_paper_info
-from src.ES.index_table import create_arxiv_index
+from src.ES.arXiv import create_arxiv_index
+from src.ES.cnki import create_cnki_index
 from src.module.read_conf import read_conf
 from src.module.Re_table_data import compare_data_index_to_cnki_inf
 from src.data_processing.index_table_processing import cnki_index_data_processing
@@ -21,7 +22,7 @@ class Index:
         self.Arxiv_paper_down = Arxiv_paper_down()
 
     def index(self):
-        flag = 'a'
+        flag = '7'
         if flag == '1':
             print("获取arxiv论文")
             self.arxivorg.get_exhaustive_url()
@@ -36,9 +37,8 @@ class Index:
             print("翻译title")
             while True:
                 sql = (f" SELECT UUID, title_en FROM `Paper`.`index`"
-                       f" WHERE state = '01' and `from` = 'arxiv' and classification_zh not like '%cs%' "
+                       f" WHERE state = '01' and `from` = 'arxiv'"
                        f" ORDER BY receive_time desc limit 10000")
-                print(sql)
                 self.process.multi_process_as_up_group(sql, translate_title)
 
         if flag == '4':
@@ -58,15 +58,14 @@ class Index:
             print("获取cnki论文详细数据")
             sql = (f"SELECT * FROM `cnki_index` WHERE `start` = '0' AND db_type in ('1', '2', '3') "
                    f"ORDER BY receive_time DESC LIMIT 3000, {limit}")
-
-            sql = f""
-
             self.process.multi_process_as_up_group(sql, run_get_paper_info)
 
         if flag == '7':
             print("向ES添加数据")
             sql = f"SELECT * FROM `index` WHERE ES_date is NULL and `state` not in ('00', '01')  limit 5000"
-            self.process.multi_process_as_up_group(sql, create_arxiv_index)
+            sql = f"SELECT * FROM `index` WHERE `from` = 'cnki' and ES_date is NULL limit 10000"
+            self.process.multi_process_as_up_group(sql, create_cnki_index)
+            exit()
 
         if flag == 'a':
             print('数据清洗')
