@@ -90,7 +90,7 @@ def create_cnki_index(data):
 
             # 写入分类索引
             sql = f"SELECT album FROM `Paper`.`cnki_paper_information` WHERE `UUID` = '{UUID}'"
-            flag, album = Date_base().select_all(sql)
+            flag, album = Date_base().select(sql)
             album = album[0][0]
             if album:
                 if ';' in album:
@@ -136,7 +136,7 @@ def create_cnki_index(data):
             sql = (f"SELECT  `journal`, `master`, `PhD`, `international_journals`, `book`, `Chinese_and_foreign`, "
                    f"`newpaper` FROM `Paper`.`cnki_paper_information` WHERE `UUID` = '{UUID}'")
 
-            flag, data = Date_base().select_all(sql)
+            flag, data = Date_base().select(sql)
             data = data[0]
             journal = data[0]
             master = data[1]
@@ -296,7 +296,7 @@ def create_cnki_index(data):
                         Log().write_log(f"写入报纸引用失败 {newpaper}", 'error')
 
             sql = f"UPDATE `Paper`.`index` SET `ES_date` = '{now_time()}', state = '10' WHERE `UUID` = '{UUID}';"
-            Date_base().update_all(sql)
+            Date_base().update(sql)
 
             Log().write_log(f'写入Es成功 {title_zh}', 'info')
             time.sleep(0.2)

@@ -47,11 +47,11 @@ def run_get_paper_info(date):
             page_flag = open_paper_info(driver, title)
             if len(title) < 6:
                 sql = f"UPDATE `Paper`.`cnki_index` SET  `start` = '8' WHERE UUID = '{uuid}';"
-                Date_base().update_all(sql)
+                Date_base().update(sql)
                 driver.close()
             if page_flag is False:
                 sql = f"UPDATE `Paper`.`cnki_index` SET  `start` = '9' WHERE UUID = '{uuid}';"
-                Date_base().update_all(sql)
+                Date_base().update(sql)
                 driver.close()
                 continue
 

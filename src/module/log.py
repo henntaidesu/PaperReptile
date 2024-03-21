@@ -16,36 +16,26 @@ class Log:
         # 创建一个logger对象
         logger = logging.getLogger("my_logger")
         logger.setLevel(logging.DEBUG)
-
         # 清除现有的处理器，以防止累积
         for handler in logger.handlers[:]:
             logger.removeHandler(handler)
-
         # 创建一个文件处理器，将日志写入文件
         file_handler = logging.FileHandler(log_file, encoding='utf-8')
         file_handler.setLevel(logging.DEBUG)
-
         # 创建一个控制台处理器，将日志输出到控制台
         console_handler = logging.StreamHandler()
         console_handler.setLevel(logging.INFO)
-
         # 定义日志格式
         formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
         file_handler.setFormatter(formatter)
         console_handler.setFormatter(formatter)
-
         # 将处理器添加到logger对象
         logger.addHandler(file_handler)
         logger.addHandler(console_handler)
-
         return logger
-
-    def print_log(self):
-        pass
 
     def write_log(self, text, log_type):
         # 输出不同级别的日志
-
         if self.log_level == "error":
             if log_type == 'info':
                 print(f"{now_time()} - INFO - {text}")
@@ -53,7 +43,6 @@ class Log:
                 self.logger.error(text)
             elif log_type == 'warning':
                 self.logger.warning(text)
-
         elif self.log_level == "info":
             if log_type == 'info':
                 self.logger.info(text)
@@ -61,7 +50,6 @@ class Log:
                 print(f"{now_time()} - ERROR - {text}")
             elif log_type == 'warning':
                 self.logger.warning(text)
-
         elif self.log_level == "debug":
             if log_type == 'info':
                 self.logger.info(text)
@@ -72,7 +60,6 @@ class Log:
 
         elif self.log_level == "critical" and log_type == 'critical':
             self.logger.critical(text)
-
         # 检查是否开始了新的一天，如果是，则更新日志文件名
         new_day = today()
         if new_day != self.day:

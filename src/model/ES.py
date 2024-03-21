@@ -9,7 +9,7 @@ class ArxivModel:
     @staticmethod
     def ES_classification():
         sql = f"SELECT * FROM arxiv_classification_type"
-        flag, data = Date_base().select_all(sql)
+        flag, data = Date_base().select(sql)
         classification_dict = {}
         for i in data:
             classification_dict[i[0]] = i[1]

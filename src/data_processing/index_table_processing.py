@@ -7,7 +7,7 @@ from src.module.log import err2, err1
 def arxiv_index_data_processing():
     classification_zh_list = []
     sql = f"SELECT classification_zh FROM `index` WHERE `from` = 'arxiv' and classification_zh is not NULL"
-    flag, data = Date_base().select_all(sql)
+    flag, data = Date_base().select(sql)
     class_name_list = []
     alist = []
     try:
@@ -104,7 +104,7 @@ def arxiv_index_data_processing():
             sql = (
                 f"INSERT INTO `Paper`.`arxiv_classification_type` (`classification_name`, `classification_type`, `flag`)"
                 f" VALUES ('{i}', '{classification_type}', '0');")
-            Date_base().insert_all(sql)
+            Date_base().insert(sql)
 
         exit()
     except Exception as e:
@@ -115,7 +115,7 @@ def arxiv_index_data_processing():
 def cnki_index_data_processing():
     classification_zh_list = []
     sql = f"SELECT album FROM `Paper`.`cnki_paper_information` WHERE `album` IS NOT NULL"
-    flag, data = Date_base().select_all(sql)
+    flag, data = Date_base().select(sql)
     class_name_list = []
     alist = []
     try:
@@ -156,7 +156,7 @@ def cnki_index_data_processing():
             sql = (
                 f"INSERT INTO `Paper`.`cnki_classification_type` (`classification_name`, `classification_type`, `flag`)"
                 f" VALUES ('{i}', '{classification_type}', '0');")
-            Date_base().insert_all(sql)
+            Date_base().insert(sql)
 
         exit()
     except Exception as e:

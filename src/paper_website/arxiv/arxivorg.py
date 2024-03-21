@@ -88,7 +88,7 @@ class ArxivOrg:
             # url = f"https://arxiv.org/abs/{paper_units}/{yy_mm}{code}"
             # paper_code = f"{paper_units}/{yy_mm}{code}"
 
-            self.logger.write_log(url, 'info')
+            self.logger.write_log(f"URL请求成功 - {url}", 'info')
             try:
                 response = self.session.get(url)
             except Exception as e:
@@ -225,9 +225,11 @@ class ArxivOrg:
                    f"'{receive_time}','{Journal_reference}','{Comments}',{size},'{DOI}','{version}','{withdrawn}');")
 
             sql = self.TrSQL(sql)
+            self.logger.write_log(f"{yy_mm}.{code} - 获取成功", 'info')
             date_base = Date_base()
-            date_base.insert_all(sql)
+            date_base.insert(sql)
             self.write_code(yy_mm, code)
+            self.logger.write_log(f"更新配置文件成功", 'info')
             # self.logger.write_log(f"[EN : {classification_en}] -> [CN : {classification_zh}]")
             # print("sleep 2s")
             # time.sleep(2)
@@ -249,7 +251,7 @@ def translate_classification(data):
             sql = (f"UPDATE `index` SET `classification_zh` = '{classification_cn}' "
                    f" , `state` = '01', `update_time` = '{Now_time}' WHERE `UUID` = '{uuid}';")
             date_base = Date_base()
-            date_base.update_all(sql)
+            date_base.update(sql)
     except Exception as e:
         if type(e).__name__ == 'SSLError':
             logger.write_log("SSL Error", 'error')
@@ -274,7 +276,7 @@ def translate_title(data):
             sql = (f"UPDATE `index` SET `title_zh` = '{title_cn}' "
                    f" , `state` = '02', `update_time` = '{Now_time}' WHERE `UUID` = '{uuid}';")
             date_base = Date_base()
-            date_base.update_all(sql)
+            date_base.update(sql)
 
     except Exception as e:
         if type(e).__name__ == 'SSLError':

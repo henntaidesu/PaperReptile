@@ -68,11 +68,10 @@ def setting_select_date(driver, time_out):
         flag_page += flag_yy * 12
         flag_mm = now_mm - mm
         flag_page += flag_mm
-        # 设置开始时间
+
         WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.ID, 'datebox0'))).click()
         time.sleep(1)
         for i in range(flag_page):
-            # time.sleep(0.5)
             WebDriverWait(driver, time_out).until(EC.presence_of_element_located
                                                   ((By.XPATH, open_page_data['start_previous_page']))).click()
 
@@ -126,7 +125,7 @@ def setting_select_date(driver, time_out):
 
 def choose_banner(driver, time_out, paper_day):
     sql = f"select flag from cnki_page_flag WHERE date = '{paper_day}'"
-    flag, data = Date_base().select_all(sql)
+    flag, data = Date_base().select(sql)
     if data:
         date_temp = data[0][0]
         data = data[0][0]
@@ -277,7 +276,7 @@ def choose_banner(driver, time_out, paper_day):
                f"VALUES ('{paper_day}', '{item_flag}', '{xx_sum}', '{xw_sum}', '{hy_sum}', '{pa_sum}', '{ts_sum}', "
                f"'{bz_sum}', '{cg_sum}', '{kj_sum}', '{tsqk_sum}', '{sp_sum}');").replace("'0'", "NULL")
 
-        Date_base().insert_all(sql)
+        Date_base().insert(sql)
         WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data[0]))).click()
         return 0, item_flag
 
@@ -487,7 +486,7 @@ def whit_file(date_str, paper_type, paper_day):
     date_str = date_str[1:][:-1].replace(',', '').replace("'", "").replace(" ", "")
     flag = False
     sql = f"UPDATE `Paper`.`cnki_page_flag` SET `flag` = '{date_str}' WHERE `date` = '{paper_day}'"
-    Date_base().update_all(sql)
+    Date_base().update(sql)
     if date_str == '1111111111':
         flag = revise_cnki_date()
     else:

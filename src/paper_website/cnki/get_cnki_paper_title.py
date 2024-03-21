@@ -61,11 +61,11 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum,
     elif paper_type == 9:
         dt = "'7'"
         sql = f"UPDATE `Paper`.`cnki_page_flag` SET `sp` = {res_unm} WHERE `date` = '{paper_day}';"
-    Date_base().update_all(sql)
+    Date_base().update(sql)
 
     sql = (f"SELECT title FROM cnki_index where receive_time >= "
            f"'{paper_day} 00:00:00' and receive_time <= '{paper_day} 23:59:59' and db_type in ({dt})")
-    flag, paper_title = Date_base().select_all(sql)
+    flag, paper_title = Date_base().select(sql)
 
     len_data = len(paper_title)
 
@@ -226,7 +226,7 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum,
                         f"VALUES ('{uuid}', '{title}', '{paper_day}', '0', '{db_type}');")
 
                 sql3 = TrSQL(sql3)
-                flag = Date_base().insert_all(sql3)
+                flag = Date_base().insert(sql3)
                 if flag == '重复数据':
                     new_paper_sum += 1
                     logger.write_log(f"重复数据 ： {title}, UUID : {uuid}", 'info')

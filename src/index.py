@@ -22,7 +22,7 @@ class Index:
         self.Arxiv_paper_down = Arxiv_paper_down()
 
     def index(self):
-        flag = '7'
+        flag = '1'
         if flag == '1':
             print("获取arxiv论文")
             self.arxivorg.get_exhaustive_url()
@@ -62,7 +62,7 @@ class Index:
 
         if flag == '7':
             print("向ES添加数据")
-            sql = f"SELECT * FROM `index` WHERE ES_date is NULL and `state` not in ('00', '01')  limit 5000"
+            # sql = f"SELECT * FROM `index` WHERE ES_date is NULL and `state` not in ('00', '01')  limit 5000"
             sql = f"SELECT * FROM `index` WHERE `from` = 'cnki' and ES_date is NULL limit 10000"
             self.process.multi_process_as_up_group(sql, create_cnki_index)
             exit()

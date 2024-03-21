@@ -23,7 +23,6 @@ read_conf = read_conf()
 
 def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
     new_title = None
-    # paper_db = read_conf.cnki_skip_db()
 
     cp = crawl_xpath()
     rp = reference_papers()
@@ -38,10 +37,9 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
 
     title_list = WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.CLASS_NAME, "fz14")))
     # 循环网页一页中的条目
-
     if len(title_list) > 1:
         sql = f"UPDATE `cnki_index` SET `start` = 'a' WHERE `UUID` = '{uuid}';"
-        Date_base().update_all(sql)
+        Date_base().update(sql)
         driver.close()
         return 'a'
 
@@ -175,12 +173,12 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
                     f"(`UUID`, `title`, `receive_time`, `start`, `db_type`) "
                     f"VALUES ('{uuid1}', '{title}', '{date}', '1', '{ndb_type}');")
             sql3 = TrSQL(sql3)
-            flag = Date_base().insert_all(sql3)
+            flag = Date_base().insert(sql3)
             print(sql3)
             if flag == '重复数据':
                 print("重复数据")
                 sql3 = f"UPDATE `Paper`.`cnki_index` SET  `start` = '*' WHERE UUID = '{uuid}';"
-                Date_base().update_all(sql3)
+                Date_base().update(sql3)
                 continue
             else:
                 uuid = uuid1
@@ -357,6 +355,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
                     break
             print(f"论文页数 : {page_sum}")
 
+            # 获取层级
             level = None
             if '报' in db_type or '报纸' in db_type:
                 try:
@@ -528,12 +527,12 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
             sql3 = TrSQL(sql3)
 
             try:
-                Date_base().insert_all(sql1)
+                Date_base().insert(sql1)
             finally:
                 try:
-                    Date_base().insert_all(sql2)
+                    Date_base().insert(sql2)
                 finally:
-                    Date_base().update_all(sql3)
+                    Date_base().update(sql3)
 
             all_handles = driver.window_handles
 

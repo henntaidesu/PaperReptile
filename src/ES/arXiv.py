@@ -120,7 +120,7 @@ def create_arxiv_index(data):
                     Log().write_log(f"写入作者失败 {UUID} - {authors}", 'error')
 
             sql = f"UPDATE `Paper`.`index` SET `ES_date` = '{now_time()}', state = '10' WHERE `UUID` = '{UUID}';"
-            Date_base().update_all(sql)
+            Date_base().update(sql)
 
             Log().write_log(f'写入Es成功 {title_zh}', 'info')
 

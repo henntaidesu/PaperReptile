@@ -30,9 +30,8 @@ class Process:
         try:
             processes = int(self.conf.processes())
             date_base = Date_base()
-            flag, work_list = date_base.select_all(sql)
+            flag, work_list = date_base.select(sql)
             if len(work_list) == 0:
-                print("已完成获取AS UPGroup")
                 return False
             chunks = self.split_list(work_list, processes)
             # 创建进程池

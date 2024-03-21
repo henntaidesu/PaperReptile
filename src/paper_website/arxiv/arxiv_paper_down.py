@@ -20,7 +20,7 @@ class Arxiv_paper_down:
         self.logger = Log()
 
     def paper_down(self, sql):
-        flag, data = Date_base().select_all(sql)
+        flag, data = Date_base().select(sql)
         file_extension = "pdf"
         url = None
         for i in data:
@@ -72,7 +72,7 @@ class Arxiv_paper_down:
                             Time = now_time()
                             sql = f"UPDATE `index` SET  `state` = '03' ,`update_time` = '{Time}' WHERE " \
                                   f"`uuid` = '{uuid}';"
-                            Date_base().update_all(sql)
+                            Date_base().update(sql)
 
                             download_complete = True  # 下载完成
 

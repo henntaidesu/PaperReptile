@@ -10,7 +10,7 @@ class Date_base:
         self.db = read_db_conf.database()
         self.print_log = Log()
 
-    def insert_all(self, sql):
+    def insert(self, sql):
         try:
             cursor = self.db.cursor()
             cursor.execute(sql)
@@ -29,28 +29,7 @@ class Date_base:
                 self.print_log.write_log(f"错误 {sql}", 'warning')
                 return False
 
-    def insert_list(self, sql):
-        try:
-            cursor = self.db.cursor()
-            for i in sql:
-                cursor.execute(sql[i])
-                self.db.commit()
-                cursor.close()
-            self.db.close()
-            return True
-        except Exception as e:
-            err2(e)
-            if "timed out" in str(e):
-                self.print_log.write_log("连接数据库超时", 'error')
-            elif "index.PRIMARY" in str(e):
-                self.print_log.write_log("重复数据", 'warning')
-                return True
-            else:
-                err2(e)
-                self.print_log.write_log(sql, 'warning')
-                return False
-
-    def update_all(self, sql):
+    def update(self, sql):
         try:
             cursor = self.db.cursor()
             cursor.execute(sql)
@@ -68,7 +47,7 @@ class Date_base:
             if hasattr(self, 'db') and self.db:
                 self.db.close()
 
-    def select_all(self, sql):
+    def select(self, sql):
         try:
             cursor = self.db.cursor()
             cursor.execute(sql)
@@ -85,7 +64,7 @@ class Date_base:
             if hasattr(self, 'db') and self.db:
                 self.db.close()
 
-    def delete_all(self, sql):
+    def delete(self, sql):
         try:
             cursor = self.db.cursor()
             cursor.execute(sql)
