@@ -1,4 +1,6 @@
 import sys
+import time
+
 import requests
 from src.module.log import Log, err1
 from src.module.execution_db import Date_base
@@ -127,4 +129,5 @@ def create_arxiv_index(data):
     except Exception as e:
         Log().write_log(f'写入Es失败 {UUID}', 'error')
         err1(e)
+        time.sleep(3)
 

@@ -75,7 +75,7 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum,
         issuing_time_flag = True
 
     # 当爬取数量小于需求时，循环网页页码
-    while True:
+    while range(8):
         total_page += 1
         print(f'total_page   :   {total_page}')
         if issuing_time_flag is True and None_message is False:

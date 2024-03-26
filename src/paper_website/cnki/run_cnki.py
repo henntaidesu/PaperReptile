@@ -13,11 +13,9 @@ def run_get_paper_title(click_flag, total_page, total_count, None_message):
         try:
             res_unm, paper_type, paper_day, date_str, paper_sum = open_page(driver, keyword)
             page_click_sort_type(driver, click_flag)
-            flag, total_page, click_flag, total_count, None_message = get_paper_title(driver, res_unm, paper_type,
-                                                                                      paper_day, date_str,
-                                                                                      paper_sum, total_page,
-                                                                                      total_count, click_flag,
-                                                                                      None_message)
+            flag, total_page, click_flag, total_count = get_paper_title(driver, res_unm, paper_type, paper_day,
+                                                                        date_str, paper_sum, total_page, total_count,
+                                                                        click_flag, None_message)
             if flag is False:
                 driver.close()
                 run_get_paper_title(click_flag, total_page, total_count, None_message)

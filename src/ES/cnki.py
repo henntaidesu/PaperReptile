@@ -54,7 +54,7 @@ def create_cnki_index(data):
                 "DOI": DOI
             }
 
-            response = requests.post(f"{ES_URL}/arxiv_index/_doc/{UUID}",
+            response = requests.post(f"{ES_URL}/cnki_index/_doc/{UUID}",
                                      json=index_body,
                                      headers={'Content-Type': 'application/json'})
 
@@ -308,4 +308,4 @@ def create_cnki_index(data):
         else:
             Log().write_log(f'写入Es失败 {UUID}', 'error')
             err1(e)
-            exit()
+            time.sleep(3)

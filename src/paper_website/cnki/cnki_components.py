@@ -36,17 +36,17 @@ def webserver(web_zoom):
     options.add_experimental_option("prefs", {"profile.managed_default_content_settings.images": 2})
     options.add_argument(f"--force-device-scale-factor={web_zoom}")
     options.add_argument("--disable-gpu")
-    options.add_argument('--headless')  # 无头模式 不唤起实体浏览器
-    options.add_argument('--log-level=3')  # 设置日志级别为最低，减少输出信息
+    # options.add_argument('--headless')  # 无头模式 不唤起实体浏览器
+    # options.add_argument('--log-level=3')  # 设置日志级别为最低，减少输出信息
     options.add_argument('--silent')  # 完全禁止 DevTools 输出
     options.add_experimental_option('excludeSwitches', ['enable-logging'])  # 禁用 DevTools 监听输出
 
-    proxy_flag, proxy_url = read_conf.cnki_proxy()
-    if proxy_flag is True:
-        proxy = Proxy()
-        proxy.proxy_type = ProxyType.MANUAL
-        proxy.http_proxy = proxy_url
-        options.add_argument(f"--proxy-server={proxy.http_proxy}")
+    # proxy_flag, proxy_url = read_conf.cnki_proxy()
+    # if proxy_flag is True:
+    #     proxy = Proxy()
+    #     proxy.proxy_type = ProxyType.MANUAL
+    #     proxy.http_proxy = proxy_url
+    #     options.add_argument(f"--proxy-server={proxy.http_proxy}")
 
     # 指定chromedriver.exe的位置
     driver = webdriver.Chrome(service=service, options=options)
@@ -71,7 +71,7 @@ def setting_select_date(driver, time_out):
 
         WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.ID, 'datebox0'))).click()
         time.sleep(1)
-        for i in range(flag_page):
+        while range(flag_page):
             WebDriverWait(driver, time_out).until(EC.presence_of_element_located
                                                   ((By.XPATH, open_page_data['start_previous_page']))).click()
 
@@ -144,7 +144,6 @@ def choose_banner(driver, time_out, paper_day):
 
         for i in range(9):
             if data[i] == '0':
-                # 点击学术期刊
                 WebDriverWait(driver, time_out).until(
                     EC.presence_of_element_located((By.XPATH, open_page_data[i]))).click()
                 return i, date_temp

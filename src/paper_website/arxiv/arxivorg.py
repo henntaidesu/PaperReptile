@@ -25,9 +25,6 @@ class ArxivOrg:
             self.session.proxies.update(self.proxies)
         self.subject_list = ArxivOrgPageModel
         self.logger = Log()
-        self.data_base = Date_base()
-        self.tr = translate()
-        self.GPT = openAI()
 
     @staticmethod
     def read_yy_mm_new_data():
