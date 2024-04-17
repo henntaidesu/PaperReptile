@@ -1,6 +1,6 @@
 import sys
 import time
-
+import jieba
 import requests
 from src.module.log import Log, err1
 from src.module.execution_db import Date_base
@@ -19,6 +19,7 @@ def create_cnki_index(data):
         for paper_index in data:
             UUID = paper_index[0]
             # UUID = '00ea20fe-ae31-4532-8e7a-d60788c342d9'
+            classification_zh = paper_index[3]
             source_language = paper_index[4]
             title_zh = paper_index[5]
             title_en = paper_index[6]
@@ -43,6 +44,8 @@ def create_cnki_index(data):
             else:
                 authors_list = None
 
+            title_list = jieba.cut(title_zh, cut_all=False)
+
             # 写入主索引
             index_body = {
                 "UUID": UUID,
@@ -66,6 +69,100 @@ def create_cnki_index(data):
             else:
                 Log().write_log(f"写入失败主索引 {title_zh}", 'error')
 
+            # 写入分类索引
+            sql = f"SELECT album FROM `Paper`.`cnki_paper_information` WHERE `UUID` = '{UUID}'"
+            flag, album = Date_base().select(sql)
+            album = album[0][0]
+
+            classification_list = []
+            if classification_zh:
+                classification_list = classification_zh.split(';')
+
+            if album:
+                if ';' in album:
+                    album_list = album.split(';')
+                    for i in range(len(album_list)):
+                        if classification_list:
+                            for j in classification_list:
+                                album = album_list[i]
+                                if album.startswith(' '):
+                                    album = album[1:]
+
+                                cnki_paper_album_body = {
+                                    "title": title_zh,
+                                    "album": album,
+                                    "classification": j,
+                                    "receive_time": receive_time
+                                }
+
+                                response = requests.post(f"{ES_URL}/cnki_album/_doc",
+                                                         json=cnki_paper_album_body,
+                                                         headers={'Content-Type': 'application/json'})
+
+                                response_data = response.json()
+                                if response_data.get('result') == 'created' or response_data.get('result') == 'updated':
+                                    Log().write_log(f"写入分类成功 {album} -{j}", 'info')
+                                else:
+                                    Log().write_log(f"写入分类失败 {album}", 'error')
+
+                        else:
+                            album = album_list[i]
+                            if album.startswith(' '):
+                                album = album[1:]
+
+                            cnki_paper_album_body = {
+                                "title": title_zh,
+                                "album": album,
+                                "receive_time": receive_time
+                            }
+
+                            response = requests.post(f"{ES_URL}/cnki_album/_doc",
+                                                     json=cnki_paper_album_body,
+                                                     headers={'Content-Type': 'application/json'})
+
+                            response_data = response.json()
+                            if response_data.get('result') == 'created' or response_data.get('result') == 'updated':
+                                Log().write_log(f"写入分类成功 {album} {j}", 'info')
+                            else:
+                                Log().write_log(f"写入分类失败 {album}", 'error')
+
+                else:
+                    if classification_list:
+                        for j in classification_list:
+                            cnki_paper_album_body = {
+                                "title": title_zh,
+                                "album": album,
+                                "classification": j,
+                                "receive_time": receive_time
+                            }
+                            response = requests.post(f"{ES_URL}/cnki_album/_doc",
+                                                     json=cnki_paper_album_body,
+                                                     headers={'Content-Type': 'application/json'})
+
+                            response_data = response.json()
+                            if response_data.get('result') == 'created' or response_data.get('result') == 'updated':
+                                Log().write_log(f"写入分类成功 {album}", 'info')
+                            else:
+                                Log().write_log(f"写入分类失败 {album}", 'error')
+
+
+                    else:
+                        cnki_paper_album_body = {
+                            "title": title_zh,
+                            "album": album,
+                            "receive_time": receive_time
+                        }
+
+                        response = requests.post(f"{ES_URL}/cnki_album/_doc",
+                                                 json=cnki_paper_album_body,
+                                                 headers={'Content-Type': 'application/json'})
+
+                        response_data = response.json()
+                        if response_data.get('result') == 'created' or response_data.get('result') == 'updated':
+                            Log().write_log(f"写入分类成功 {album}", 'info')
+                        else:
+                            Log().write_log(f"写入分类失败 {album}", 'error')
+
             # 写入作者索引
             if authors_list:
                 for i in range(len(authors_list)):
@@ -73,7 +170,7 @@ def create_cnki_index(data):
                     if authors[0:1] == ' ':
                         authors = authors[1:]
                     arxiv_paper_authors_body = {
-                        "UUID": UUID,
+                        "title": title_zh,
                         "authors": authors,
                         "authors_text": authors,
                         "receive_time": receive_time
@@ -87,50 +184,6 @@ def create_cnki_index(data):
                         Log().write_log(f"写入作者成功 - {authors}", 'info')
                     else:
                         Log().write_log(f"写入作者失败 - {authors}", 'error')
-
-            # 写入分类索引
-            sql = f"SELECT album FROM `Paper`.`cnki_paper_information` WHERE `UUID` = '{UUID}'"
-            flag, album = Date_base().select(sql)
-            album = album[0][0]
-            if album:
-                if ';' in album:
-                    album_list = album.split(';')
-                    for i in range(len(album_list)):
-                        album = album_list[i]
-                        if album.startswith(' '):
-                            album = album[1:]
-
-                        cnki_paper_classification_zh_body = {
-                            "UUID": UUID,
-                            "classification_zh": album,
-                            "receive_time": receive_time
-                        }
-
-                        response = requests.post(f"{ES_URL}/cnki_classification_zh/_doc",
-                                                 json=cnki_paper_classification_zh_body,
-                                                 headers={'Content-Type': 'application/json'})
-
-                        response_data = response.json()
-                        if response_data.get('result') == 'created' or response_data.get('result') == 'updated':
-                            Log().write_log(f"写入分类成功 {album}", 'info')
-                        else:
-                            Log().write_log(f"写入分类失败 {album}", 'error')
-                else:
-                    cnki_paper_classification_zh_body = {
-                        "UUID": UUID,
-                        "classification_zh": album,
-                        "receive_time": receive_time
-                    }
-
-                    response = requests.post(f"{ES_URL}/cnki_classification_zh/_doc",
-                                             json=cnki_paper_classification_zh_body,
-                                             headers={'Content-Type': 'application/json'})
-
-                    response_data = response.json()
-                    if response_data.get('result') == 'created' or response_data.get('result') == 'updated':
-                        Log().write_log(f"写入分类成功 {album}", 'info')
-                    else:
-                        Log().write_log(f"写入分类失败 {album}", 'error')
 
             # 写入论文引用索引
             sql = (f"SELECT  `journal`, `master`, `PhD`, `international_journals`, `book`, `Chinese_and_foreign`, "
@@ -151,7 +204,7 @@ def create_cnki_index(data):
                 journal_list = [journal.strip(';') for journal in journal_list]
                 for album in journal_list:
                     cnki_paper_quote_body = {
-                        "UUID": UUID,
+                        "title": title_zh,
                         "quote": album,
                         "type": '期刊',
                         "receive_time": receive_time
@@ -172,7 +225,7 @@ def create_cnki_index(data):
                 master_list = [journal.strip(';') for journal in master_list]
                 for master in master_list:
                     cnki_paper_quote_body = {
-                        "UUID": UUID,
+                        "title": title_zh,
                         "quote": master,
                         "type": '硕士论文',
                         "receive_time": receive_time
@@ -195,7 +248,7 @@ def create_cnki_index(data):
                     if PhD == 'None':
                         continue
                     cnki_paper_quote_body = {
-                        "UUID": UUID,
+                        "title": title_zh,
                         "quote": PhD,
                         "type": '博士论文',
                         "receive_time": receive_time
@@ -216,7 +269,7 @@ def create_cnki_index(data):
                 international_journals_list = [journal.strip(';') for journal in international_journals_list]
                 for international_journals in international_journals_list:
                     cnki_paper_quote_body = {
-                        "UUID": UUID,
+                        "title": title_zh,
                         "quote": international_journals,
                         "type": '国际期刊',
                         "receive_time": receive_time
@@ -237,7 +290,7 @@ def create_cnki_index(data):
                 book_list = [journal.strip(';') for journal in book_list]
                 for book in book_list:
                     cnki_paper_quote_body = {
-                        "UUID": UUID,
+                        "title": title_zh,
                         "quote": book,
                         "type": '图书',
                         "receive_time": receive_time
@@ -258,7 +311,7 @@ def create_cnki_index(data):
                 Chinese_and_foreign_list = [journal.strip(';') for journal in Chinese_and_foreign_list]
                 for Chinese_and_foreign in Chinese_and_foreign_list:
                     cnki_paper_quote_body = {
-                        "UUID": UUID,
+                        "title": title_zh,
                         "quote": Chinese_and_foreign,
                         "type": '中外文题录',
                         "receive_time": receive_time
@@ -279,7 +332,7 @@ def create_cnki_index(data):
                 newpaper_list = [journal.strip(';') for journal in newpaper_list]
                 for newpaper in newpaper_list:
                     cnki_paper_quote_body = {
-                        "UUID": UUID,
+                        "title": title_zh,
                         "quote": newpaper,
                         "type": '报纸',
                         "receive_time": receive_time
@@ -295,11 +348,29 @@ def create_cnki_index(data):
                     else:
                         Log().write_log(f"写入报纸引用失败 {newpaper}", 'error')
 
+            if title_list:
+                for a in title_list:
+                    for b in classification_list:
+                        cnki_title_words_body = {
+                            "title": title_zh,
+                            "words": a,
+                            "classification": b,
+                            "receive_time": receive_time
+                        }
+                        response = requests.post(f"{ES_URL}/cnki_words/_doc",
+                                                 json=cnki_title_words_body,
+                                                 headers={'Content-Type': 'application/json'})
+                        response_data = response.json()
+                        if response_data.get('result') == 'created' or response_data.get('result') == 'updated':
+                            Log().write_log(f"写入成功 {a} - {b}", 'info')
+                        else:
+                            Log().write_log(f"写入失败 {a} - {b}", 'error')
+
             sql = f"UPDATE `Paper`.`index` SET `ES_date` = '{now_time()}', state = '10' WHERE `UUID` = '{UUID}';"
             Date_base().update(sql)
 
             Log().write_log(f'写入Es成功 {title_zh}', 'info')
-            time.sleep(0.2)
+            time.sleep(1)
 
     except Exception as e:
         if str(type(e).__name__) == 'ConnectionError':
