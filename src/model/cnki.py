@@ -1,3 +1,35 @@
+def paper_DB_flag():
+    table = {
+        0: 'xxkq',
+        1: 'xwlw',
+        2: 'hy',
+        3: 'bz',
+        4: 'ts',
+        5: 'bs',
+        6: 'cg',
+        7: 'xxkj',
+        8: 'tsqk',
+        9: 'sp'
+    }
+    return table
+
+
+def paper_DB_DT():
+    table = {
+        0: "'1'",
+        1: "'2', '3'",
+        2: "'c'",
+        3: "'0'",
+        4: "'4'",
+        5: "'a'",
+        6: "'b'",
+        7: "'6'",
+        8: "'5'",
+        9: "'7'"
+    }
+    return table
+
+
 def date_choose_start_table():
     table = {
         1: '/html/body/div[5]/div[1]/div[2]/table/tbody/tr[1]/td[1]',
@@ -126,7 +158,6 @@ def positioned_element():  # 定位元素
         9: '''//*[@id="ModuleSearch"]/div[2]/div/div/ul/li[18]/a''',
         'sp_sum': '''//*[@id="ModuleSearch"]/div[2]/div/div/ul/li[18]/a/em''',
 
-
         'all_item': '''//*[@id="more"]/i''',
 
         'start_yy': '''/html/body/div[5]/div[1]/div[1]/div[2]/span''',
@@ -227,69 +258,105 @@ class Crawl:
 
     @staticmethod
     def xpath_inf():
+        xpath = "/html/body/div[2]/div[1]/div[3]/div/div/div"
         xpaths = [
-            # 专辑
-            ("/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[1]/span",
-             "/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[1]/p"),
-            ("/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[2]/span",
-             "/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[2]/p"),
-            ("/html/body/div[2]/div[1]/div[3]/div/div/div[5]/ul/li[1]/span",
-             "/html/body/div[2]/div[1]/div[3]/div/div/div[5]/ul/li[1]/p"),
-            ("/html/body/div[2]/div[1]/div[3]/div/div/div[5]/ul/li[2]/span",
-             "/html/body/div[2]/div[1]/div[3]/div/div/div[5]/ul/li[2]/p"),
-            ("/html/body/div[2]/div[1]/div[3]/div/div/div[5]/ul/li[3]/span",
-             "/html/body/div[2]/div[1]/div[3]/div/div/div[5]/ul/li[3]/p"),
-            # 专题
-            ("/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[1]/span",
-             "/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[1]/p"),
-            ("/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[2]/span",
-             "/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[2]/p"),
-            ("/html/body/div[2]/div[1]/div[3]/div/div/div[4]/ul/li[1]/span",
-             "/html/body/div[2]/div[1]/div[3]/div/div/div[4]/ul/li[1]/p"),
-            # 分类号
-            ("/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[3]/span",
-             "/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[3]/p"),
-            ("/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[3]/span",
-             "/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[3]/p"),
-            ("/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[3]/span",
-             "/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[3]/p"),
-            ("/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[4]/span",
-             "/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[4]/p"),
-            ("/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[4]/span",
-             "/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[4]/p"),
-            ("/html/body/div[2]/div[1]/div[3]/div/div/div[5]/ul/li[4]/span",
-             "/html/body/div[2]/div[1]/div[3]/div/div/div[5]/ul/li[4]/p"),
+            # list
+            (f"{xpath}[1]/ul/li[1]/span", f"{xpath}[1]/ul/li[1]/p"),
+            (f"{xpath}[1]/ul/li[2]/span", f"{xpath}[1]/ul/li[2]/p"),
+            (f"{xpath}[1]/ul/li[3]/span", f"{xpath}[1]/ul/li[3]/p"),
+            (f"{xpath}[1]/ul/li[4]/span", f"{xpath}[1]/ul/li[4]/p"),
+            (f"{xpath}[1]/ul/li[5]/span", f"{xpath}[1]/ul/li[5]/p"),
+            (f"{xpath}[1]/ul/li[6]/span", f"{xpath}[1]/ul/li[6]/p"),
+            (f"{xpath}[1]/ul/li[7]/span", f"{xpath}[1]/ul/li[7]/p"),
+            (f"{xpath}[1]/ul/li[8]/span", f"{xpath}[1]/ul/li[8]/p"),
+            (f"{xpath}[1]/ul/li[9]/span", f"{xpath}[1]/ul/li[9]/p"),
+
+            (f"{xpath}[2]/ul/li[1]/span", f"{xpath}[2]/ul/li[1]/p"),
+            (f"{xpath}[2]/ul/li[2]/span", f"{xpath}[2]/ul/li[2]/p"),
+            (f"{xpath}[2]/ul/li[3]/span", f"{xpath}[2]/ul/li[3]/p"),
+            (f"{xpath}[2]/ul/li[4]/span", f"{xpath}[2]/ul/li[4]/p"),
+            (f"{xpath}[2]/ul/li[5]/span", f"{xpath}[2]/ul/li[5]/p"),
+            (f"{xpath}[2]/ul/li[6]/span", f"{xpath}[2]/ul/li[6]/p"),
+            (f"{xpath}[2]/ul/li[7]/span", f"{xpath}[2]/ul/li[7]/p"),
+            (f"{xpath}[2]/ul/li[8]/span", f"{xpath}[2]/ul/li[8]/p"),
+            (f"{xpath}[2]/ul/li[9]/span", f"{xpath}[2]/ul/li[9]/p"),
+
+            (f"{xpath}[3]/ul/li[1]/span", f"{xpath}[3]/ul/li[1]/p"),
+            (f"{xpath}[3]/ul/li[2]/span", f"{xpath}[3]/ul/li[2]/p"),
+            (f"{xpath}[3]/ul/li[3]/span", f"{xpath}[3]/ul/li[3]/p"),
+            (f"{xpath}[3]/ul/li[4]/span", f"{xpath}[3]/ul/li[4]/p"),
+            (f"{xpath}[3]/ul/li[5]/span", f"{xpath}[3]/ul/li[5]/p"),
+            (f"{xpath}[3]/ul/li[6]/span", f"{xpath}[3]/ul/li[6]/p"),
+            (f"{xpath}[3]/ul/li[7]/span", f"{xpath}[3]/ul/li[7]/p"),
+            (f"{xpath}[3]/ul/li[8]/span", f"{xpath}[3]/ul/li[8]/p"),
+            (f"{xpath}[3]/ul/li[9]/span", f"{xpath}[3]/ul/li[9]/p"),
+
+            (f"{xpath}[4]/ul/li[1]/span", f"{xpath}[4]/ul/li[1]/p"),
+            (f"{xpath}[4]/ul/li[2]/span", f"{xpath}[4]/ul/li[2]/p"),
+            (f"{xpath}[4]/ul/li[3]/span", f"{xpath}[4]/ul/li[3]/p"),
+            (f"{xpath}[4]/ul/li[4]/span", f"{xpath}[4]/ul/li[4]/p"),
+            (f"{xpath}[4]/ul/li[5]/span", f"{xpath}[4]/ul/li[5]/p"),
+            (f"{xpath}[4]/ul/li[6]/span", f"{xpath}[4]/ul/li[6]/p"),
+            (f"{xpath}[4]/ul/li[7]/span", f"{xpath}[4]/ul/li[7]/p"),
+            (f"{xpath}[4]/ul/li[8]/span", f"{xpath}[4]/ul/li[8]/p"),
+            (f"{xpath}[4]/ul/li[9]/span", f"{xpath}[4]/ul/li[9]/p"),
+
+            (f"{xpath}[5]/ul/li[1]/span", f"{xpath}[5]/ul/li[1]/p"),
+            (f"{xpath}[5]/ul/li[2]/span", f"{xpath}[5]/ul/li[2]/p"),
+            (f"{xpath}[5]/ul/li[3]/span", f"{xpath}[5]/ul/li[3]/p"),
+            (f"{xpath}[5]/ul/li[4]/span", f"{xpath}[5]/ul/li[4]/p"),
+            (f"{xpath}[5]/ul/li[5]/span", f"{xpath}[5]/ul/li[5]/p"),
+            (f"{xpath}[5]/ul/li[6]/span", f"{xpath}[5]/ul/li[6]/p"),
+            (f"{xpath}[5]/ul/li[7]/span", f"{xpath}[5]/ul/li[7]/p"),
+            (f"{xpath}[5]/ul/li[8]/span", f"{xpath}[5]/ul/li[8]/p"),
+            (f"{xpath}[5]/ul/li[9]/span", f"{xpath}[5]/ul/li[9]/p"),
+
+            (f"{xpath}[6]/ul/li[1]/span", f"{xpath}[6]/ul/li[1]/p"),
+            (f"{xpath}[6]/ul/li[2]/span", f"{xpath}[6]/ul/li[2]/p"),
+            (f"{xpath}[6]/ul/li[3]/span", f"{xpath}[6]/ul/li[3]/p"),
+            (f"{xpath}[6]/ul/li[4]/span", f"{xpath}[6]/ul/li[4]/p"),
+            (f"{xpath}[6]/ul/li[5]/span", f"{xpath}[6]/ul/li[5]/p"),
+            (f"{xpath}[6]/ul/li[6]/span", f"{xpath}[6]/ul/li[6]/p"),
+            (f"{xpath}[6]/ul/li[7]/span", f"{xpath}[6]/ul/li[7]/p"),
+            (f"{xpath}[6]/ul/li[8]/span", f"{xpath}[6]/ul/li[8]/p"),
+            (f"{xpath}[6]/ul/li[9]/span", f"{xpath}[6]/ul/li[9]/p"),
+
+            (f"{xpath}[7]/ul/li[1]/span", f"{xpath}[7]/ul/li[1]/p"),
+            (f"{xpath}[7]/ul/li[2]/span", f"{xpath}[7]/ul/li[2]/p"),
+            (f"{xpath}[7]/ul/li[3]/span", f"{xpath}[7]/ul/li[3]/p"),
+            (f"{xpath}[7]/ul/li[4]/span", f"{xpath}[7]/ul/li[4]/p"),
+            (f"{xpath}[7]/ul/li[5]/span", f"{xpath}[7]/ul/li[5]/p"),
+            (f"{xpath}[7]/ul/li[6]/span", f"{xpath}[7]/ul/li[6]/p"),
+            (f"{xpath}[7]/ul/li[7]/span", f"{xpath}[7]/ul/li[7]/p"),
+            (f"{xpath}[7]/ul/li[8]/span", f"{xpath}[7]/ul/li[8]/p"),
+            (f"{xpath}[7]/ul/li[9]/span", f"{xpath}[7]/ul/li[9]/p"),
+
+            (f"{xpath}[8]/ul/li[1]/span", f"{xpath}[8]/ul/li[1]/p"),
+            (f"{xpath}[8]/ul/li[2]/span", f"{xpath}[8]/ul/li[2]/p"),
+            (f"{xpath}[8]/ul/li[3]/span", f"{xpath}[8]/ul/li[3]/p"),
+            (f"{xpath}[8]/ul/li[4]/span", f"{xpath}[8]/ul/li[4]/p"),
+            (f"{xpath}[8]/ul/li[5]/span", f"{xpath}[8]/ul/li[5]/p"),
+            (f"{xpath}[8]/ul/li[6]/span", f"{xpath}[8]/ul/li[6]/p"),
+            (f"{xpath}[8]/ul/li[7]/span", f"{xpath}[8]/ul/li[7]/p"),
+            (f"{xpath}[8]/ul/li[8]/span", f"{xpath}[8]/ul/li[8]/p"),
+            (f"{xpath}[8]/ul/li[9]/span", f"{xpath}[8]/ul/li[9]/p"),
+
+            (f"{xpath}[9]/ul/li[1]/span", f"{xpath}[9]/ul/li[1]/p"),
+            (f"{xpath}[9]/ul/li[2]/span", f"{xpath}[9]/ul/li[2]/p"),
+            (f"{xpath}[9]/ul/li[3]/span", f"{xpath}[9]/ul/li[3]/p"),
+            (f"{xpath}[9]/ul/li[4]/span", f"{xpath}[9]/ul/li[4]/p"),
+            (f"{xpath}[9]/ul/li[5]/span", f"{xpath}[9]/ul/li[5]/p"),
+            (f"{xpath}[9]/ul/li[6]/span", f"{xpath}[9]/ul/li[6]/p"),
+            (f"{xpath}[9]/ul/li[7]/span", f"{xpath}[9]/ul/li[7]/p"),
+            (f"{xpath}[9]/ul/li[8]/span", f"{xpath}[9]/ul/li[8]/p"),
+            (f"{xpath}[9]/ul/li[9]/span", f"{xpath}[9]/ul/li[9]/p"),
+
             # 版名
             ("/html/body/div[2]/div[1]/div[3]/div[1]/div/div[5]/span",
              "/html/body/div[2]/div[1]/div[3]/div[1]/div/div[5]/p"),
             # 版号
             ("/html/body/div[2]/div[1]/div[3]/div[1]/div/div[6]/span",
              "/html/body/div[2]/div[1]/div[3]/div[1]/div/div[6]/p"),
-            # DOI
-            ("/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[1]/span",
-             "/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[1]/p"),
-            # list
-            ("/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[1]/span",
-             "/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[1]/p"),
-            ("/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[2]/span",
-             "/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[2]/p"),
-            ("/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[1]/span",
-             "/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[1]/p"),
-            ("/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[2]/span",
-             "/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[2]/p"),
-            ("/html/body/div[2]/div[1]/div[3]/div/div/div[4]/ul/li[1]/span",
-             "/html/body/div[2]/div[1]/div[3]/div/div/div[4]/ul/li[1]/p"),
-            ("/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[2]/span",
-             "/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[2]/p"),
-            ("/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[3]/span",
-             "/html/body/div[2]/div[1]/div[3]/div/div/div[6]/ul/li[3]/p"),
-            ("/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[2]/span",
-             "/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[2]/p"),
-            ("/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[3]/span",
-             "/html/body/div[2]/div[1]/div[3]/div/div/div[7]/ul/li[3]/p"),
-            ("/html/body/div[2]/div[1]/div[3]/div/div/div[4]/ul/li[2]/span",
-             "/html/body/div[2]/div[1]/div[3]/div/div/div[4]/ul/li[2]/p"),
-
         ]
 
         return xpaths

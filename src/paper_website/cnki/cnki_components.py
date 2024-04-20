@@ -1,7 +1,7 @@
-import sys
 import time
 import re
 import random
+import getpass
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -13,10 +13,8 @@ from src.module.now_time import year, moon, day
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from src.model.cnki import Crawl, positioned_element
-from src.module.log import Log, err2, err1
-from selenium.webdriver.common.proxy import Proxy, ProxyType
-
-
+from src.module.log import Log, err2
+from concurrent.futures import ThreadPoolExecutor
 
 open_page_data = positioned_element()
 crawl_xp = Crawl()
@@ -26,18 +24,15 @@ dts = date_choose_start_table()
 dte = date_choose_end_table()
 
 
-def webserver(web_zoom):
-    chromedriver_path = r"chromedriver.exe"
-    service = ChromeService(chromedriver_path)
+def webserver():
     desired_capabilities = DesiredCapabilities.CHROME
     desired_capabilities["pageLoadStrategy"] = "none"
     options = webdriver.ChromeOptions()
     # 设置浏览器不加载图片，提高速度
     options.add_experimental_option("prefs", {"profile.managed_default_content_settings.images": 2})
-    options.add_argument(f"--force-device-scale-factor={web_zoom}")
     options.add_argument("--disable-gpu")
-    # options.add_argument('--headless')  # 无头模式 不唤起实体浏览器
-    # options.add_argument('--log-level=3')  # 设置日志级别为最低，减少输出信息
+    options.add_argument('--headless')  # 不唤起实体浏览器
+    options.add_argument('--log-level=3')  # 设置日志级别减少输出信息
     options.add_argument('--silent')  # 完全禁止 DevTools 输出
     options.add_experimental_option('excludeSwitches', ['enable-logging'])  # 禁用 DevTools 监听输出
 
@@ -49,7 +44,7 @@ def webserver(web_zoom):
     #     options.add_argument(f"--proxy-server={proxy.http_proxy}")
 
     # 指定chromedriver.exe的位置
-    driver = webdriver.Chrome(service=service, options=options)
+    driver = webdriver.Chrome(service=ChromeService(r"chromedriver.exe"), options=options)
     return driver
 
 
@@ -71,7 +66,7 @@ def setting_select_date(driver, time_out):
 
         WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.ID, 'datebox0'))).click()
         time.sleep(1)
-        while range(flag_page):
+        for i in range(flag_page):
             WebDriverWait(driver, time_out).until(EC.presence_of_element_located
                                                   ((By.XPATH, open_page_data['start_previous_page']))).click()
 
@@ -265,10 +260,6 @@ def choose_banner(driver, time_out, paper_day):
             a11 = '1'
 
         item_flag = f"{a0}{a1}{a2}{a3}{a5}{a7}{a8}{a9}{a10}{a11}"
-        print(item_flag)
-
-        sql = (f"INSERT INTO `Paper`.`cnki_page_flag`(`date`, `flag`) VALUES "
-               f"('{paper_day}', '{item_flag}');")
 
         sql = (f"INSERT INTO `Paper`.`cnki_page_flag`"
                f"(`date`, `flag`, `xxkq`, `xwlw`, `hy`, `bz`, `ts`, `bs`, `cg`, `xxkj`, `tsqk`, `sp`) "
@@ -280,21 +271,13 @@ def choose_banner(driver, time_out, paper_day):
         return 0, item_flag
 
 
-def open_page(driver, keyword):
+def open_page_of_title(driver):
     # 打开页面，等待两秒
     try:
         url = f"https://kns.cnki.net/kns8/AdvSearch"
-        # driver.add_cookie(cookie)
         driver.get(url)
-        random_sleep = round(random.uniform(0, 3), 2)
-        print(f"sleep {random_sleep}s")
-        time.sleep(random_sleep)
         time_out = 10
-        # os.system("pause")
-
-        # 传入关键字
-        # WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['ik']))).send_keys(keyword)
-
+        time.sleep(3)
         # 设置时间
         paper_day = setting_select_date(driver, time_out)
 
@@ -325,10 +308,7 @@ def open_page(driver, keyword):
 
         paper_sum = 50
 
-        # 去除千分位里的逗号
-
-        page_unm = int(res_unm / paper_sum) + 1
-        print(f"共找到 {res_unm} 条结果, {page_unm} 页。")
+        print(f"共找到 {res_unm} 条结果, {int(res_unm / paper_sum + 1)} 页。")
         return res_unm, paper_type, paper_day, date_str, paper_sum
     except Exception as e:
         err2(e)
@@ -337,10 +317,6 @@ def open_page(driver, keyword):
 def open_paper_info(driver, keyword):
     time_out = 5
     driver.get("https://kns.cnki.net/kns8/AdvSearch")
-    random_sleep = round(random.uniform(1, 2), 2)
-    print(f"sleep {random_sleep}s")
-    time.sleep(random_sleep)
-
     WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['ik']))).send_keys(
         keyword)
 
@@ -409,14 +385,32 @@ def is_english_string(s):
     return bool(re.match('''^[a-zA-Z\s.,;:!?\'"()]+$''', s))
 
 
-def get_choose_info(driver, xpath1, xpath2, str):
+def process_element(driver, div, li):
+    xpath1 = f"/html/body/div[2]/div[1]/div[3]/div/div/div[{div}]/ul/li[{li}]/span"
+    xpath2 = f"/html/body/div[2]/div[1]/div[3]/div/div/div[{div}]/ul/li[{li}]/p"
     try:
-        if WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, xpath1))).text == str:
-            return WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, xpath2))).text
-        else:
-            return None
+        class_name_elem = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, xpath1)))
+        class_name = class_name_elem.text
+        if class_name:
+            class_data_elem = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, xpath2)))
+            class_data = class_data_elem.text
+            return class_name, class_data
     except:
         return None
+
+
+def get_choose_info(driver):
+    class_list = []
+    with ThreadPoolExecutor() as executor:
+        futures = []
+        for div in range(3, 9):
+            for li in range(1, 9):
+                futures.append(executor.submit(process_element, driver, div, li))
+        for future in futures:
+            result = future.result()
+            if result:
+                class_list.append(result)
+    return class_list
 
 
 def is_leap_year(year):
@@ -483,7 +477,6 @@ def whit_file(date_str, paper_type, paper_day):
     date_str[paper_type] = '1'
     date_str = str(date_str)
     date_str = date_str[1:][:-1].replace(',', '').replace("'", "").replace(" ", "")
-    flag = False
     sql = f"UPDATE `Paper`.`cnki_page_flag` SET `flag` = '{date_str}' WHERE `date` = '{paper_day}'"
     Date_base().update(sql)
     if date_str == '1111111111':
@@ -529,5 +522,5 @@ def page_click_sort_type(driver, flag):
         # 综合
         if flag == 7:
             WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="ZH"]'))).click()
-    except Exception as e:
+    except ExceptionGroup as e:
         err2(e)

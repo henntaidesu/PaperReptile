@@ -17,16 +17,15 @@ class read_conf:
 
     def database(self):
         host = self.config.get('database', 'host')
-        port = self.config.get('database', 'port')
-        port = int(port)
+        port = int(self.config.get('database', 'port'))
         user = self.config.get('database', 'user')
         password = self.config.get('database', 'password')
-        data_base = self.config.get('database', 'database')
-        db = pymysql.connect(host=host, port=port, user=user, password=password, database=data_base)
+        database = self.config.get('database', 'database')
+        db = pymysql.connect(host=host, port=port, user=user, password=password, database=database)
         return db
 
     def http_proxy(self):
-        if_true = self.config.get('http_proxy', 'true')
+        if_true = self.config.get('http_proxy', 'status')
         host = self.config.get('http_proxy', 'host')
         port = self.config.get('http_proxy', 'port')
         proxy_url = "http://" + host + ":" + port
@@ -43,14 +42,14 @@ class read_conf:
             return False, proxies
 
     def socks5(self):
-        host = self.config.get('socks5', 'host')
-        port = self.config.get('socks5', 'port')
+        host = self.config.get('socks5_proxy', 'host')
+        port = self.config.get('socks5_proxy', 'port')
         proxy_url = f"socks5://{host}:{port}"
         return proxy_url
 
     def baidu_api(self):
-        baidu_rapid = self.config.get('baidu translate', 'rapid')
-        key = self.config.get('baidu translate', 'key')
+        baidu_rapid = self.config.get('baidu_translate', 'rapid')
+        key = self.config.get('baidu_translate', 'key')
         return baidu_rapid, key
 
     def log_level(self):
@@ -69,70 +68,27 @@ class read_conf:
         return number
 
     def down_path(self):
-        path = self.config.get('Paper File Path', 'path')
+        path = self.config.get('Paper_Down_Path', 'path')
         # if '\\' in path:
         #     path = path.replace('\\','\\\\')
         return path
 
     def cnki_proxy(self):
-        true = self.config.get('Paper File Path', 'true')
-        host = self.config.get('Paper File Path', 'host')
-        port = self.config.get('Paper File Path', 'port')
+        status = self.config.get('cnki_proxy', 'status')
+        host = self.config.get('cnki_proxy', 'host')
+        port = self.config.get('cnki_proxy', 'port')
         proxy_url = "http://" + host + ":" + port
 
         # print(type(if_true))
-        if true == "True":
+        if status == "True":
             return True, proxy_url
         else:
             return False, proxy_url
-
-    def cnki_paper(self):
-        web_zoom = self.config.get('cnki paper passkey', 'web_zoom')
-        keyword = self.config.get('cnki paper passkey', 'keyword')
-        papers_need = int(self.config.get('cnki paper passkey', 'papers_need'))
-        time_out = int(self.config.get('cnki paper passkey', 'time_out'))
-        return web_zoom, keyword, papers_need, time_out
-
-    def cnki_skip_db(self):
-        newpaper = self.config.get('cnki skip jump', '报纸')
-        journal = self.config.get('cnki skip jump', '期刊')
-        journal_A = self.config.get('cnki skip jump', '特色期刊')
-        master = self.config.get('cnki skip jump', '硕士')
-        PhD = self.config.get('cnki skip jump', '博士')
-
-        if newpaper == "True":
-            newpaper = True
-        else:
-            newpaper = False
-
-        if journal == "True":
-            journal = True
-        else:
-            journal = False
-
-        if journal_A == "True":
-            journal_A = True
-        else:
-            journal_A = False
-
-        if master == "True":
-            master = True
-        else:
-            master = False
-
-        if PhD == "True":
-            PhD = True
-        else:
-            PhD = False
-
-        return [newpaper, journal, master, PhD]
 
     def elasticsearch(self):
         host = self.config.get('elasticsearch', 'host')
         ES_URL = f'http://{host}:9200'
         return ES_URL
-
-
 
 
 class ArxivYYMM:
@@ -169,4 +125,3 @@ class CNKI:
         self.config.set('cnki date', 'day', day)
         with open('conf.ini', 'w', encoding='utf-8') as configfile:
             self.config.write(configfile)
-

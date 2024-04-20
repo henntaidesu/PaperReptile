@@ -2,7 +2,7 @@ from src.paper_website.arxiv.arxivorg import ArxivOrg, translate_classification,
 from src.module.log import Log
 from src.module.multi_process import Process
 from src.paper_website.arxiv.arxiv_paper_down import Arxiv_paper_down
-from src.paper_website.cnki.run_cnki import run_get_paper_title, run_get_paper_info
+from src.paper_website.cnki.run_cnki import run_get_paper_title, run_get_paper_info, run_multi_title_data
 from src.ES.arXiv import create_arxiv_index
 from src.ES.cnki import create_cnki_index
 from src.module.read_conf import read_conf
@@ -22,7 +22,7 @@ class Index:
         self.Arxiv_paper_down = Arxiv_paper_down()
 
     def index(self):
-        flag = '7'
+        flag = '6'
         if flag == '1':
             print("获取arxiv论文")
             self.arxivorg.get_exhaustive_url()
@@ -57,13 +57,18 @@ class Index:
             limit = int(self.conf.processes()) * 10
             print("获取cnki论文详细数据")
             sql = (f"SELECT * FROM `cnki_index` WHERE `start` = '0' AND db_type in ('1', '2', '3') "
-                   f"ORDER BY receive_time DESC LIMIT 3000, {limit}")
+                   f"ORDER BY receive_time DESC LIMIT {int(self.conf.processes()) * 10}")
             self.process.multi_process_as_up_group(sql, run_get_paper_info)
 
         if flag == '7':
+            print("处理CNKI重复数据")
+            sql = f"SELECT * FROM `Paper`.`cnki_index` WHERE `start` = 'a' limit {int(self.conf.processes()) * 10}"
+            self.process.multi_process_as_up_group(sql, run_multi_title_data)
+
+        if flag == '8':
             print("向ES添加数据")
-            # sql = f"SELECT * FROM `index` WHERE ES_date is NULL and `from` = 'arxiv' and `state` not in ('00', '01') limit 5000"
-            # self.process.multi_process_as_up_group(sql, create_arxiv_index)
+            # sql = f"SELECT * FROM `index` WHERE ES_date is NULL and `from` = 'arxiv' and `state` not in ('00',
+            # '01') limit 5000" self.process.multi_process_as_up_group(sql, create_arxiv_index)
 
             sql = f"SELECT * FROM `index` WHERE `from` = 'cnki' and ES_date is NULL limit 10000"
             self.process.multi_process_as_up_group(sql, create_cnki_index)

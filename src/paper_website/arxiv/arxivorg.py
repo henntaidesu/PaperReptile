@@ -242,7 +242,7 @@ def translate_classification(data):
             classification_en = i[1]
             # classification_cn = openAI().openai_chat(classification_en)
             classification_cn = tr.GoogleTR(classification_en, 'zh-CN')
-            # classification_cn = tr.baiduTR("en", "zh", classification_en)
+
             classification_en = ArxivOrg.TrimString(classification_en)
             logger.write_log(f"[EN : {classification_en}] -> [CN : {classification_cn}]", 'info')
             sql = (f"UPDATE `index` SET `classification_zh` = '{classification_cn}' "

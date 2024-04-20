@@ -7,8 +7,8 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 from src.module.execution_db import Date_base
 from src.module.UUID import UUID
-from src.model.cnki import Crawl, positioned_element
-from src.module.log import Log, err2
+from src.model.cnki import Crawl, positioned_element, paper_DB_flag, paper_DB_DT
+from src.module.log import Log, err2, err3
 from src.module.read_conf import read_conf
 
 open_page_data = positioned_element()
@@ -21,50 +21,13 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum,
                     None_message):
     time_out = 5
     count = 1
-    db_type = None
-
-    # paper_db = read_conf.cnki_skip_db()
-
     new_paper_sum = 0
-    sql = None
-    dt = None
-    xpath_information = crawl_xp.xpath_inf()
-    sum_page = res_unm / 50 + 1
 
-    if paper_type == 0:
-        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `xxkq` = {res_unm} WHERE `date` ='{paper_day}';"
-        dt = "'1'"
-    elif paper_type == 1:
-        dt = "'2', '3'"
-        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `xwlw` = {res_unm} WHERE `date` = '{paper_day}';"
-    elif paper_type == 2:
-        dt = "'c'"
-        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `hy` = {res_unm} WHERE `date` = '{paper_day}';"
-    elif paper_type == 3:
-        dt = "'0'"
-        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `bz` = {res_unm} WHERE `date` = '{paper_day}';"
-    elif paper_type == 4:
-        dt = "'4'"
-        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `ts` = {res_unm} WHERE `date` = '{paper_day}';"
-    elif paper_type == 5:
-        dt = "'a'"
-        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `bs` = {res_unm} WHERE `date` = '{paper_day}';"
-    elif paper_type == 6:
-        dt = "'b'"
-        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `cg` = {res_unm} WHERE `date` = '{paper_day}';"
-    elif paper_type == 7:
-        dt = "'6'"
-        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `xxkj` = {res_unm} WHERE `date` = '{paper_day}';"
-    elif paper_type == 8:
-        dt = "'5'"
-        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `tsqk` = {res_unm} WHERE `date` = '{paper_day}';"
-    elif paper_type == 9:
-        dt = "'7'"
-        sql = f"UPDATE `Paper`.`cnki_page_flag` SET `sp` = {res_unm} WHERE `date` = '{paper_day}';"
+    sql = f"UPDATE `cnki_page_flag` SET `{paper_DB_flag()[paper_type]}` = {res_unm} WHERE `date` ='{paper_day}';"
     Date_base().update(sql)
 
-    sql = (f"SELECT title FROM cnki_index where receive_time >= "
-           f"'{paper_day} 00:00:00' and receive_time <= '{paper_day} 23:59:59' and db_type in ({dt})")
+    sql = (f"SELECT title FROM cnki_index where receive_time >= '{paper_day} 00:00:00' "
+           f"and receive_time <= '{paper_day} 23:59:59' and db_type in ({paper_DB_DT()[paper_type]})")
     flag, paper_title = Date_base().select(sql)
 
     len_data = len(paper_title)
@@ -74,10 +37,10 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum,
     if res_unm > 5950:
         issuing_time_flag = True
 
-    # 当爬取数量小于需求时，循环网页页码
-    while range(8):
+    while True:
         total_page += 1
-        print(f'total_page   :   {total_page}')
+        time.sleep(1)
+        print(f'当前总查询页码   :   {total_page}')
         if issuing_time_flag is True and None_message is False:
             if total_page == 120:
                 # 按引用倒序
@@ -110,32 +73,29 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum,
                 flag333 = whit_file(date_str, paper_type, paper_day)
                 if flag333 is True:
                     return True, False, -1, count, False
-        # 等待加载完全，休眠1S
-        time.sleep(1)
+
         driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.END)
+
 
         # 循环网页一页中的条目
         for i in range((count - 1) % paper_sum + 1, paper_sum + 1):
-            print(f"{res_unm} --- {count + len_data - new_paper_sum} --- {total_page}")
+            # print(f"{res_unm} --- {count + len_data - new_paper_sum} --- {total_page}")
             if res_unm < count + len_data - new_paper_sum:
                 logger.write_log("已获取完数据", 'info')
                 flag333 = whit_file(date_str, paper_type, paper_day)
                 if flag333 is True:
                     return True, False, -1, count, False
 
-            if issuing_time_flag is False and total_page > sum_page:
+            if issuing_time_flag is False and total_page > res_unm / 50 + 1:
                 logger.write_log("已获取完数据", 'info')
                 flag333 = whit_file(date_str, paper_type, paper_day)
                 if flag333 is True:
                     return True, False, -1, count, False
 
             print(f"正在爬取第{count + len_data - new_paper_sum}条基础数据,跳过{new_paper_sum}"
-                  f"条(第{(count - 1) // paper_sum + 1}页第{i}条 总第{total_count + count}次查询 共{res_unm}条):")
+                  f"条(当前查询条件第{(count - 1) // paper_sum + 1}页第{i}条。总第{total_count + count}次查询 共{res_unm}条):")
 
             try:
-                term = (count - 1) % paper_sum + 1  # 本页的第几个条目
-                xpaths = crawl_xp.xpath_base(term)
-
                 try:
                     if res_unm == 1:
                         xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[2]/a'''
@@ -164,7 +124,7 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum,
                 if_title = None
                 for ii in paper_title:
                     if ii[0] == title:
-                        print(f"数据已存在 : {title}")
+                        print(f"数据已存在 : {title} \n")
                         if_title = True
                         break
 
@@ -232,33 +192,116 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum,
                     logger.write_log(f"重复数据 ： {title}, UUID : {uuid}", 'info')
                     continue
 
-                print(f"\n标题:    {title}\n")
+                print(f"标题:    {title}")
 
-                logger.write_log(f"已获取 ： {title}, UUID : {uuid}", 'info')
+                logger.write_log(f"已获取 ： {title}, UUID : {uuid} \n", 'info')
 
             except Exception as e:
                 err2(e)
                 if type(e).__name__ == 'TimeoutException' and issuing_time_flag is False:
                     print(f"{res_unm} ------- {count + len_data - new_paper_sum + 1}")
-                    logger.write_log(f"已获取完数据 ，，{res_unm - (count + len_data - new_paper_sum + 1)}条数据无法获取", 'info')
+                    logger.write_log(f"已获取完数据 ，，{res_unm - (count + len_data - new_paper_sum + 1)}条数据无法获取",
+                                     'info')
                     flag333 = whit_file(date_str, paper_type, paper_day)
                     if flag333 is True:
                         return True, False, -1, count, False
 
             finally:
                 count += 1
-            continue_flag = False
             if res_unm <= count + len_data - new_paper_sum - 1:
-                logger.write_log("已获取完数据", 'info')
-
+                logger.write_log("已获取完数据 \n", 'info')
                 flag333 = whit_file(date_str, paper_type, paper_day)
 
                 if flag333 is True:
                     return True, False, -1, count, False
-            # time.sleep(1)
-
+        time.sleep(1)
         try:
-            time.sleep(3)
             ActionChains(driver).key_down(Keys.ARROW_RIGHT).key_up(Keys.ARROW_RIGHT).perform()
-        except Exception as e:
-            err2(e)
+        finally:
+            pass
+        time.sleep(3)
+
+
+def get_multi_title_data(driver, res_unm):
+    time_out = 5
+    driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.END)
+    count = 0
+    # 循环网页一页中的条目
+    for a in range(int(res_unm / 20)):
+        if a > 0:
+            try:
+                time.sleep(3)
+                ActionChains(driver).key_down(Keys.ARROW_RIGHT).key_up(Keys.ARROW_RIGHT).perform()
+            except Exception as e:
+                err2(e)
+        for i in range(20):
+            count += 1
+
+            print(f"正在爬取第{count}条基础数据,")
+
+            title_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr[{i + 1}]/td[2]/a'''
+            date_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr[{i + 1}]/td[5]'''
+            ndb_type_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr[{i + 1}]/td[6]/span'''
+
+            title = WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, title_xpath))).text
+
+            try:
+                db_type = WebDriverWait(driver, time_out).until(
+                    EC.presence_of_element_located((By.XPATH, ndb_type_xpath))).text
+            except Exception as e:
+                err3(e)
+                db_type = None
+
+            try:
+                date = WebDriverWait(driver, time_out).until(
+                    EC.presence_of_element_located((By.XPATH, date_xpath))).text
+            except Exception as e:
+                err3(e)
+                date = None
+
+            print(db_type)
+
+            if db_type == '期刊':
+                db_type = '1'
+            elif db_type == '报纸':
+                db_type = '0'
+            elif db_type == '硕士':
+                db_type = '2'
+            elif db_type == '博士':
+                db_type = '3'
+            elif db_type == '图书':
+                db_type = '4'
+            elif db_type == '特色期刊':
+                db_type = '5'
+            elif db_type == '刊辑':
+                db_type = '6'
+            elif db_type == '中国会议':
+                db_type = 'a'
+            elif db_type == '国际会议':
+                db_type = 'b'
+            elif db_type == '国家标准':
+                db_type = 'c'
+            elif db_type == '国家标准':
+                db_type = 'd'
+            else:
+                db_type = '9'
+
+            title = title.replace(':', '：').replace('：', ':').replace('——', '—')
+
+            if "<font color='red'>" in title:
+                title = title.replace("<font color='red'>", "")
+
+            uuid = UUID()
+            sql3 = (f"INSERT INTO `Paper`.`cnki_index`"
+                    f"(`UUID`, `title`, `receive_time`, `start`, `db_type`) "
+                    f"VALUES ('{uuid}', '{title}', '{date}', '0', '{db_type}');")
+
+            sql3 = TrSQL(sql3)
+            flag = Date_base().insert(sql3)
+            if flag == '重复数据':
+                logger.write_log(f"重复数据 ： {title}, UUID : {uuid}", 'info')
+                continue
+
+            print(f"标题:    {title}")
+
+            logger.write_log(f"已获取 ： {title}, UUID : {uuid} \n", 'info')
