@@ -1,12 +1,12 @@
 import sys
 from src.module.log import Log, err2
-from src.module.read_conf import read_conf
+from src.module.read_conf import ReadConf
 
 
 class Date_base:
 
     def __init__(self):
-        read_db_conf = read_conf()
+        read_db_conf = ReadConf()
         self.db = read_db_conf.database()
         self.print_log = Log()
 

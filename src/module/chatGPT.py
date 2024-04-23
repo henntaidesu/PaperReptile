@@ -1,5 +1,5 @@
 from openai import OpenAI
-from src.module.read_conf import read_conf
+from src.module.read_conf import ReadConf
 
 
 class openAI:
@@ -9,7 +9,7 @@ class openAI:
     prompt = None
 
     def __init__(self):
-        self.conf = read_conf()
+        self.conf = ReadConf()
         self.key, self.model, self.base_url, self.prompt = self.conf.ChatGPT()
 
     def openai_chat(self, question):

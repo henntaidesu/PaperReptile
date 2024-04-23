@@ -4,7 +4,7 @@ import requests
 import re
 import time
 from lxml import html
-from src.module.read_conf import read_conf, ArxivYYMM
+from src.module.read_conf import ReadConf, ArxivYYMM
 from bs4 import BeautifulSoup
 from src.model.arxiv_org import ArxivOrgPageModel
 from src.module.execution_db import Date_base
@@ -19,7 +19,7 @@ class ArxivOrg:
 
     def __init__(self):
         self.session = requests.Session()
-        self.conf = read_conf()
+        self.conf = ReadConf()
         self.if_proxy, self.proxies = self.conf.http_proxy()
         if self.if_proxy is True:
             self.session.proxies.update(self.proxies)

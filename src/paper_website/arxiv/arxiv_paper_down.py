@@ -3,7 +3,7 @@ import requests
 from tqdm import tqdm
 from src.module.execution_db import Date_base
 from src.module.log import Log
-from src.module.read_conf import read_conf
+from src.module.read_conf import ReadConf
 from src.module.now_time import now_time
 import os
 
@@ -11,7 +11,7 @@ import os
 class Arxiv_paper_down:
 
     def __init__(self):
-        self.conf = read_conf()
+        self.conf = ReadConf()
         self.session = requests.Session()
         self.if_proxy, self.proxies = self.conf.http_proxy()
         if self.if_proxy is True:

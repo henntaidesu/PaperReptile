@@ -1,6 +1,6 @@
 import logging
 from src.module.now_time import today, now_time
-from src.module.read_conf import read_conf
+from src.module.read_conf import ReadConf
 import sys
 
 
@@ -8,7 +8,7 @@ class Log:
     def __init__(self):
         self.day = today()
         self.logger = self.setup_logger()
-        self.confing = read_conf()
+        self.confing = ReadConf()
         self.log_level = self.confing.log_level()
 
     def setup_logger(self):

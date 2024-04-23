@@ -1,7 +1,7 @@
 import time
 from src.module.execution_db import Date_base
 import multiprocessing
-from src.module.read_conf import read_conf
+from src.module.read_conf import ReadConf
 from src.module.log import Log
 from src.module.log import err2
 
@@ -9,7 +9,7 @@ from src.module.log import err2
 class Process:
     def __init__(self):
         self.database = Date_base()
-        self.conf = read_conf()
+        self.conf = ReadConf()
         self.logger = Log()
 
     @staticmethod

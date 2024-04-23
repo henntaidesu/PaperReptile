@@ -7,7 +7,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from src.module.execution_db import Date_base
-from src.module.read_conf import CNKI, read_conf
+from src.module.read_conf import CNKI, ReadConf
 from src.model.cnki import date_choose_end_table, date_choose_start_table
 from src.module.now_time import year, moon, day
 from selenium.webdriver.chrome.service import Service as ChromeService
@@ -19,7 +19,7 @@ from concurrent.futures import ThreadPoolExecutor
 open_page_data = positioned_element()
 crawl_xp = Crawl()
 logger = Log()
-read_conf = read_conf()
+read_conf = ReadConf()
 dts = date_choose_start_table()
 dte = date_choose_end_table()
 
@@ -31,10 +31,11 @@ def webserver():
     # 设置浏览器不加载图片，提高速度
     options.add_experimental_option("prefs", {"profile.managed_default_content_settings.images": 2})
     options.add_argument("--disable-gpu")
-    options.add_argument('--headless')  # 不唤起实体浏览器
     options.add_argument('--log-level=3')  # 设置日志级别减少输出信息
     options.add_argument('--silent')  # 完全禁止 DevTools 输出
     options.add_experimental_option('excludeSwitches', ['enable-logging'])  # 禁用 DevTools 监听输出
+
+    # options.add_argument('--headless')  # 不唤起实体浏览器
 
     # proxy_flag, proxy_url = read_conf.cnki_proxy()
     # if proxy_flag is True:
@@ -48,10 +49,9 @@ def webserver():
     return driver
 
 
-def setting_select_date(driver, time_out):
+def setting_select_date(driver, time_out, yy, mm, dd):
     try:
-        cnki = CNKI()
-        yy, mm, dd = cnki.read_cnki_date()
+
         now_yy = int(year())
         now_mm = int(moon())
         now_day = int(day())
@@ -279,7 +279,8 @@ def open_page_of_title(driver):
         time_out = 10
         time.sleep(3)
         # 设置时间
-        paper_day = setting_select_date(driver, time_out)
+        yy, mm, dd = CNKI().read_cnki_date()
+        paper_day = setting_select_date(driver, time_out, yy, mm, dd)
 
         # 点击搜索
         WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['cs']))).click()
@@ -336,6 +337,35 @@ def open_paper_info(driver, keyword):
     return res_unm
 
 
+def open_multi_info(driver, receive_time, title):
+    time_out = 5
+    time.sleep(1)
+    driver.get("https://kns.cnki.net/kns8/AdvSearch")
+
+    yy = receive_time.year
+    mm = receive_time.month
+    dd = receive_time.day
+
+    setting_select_date(driver, 5, yy, mm, dd)
+
+    WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['ik']))).send_keys(
+        title)
+
+    WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['cs']))).click()
+
+    flag_xpath = '''//*[@id="briefBox"]/p'''
+    try:
+        flag = WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, flag_xpath))).text
+    except:
+        flag = None
+
+    if flag:
+        return True
+    else:
+        return False
+
+
+
 def TrimString(Str):
     if '\n' in Str:
         Str = Str.replace('\n', ' ')
@@ -389,10 +419,10 @@ def process_element(driver, div, li):
     xpath1 = f"/html/body/div[2]/div[1]/div[3]/div/div/div[{div}]/ul/li[{li}]/span"
     xpath2 = f"/html/body/div[2]/div[1]/div[3]/div/div/div[{div}]/ul/li[{li}]/p"
     try:
-        class_name_elem = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, xpath1)))
+        class_name_elem = WebDriverWait(driver, 0.05).until(EC.presence_of_element_located((By.XPATH, xpath1)))
         class_name = class_name_elem.text
         if class_name:
-            class_data_elem = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, xpath2)))
+            class_data_elem = WebDriverWait(driver, 0.05).until(EC.presence_of_element_located((By.XPATH, xpath2)))
             class_data = class_data_elem.text
             return class_name, class_data
     except:

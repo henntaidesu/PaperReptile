@@ -4,7 +4,7 @@ import sys
 import urllib
 import random
 import json
-from src.module.read_conf import read_conf
+from src.module.read_conf import ReadConf
 from src.module.log import Log, err2
 from pygtrans import Translate
 
@@ -12,7 +12,7 @@ from pygtrans import Translate
 class translate:
 
     def __init__(self):
-        self.conf = read_conf()
+        self.conf = ReadConf()
         self.logger = Log()
 
     def baiduTR(self, language, to_language, text):

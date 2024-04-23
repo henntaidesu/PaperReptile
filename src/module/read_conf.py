@@ -2,13 +2,13 @@ import pymysql
 import configparser
 
 
-class read_conf:
+class ReadConf:
     config = None
 
     def __init__(self):
         # 如果配置信息尚未加载，则加载配置文件
-        if not read_conf.config:
-            read_conf.config = self._load_config()
+        if not ReadConf.config:
+            ReadConf.config = self._load_config()
 
     def _load_config(self):
         self.config = configparser.ConfigParser()

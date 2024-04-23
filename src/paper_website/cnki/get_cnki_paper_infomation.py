@@ -12,13 +12,13 @@ from src.module.UUID import UUID
 from src.module.now_time import now_time
 from src.model.cnki import Crawl, positioned_element, crawl_xpath, reference_papers, QuotePaper
 from src.module.log import Log, err2, err3
-from src.module.read_conf import read_conf
+from src.module.read_conf import ReadConf
 from concurrent.futures import ThreadPoolExecutor
 
 open_page_data = positioned_element()
 crawl_xp = Crawl()
 logger = Log()
-read_conf = read_conf()
+read_conf = ReadConf()
 
 
 def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
@@ -38,12 +38,10 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
     title_list = WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.CLASS_NAME, "fz14")))
     # 循环网页一页中的条目
     if len(title_list) > 1:
-        sql = f"UPDATE `cnki_index` SET `start` = 'a' WHERE `UUID` = '{uuid}';"
+        sql = f"UPDATE `cnki_index` SET `status` = 'a' WHERE `UUID` = '{uuid}';"
         Date_base().update(sql)
         driver.close()
         return 'a'
-
-
 
     gc.collect()
 
@@ -154,14 +152,14 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
         uuid1 = UUID()
         title = TrimString(title)
         sql3 = (f"INSERT INTO `Paper`.`cnki_index`"
-                f"(`UUID`, `title`, `receive_time`, `start`, `db_type`) "
+                f"(`UUID`, `title`, `receive_time`, `status`, `db_type`) "
                 f"VALUES ('{uuid1}', '{title}', '{date}', '1', '{ndb_type}');")
         sql3 = TrSQL(sql3)
         flag = Date_base().insert(sql3)
         # print(sql3)
         if flag == '重复数据':
             print("重复数据")
-            sql3 = f"UPDATE `Paper`.`cnki_index` SET  `start` = '*' WHERE UUID = '{uuid}';"
+            sql3 = f"UPDATE `Paper`.`cnki_index` SET  `status` = '*' WHERE UUID = '{uuid}';"
             Date_base().update(sql3)
             return
         else:
@@ -447,7 +445,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
 
         sql3 = (f"UPDATE `Paper`.`cnki_index` SET "
                 f"`receive_time` = '{date}', "
-                f"`start` = '1', "
+                f"`status` = '1', "
                 f"`db_type` = '{ndb_type}' "
                 f"WHERE `UUID` = '{uuid}';")
 

@@ -4,7 +4,7 @@ import time
 import requests
 from src.module.log import Log, err1
 from src.module.execution_db import Date_base
-from src.module.read_conf import read_conf
+from src.module.read_conf import ReadConf
 from src.module.now_time import now_time
 from datetime import datetime, timezone, timedelta
 from src.model.ES import ArxivModel
@@ -13,7 +13,7 @@ model = ArxivModel()
 
 
 def create_arxiv_index(data):
-    ES_URL = read_conf().elasticsearch()
+    ES_URL = ReadConf().elasticsearch()
     UUID = None
     dictionary = model.ES_classification()
     try:

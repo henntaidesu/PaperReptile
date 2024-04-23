@@ -9,12 +9,12 @@ from src.module.execution_db import Date_base
 from src.module.UUID import UUID
 from src.model.cnki import Crawl, positioned_element, paper_DB_flag, paper_DB_DT
 from src.module.log import Log, err2, err3
-from src.module.read_conf import read_conf
+from src.module.read_conf import ReadConf
 
 open_page_data = positioned_element()
 crawl_xp = Crawl()
 logger = Log()
-read_conf = read_conf()
+read_conf = ReadConf()
 
 
 def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum, total_page, total_count, click_flag,
@@ -46,36 +46,35 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum,
                 # 按引用倒序
                 return False, total_page, 1, count, False
 
-            if total_page == 240 and res_unm > 8000:
+            elif total_page == 240:
                 # 按下载正序
                 return False, total_page, 2, count, False
 
-            if total_page == 360 and res_unm > 10000:
+            elif total_page == 360:
                 # 按引用正序
                 return False, total_page, 3, count, False
 
-            if total_page == 480 and res_unm > 12000:
+            elif total_page == 480:
                 return False, total_page, 4, count, False
                 # 按下载倒序
-            if total_page == 600 and res_unm > 15000:
+            elif total_page == 600:
                 # 按发表顺序倒
                 return False, total_page, 5, count, False
 
-            if total_page == 720 and res_unm > 18000:
+            elif total_page == 720:
                 # 按发表顺序倒
                 return False, total_page, 6, count, False
 
-            if total_page == 840 and res_unm > 20000:
+            elif total_page == 840:
                 # 按发表顺序倒
                 return False, total_page, 7, count, False
 
-            if total_page == 960:
+            elif total_page == 960:
                 flag333 = whit_file(date_str, paper_type, paper_day)
                 if flag333 is True:
                     return True, False, -1, count, False
 
         driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.END)
-
 
         # 循环网页一页中的条目
         for i in range((count - 1) % paper_sum + 1, paper_sum + 1):
@@ -223,27 +222,33 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum,
 
 
 def get_multi_title_data(driver, res_unm):
-    time_out = 5
+    time_out = 3
     driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.END)
     count = 0
     # 循环网页一页中的条目
-    for a in range(int(res_unm / 20)):
+    for a in range(int(res_unm / 20) + 1):
         if a > 0:
             try:
                 time.sleep(3)
                 ActionChains(driver).key_down(Keys.ARROW_RIGHT).key_up(Keys.ARROW_RIGHT).perform()
             except Exception as e:
                 err2(e)
-        for i in range(20):
+
+        title_list = WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.CLASS_NAME, "fz14")))
+        for i in range(len(title_list)):
             count += 1
 
             print(f"正在爬取第{count}条基础数据,")
 
-            title_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr[{i + 1}]/td[2]/a'''
-            date_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr[{i + 1}]/td[5]'''
-            ndb_type_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr[{i + 1}]/td[6]/span'''
+            title_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr[{count}]/td[2]/a'''
+            title_xpath2 = f'''//*[@id="gridTable"]/div/div/table/tbody/tr[{count}]/td[2]/div/div/a'''
+            date_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr[{count}]/td[5]'''
+            ndb_type_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr[{count}]/td[6]/span'''
 
-            title = WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, title_xpath))).text
+            try:
+                title = WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, title_xpath))).text
+            except:
+                title = WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, title_xpath2))).text
 
             try:
                 db_type = WebDriverWait(driver, time_out).until(
@@ -258,8 +263,6 @@ def get_multi_title_data(driver, res_unm):
             except Exception as e:
                 err3(e)
                 date = None
-
-            print(db_type)
 
             if db_type == '期刊':
                 db_type = '1'
@@ -305,3 +308,4 @@ def get_multi_title_data(driver, res_unm):
             print(f"标题:    {title}")
 
             logger.write_log(f"已获取 ： {title}, UUID : {uuid} \n", 'info')
+    return True

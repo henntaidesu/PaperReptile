@@ -1,6 +1,6 @@
 from src.module.log import Log, err1
 from src.module.execution_db import Date_base
-from src.module.read_conf import read_conf
+from src.module.read_conf import ReadConf
 from src.module.now_time import now_time
 from datetime import datetime, timezone, timedelta
 
