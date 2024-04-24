@@ -41,7 +41,8 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
         sql = f"UPDATE `cnki_index` SET `status` = 'a' WHERE `UUID` = '{uuid}';"
         Date_base().update(sql)
         driver.close()
-        return 'a'
+        print(f'{title1} - 该文章普通搜索存在多条数据')
+        return
 
     gc.collect()
 
@@ -480,3 +481,4 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
     except Exception as e:
         logger.write_log(f"错误 ： {new_title}, UUID : {uuid}", 'error')
         err2(e)
+        return

@@ -181,7 +181,7 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum,
                 title = TrimString(title)
                 uuid = UUID()
                 sql3 = (f"INSERT INTO `Paper`.`cnki_index`"
-                        f"(`UUID`, `title`, `receive_time`, `start`, `db_type`) "
+                        f"(`UUID`, `title`, `receive_time`, `status`, `db_type`) "
                         f"VALUES ('{uuid}', '{title}', '{paper_day}', '0', '{db_type}');")
 
                 sql3 = TrSQL(sql3)
@@ -296,7 +296,7 @@ def get_multi_title_data(driver, res_unm):
 
             uuid = UUID()
             sql3 = (f"INSERT INTO `Paper`.`cnki_index`"
-                    f"(`UUID`, `title`, `receive_time`, `start`, `db_type`) "
+                    f"(`UUID`, `title`, `receive_time`, `status`, `db_type`) "
                     f"VALUES ('{uuid}', '{title}', '{date}', '0', '{db_type}');")
 
             sql3 = TrSQL(sql3)

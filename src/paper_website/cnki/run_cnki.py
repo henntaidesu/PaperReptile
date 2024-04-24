@@ -52,7 +52,8 @@ def run_get_paper_info(data):
                 driver.close()
                 continue
             get_flag = get_paper_info(driver, time_out, uuid, title, db_type, receive_time)
-            print(get_flag)
+        except Exception as e:
+            err2(e)
         finally:
             driver.close()
 

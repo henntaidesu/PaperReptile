@@ -35,7 +35,7 @@ def webserver():
     options.add_argument('--silent')  # 完全禁止 DevTools 输出
     options.add_experimental_option('excludeSwitches', ['enable-logging'])  # 禁用 DevTools 监听输出
 
-    # options.add_argument('--headless')  # 不唤起实体浏览器
+    options.add_argument('--headless')  # 不唤起实体浏览器
 
     # proxy_flag, proxy_url = read_conf.cnki_proxy()
     # if proxy_flag is True:

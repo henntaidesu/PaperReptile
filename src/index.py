@@ -9,7 +9,7 @@ class Index:
         self.conf = ReadConf()
 
     def index(self):
-        flag = '8'
+        flag = '6'
 
         if flag == '1':
             from src.paper_website.arxiv.arxivorg import ArxivOrg
@@ -48,11 +48,10 @@ class Index:
             run_get_paper_title(0, 0, 0, False)
 
         if flag == '6':
-            limit = int(self.conf.processes()) * 10
             from src.paper_website.cnki.run_cnki import run_get_paper_info
             print("获取cnki论文详细数据")
-            sql = (f"SELECT * FROM `cnki_index` WHERE `status` = '0' AND db_type in ('1', '2', '3') "
-                   f"ORDER BY receive_time DESC LIMIT {int(self.conf.processes()) * 10}")
+            sql = (f"SELECT * FROM `cnki_index` WHERE `status` = '0' AND db_type in ('1', '2', '3') and "
+                   f"receive_time >= '2024-03-01' and  receive_time < '2024-04-01' ORDER BY receive_time DESC LIMIT {int(self.conf.processes())}")
             self.process.multi_process_as_up_group(sql, run_get_paper_info)
 
         if flag == '7':
