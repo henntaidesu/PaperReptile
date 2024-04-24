@@ -9,7 +9,7 @@ class Index:
         self.conf = ReadConf()
 
     def index(self):
-        flag = '6'
+        flag = '9'
 
         if flag == '1':
             from src.paper_website.arxiv.arxivorg import ArxivOrg
@@ -68,12 +68,13 @@ class Index:
 
         if flag == '9':
             from src.ES.cnki import create_cnki_index
+            from src.ES.arXiv import create_arxiv_index
             print("向ES添加数据")
-            # sql = f"SELECT * FROM `index` WHERE ES_date is NULL and `from` = 'arxiv' and `state` not in ('00',
-            # '01') limit 5000" self.process.multi_process_as_up_group(sql, create_arxiv_index)
+            sql = f"SELECT * FROM `index` WHERE ES_date is NULL and `from` = 'arxiv' and `state` not in ('00', '01') limit 5000"
+            self.process.multi_process_as_up_group(sql, create_arxiv_index)
 
-            sql = f"SELECT * FROM `index` WHERE `from` = 'cnki' and ES_date is NULL limit 10000"
-            self.process.multi_process_as_up_group(sql, create_cnki_index)
+            # sql = f"SELECT * FROM `index` WHERE `from` = 'cnki' and ES_date is NULL limit 10000"
+            # self.process.multi_process_as_up_group(sql, create_cnki_index)
 
         if flag == 'a':
             from src.data_processing.index_table_processing import cnki_index_data_processing
