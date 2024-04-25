@@ -85,7 +85,7 @@ class ArxivOrg:
             # url = f"https://arxiv.org/abs/{paper_units}/{yy_mm}{code}"
             # paper_code = f"{paper_units}/{yy_mm}{code}"
 
-            self.logger.write_log(f"URL请求成功 - {url}", 'info')
+            self.logger.write_log(f"{yy_mm}.{code} - URL请求成功 ", 'info')
             try:
                 response = self.session.get(url)
             except Exception as e:
@@ -222,7 +222,7 @@ class ArxivOrg:
                    f"'{receive_time}','{Journal_reference}','{Comments}',{size},'{DOI}','{version}','{withdrawn}');")
 
             sql = self.TrSQL(sql)
-            self.logger.write_log(f"{yy_mm}.{code} - 获取成功", 'info')
+            self.logger.write_log(f"获取成功", 'info')
             date_base = Date_base()
             date_base.insert(sql)
             self.write_code(yy_mm, code)

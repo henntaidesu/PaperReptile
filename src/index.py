@@ -9,7 +9,7 @@ class Index:
         self.conf = ReadConf()
 
     def index(self):
-        flag = '9'
+        flag = '5'
 
         if flag == '1':
             from src.paper_website.arxiv.arxivorg import ArxivOrg
@@ -37,9 +37,8 @@ class Index:
             from src.paper_website.arxiv.arxiv_paper_down import Arxiv_paper_down
             print("下载arxiv论文")
             while True:
-                sql = (f"SELECT UUIDs, web_site_id, version, withdrawn "
-                       f"FROM `Paper`.`index`WHERE state = '02' and classification_zh "
-                       f" like '%cs%' ORDER BY receive_time desc limit 10000")
+                sql = (f"SELECT UUID, web_site_id, version, withdrawn FROM `Paper`.`index` "
+                       f"WHERE state = '02' and classification_zh like '%cs%' ORDER BY receive_time desc limit 100")
                 Arxiv_paper_down().paper_down(sql)
 
         if flag == '5':
@@ -69,7 +68,7 @@ class Index:
         if flag == '9':
             from src.ES.cnki import create_cnki_index
             from src.ES.arXiv import create_arxiv_index
-            print("向ES添加数据")
+            print("向ES添加arXiv数据")
             sql = f"SELECT * FROM `index` WHERE ES_date is NULL and `from` = 'arxiv' and `state` not in ('00', '01') limit 5000"
             self.process.multi_process_as_up_group(sql, create_arxiv_index)
 

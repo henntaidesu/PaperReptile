@@ -2,6 +2,7 @@ import time
 import re
 import random
 import getpass
+from datetime import datetime, timedelta
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -9,7 +10,7 @@ from selenium.webdriver.common.by import By
 from src.module.execution_db import Date_base
 from src.module.read_conf import CNKI, ReadConf
 from src.model.cnki import date_choose_end_table, date_choose_start_table
-from src.module.now_time import year, moon, day
+from src.module.now_time import year, moon, day, today
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from src.model.cnki import Crawl, positioned_element
@@ -35,7 +36,7 @@ def webserver():
     options.add_argument('--silent')  # 完全禁止 DevTools 输出
     options.add_experimental_option('excludeSwitches', ['enable-logging'])  # 禁用 DevTools 监听输出
 
-    options.add_argument('--headless')  # 不唤起实体浏览器
+    # options.add_argument('--headless')  # 不唤起实体浏览器
 
     # proxy_flag, proxy_url = read_conf.cnki_proxy()
     # if proxy_flag is True:
@@ -380,16 +381,16 @@ def TrimString(Str):
     return Str
 
 
-def Trim_passkey(Str):
-    Str = Str.replace(";", " ")
-    return Str
+def Trim_passkey(str):
+    str = str.replace(";", " ")
+    return str
 
 
-def trim_quote(Str):
-    Str = str(Str)
-    Str = Str.replace(',', '').replace("'", "").replace('] ', '、')
-    Str = Str.replace(' ', '')[2:][:-1]
-    return Str
+def trim_quote(data):
+    data = str(data)
+    data = data.replace(',', '').replace("'", "").replace('] ', '、')
+    data = data.replace(' ', '')[2:][:-1]
+    return data
 
 
 def extract_number(item):
@@ -451,13 +452,14 @@ def is_leap_year(year):
 
 
 def revise_cnki_date():
-    cnki = CNKI()
-    yy, mm, dd = cnki.read_cnki_date()
+    yy, mm, dd = CNKI().read_cnki_date()
     dd += 1
     if mm in {1, 3, 5, 7, 8, 10} and dd > 31:
+        mm += 1
         dd = 1
 
-    elif mm in {2, 4, 6, 9, 11} and dd > 30:
+    elif mm in {4, 6, 9, 11} and dd > 30:
+        mm += 1
         dd = 1
 
     elif mm == 2:
@@ -467,17 +469,18 @@ def revise_cnki_date():
         else:
             if dd > 28:
                 dd = 1
+        mm += 1
 
     elif mm == 12 and dd > 31:
         yy += 1
         mm = 1
         dd = 1
 
-    cnki.write_cnki_date(str(yy), str(mm), str(dd))
+    CNKI().write_cnki_date(str(yy), str(mm), str(dd))
     return True
 
 
-def revise_cnki_date1():
+def revise_cnki_date_desc():
     cnki = CNKI()
     yy, mm, dd = cnki.read_cnki_date()
     dd += 1
@@ -510,12 +513,24 @@ def whit_file(date_str, paper_type, paper_day):
     sql = f"UPDATE `Paper`.`cnki_page_flag` SET `flag` = '{date_str}' WHERE `date` = '{paper_day}'"
     Date_base().update(sql)
     if date_str == '1111111111':
-        flag = revise_cnki_date()
+
+        paper_day = datetime.strptime(paper_day, "%Y-%m-%d")
+        next_day = paper_day + timedelta(days=1)
+
+        if next_day < datetime.strptime(today(), "%Y-%m-%d"):
+            revise_cnki_date()
+
+        else:
+            while True:
+                if next_day < datetime.strptime(today(), "%Y-%m-%d"):
+                    revise_cnki_date()
+                else:
+                    print("暂停1小时")
+                    time.sleep(3600)
     else:
         return True
 
-    if flag is True:
-        return True
+
 
 
 def page_click_sort_type(driver, flag):
