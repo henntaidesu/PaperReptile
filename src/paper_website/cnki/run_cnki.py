@@ -1,16 +1,17 @@
 import time
 from src.module.execution_db import Date_base
 from src.paper_website.cnki.get_cnki_paper_title import get_multi_title_data, get_paper_title
-from src.paper_website.cnki.cnki_components import open_paper_info, page_click_sort_type, setting_select_date
-from src.paper_website.cnki.cnki_components import webserver, open_page_of_title
-from src.module.log import err2
+from src.paper_website.cnki.cnki_components import open_paper_info, page_click_sort_type, get_paper_type_number
+from src.paper_website.cnki.cnki_components import webserver, open_page_of_title, get_proxy_address
+from src.module.log import err2, Log
 from src.paper_website.cnki.get_cnki_paper_infomation import get_paper_info
 
 
 def run_get_paper_title(click_flag, total_page, total_count, None_message):
     try:
         time_out = 3
-        driver = webserver()
+        proxy, ID = get_proxy_address()
+        driver = webserver(proxy)
         try:
             res_unm, paper_type, paper_day, date_str, paper_sum = open_page_of_title(driver)
             page_click_sort_type(driver, click_flag)
@@ -27,6 +28,8 @@ def run_get_paper_title(click_flag, total_page, total_count, None_message):
                 run_get_paper_title(0, 0, 0, False)
         finally:
             driver.close()
+            sql = f"UPDATE `Paper`.`proxy_pool` SET `status` = '0' WHERE `id` = {ID};"
+            Date_base().update(sql)
     except Exception as e:
         err2(e)
 
@@ -39,9 +42,11 @@ def run_get_paper_info(data):
         receive_time = i[2]
         # start = i[3]
         db_type = i[4]
-        driver = webserver()
+        proxy, ID = get_proxy_address()
+        driver = webserver(proxy)
         try:
             page_flag = open_paper_info(driver, title)
+            Log().write_log(f"{title} - 共找到 {page_flag}条结果 ", 'info')
             if len(title) < 6:
                 sql = f"UPDATE `Paper`.`cnki_index` SET  `status` = '8' WHERE UUID = '{uuid}';"
                 Date_base().update(sql)
@@ -56,6 +61,7 @@ def run_get_paper_info(data):
             err2(e)
         finally:
             driver.close()
+            sql = f"UPDATE `Paper`.`proxy_pool` SET `status` = '0' WHERE `id` = {ID};"
 
 
 def run_multi_title_data(data):
@@ -65,13 +71,22 @@ def run_multi_title_data(data):
         receive_time = i[2]
         # start = i[3]
         db_type = i[4]
-        driver = webserver()
-        title_number = open_paper_info(driver, title)
-        time.sleep(1)
-        flag = get_multi_title_data(driver, title_number)
-        sql = (f"UPDATE `Paper`.`cnki_index` SET `status` = 'b' "
-               f"WHERE `title` = '{title}' AND `receive_time` = '{receive_time}'")
-        Date_base().update(sql)
+        try:
+
+            proxy, ID = get_proxy_address()
+            driver = webserver(proxy)
+            title_number = open_paper_info(driver, title)
+            time.sleep(1)
+            flag = get_multi_title_data(driver, title_number)
+            sql = (f"UPDATE `Paper`.`cnki_index` SET `status` = 'b' "
+                   f"WHERE `title` = '{title}' AND `receive_time` = '{receive_time}'")
+            Date_base().update(sql)
+        except Exception as e:
+            err2(e)
+        finally:
+            sql = f"UPDATE `Paper`.`proxy_pool` SET `status` = '0' WHERE `id` = {ID};"
+            Date_base().update(sql)
+            driver.close()
 
 
 def run_multi_title_info(data):
@@ -82,18 +97,36 @@ def run_multi_title_info(data):
         receive_time = i[2]
         # start = i[3]
         db_type = i[4]
+        try:
+            proxy, ID = get_proxy_address()
+            driver = webserver(proxy)
+            if_paper = open_multi_info(driver, receive_time, title)
+            if if_paper:
+                sql = (f"UPDATE `Paper`.`cnki_index` SET `status` = '?' "
+                       f"WHERE `title` = '{title}' AND `receive_time` = '{receive_time}'")
+                Date_base().update(sql)
+                driver.close()
+                continue
 
-        driver = webserver()
-        if_paper = open_multi_info(driver, receive_time, title)
-        if if_paper:
-            sql = (f"UPDATE `Paper`.`cnki_index` SET `status` = '?' "
+            get_flag = get_paper_info(driver, 5, uuid, title, db_type, receive_time)
+            sql = (f"UPDATE `Paper`.`cnki_index` SET `status` = 'c' "
                    f"WHERE `title` = '{title}' AND `receive_time` = '{receive_time}'")
             Date_base().update(sql)
             driver.close()
-            continue
+        finally:
+            sql = f"UPDATE `Paper`.`proxy_pool` SET `status` = '0' WHERE `id` = {ID};"
+            Date_base().update(sql)
+            driver.close()
 
-        get_flag = get_paper_info(driver, 5, uuid, title, db_type, receive_time)
-        sql = (f"UPDATE `Paper`.`cnki_index` SET `status` = 'c' "
-               f"WHERE `title` = '{title}' AND `receive_time` = '{receive_time}'")
+
+def run_paper_type_number():
+    try:
+        proxy, ID = get_proxy_address()
+        driver = webserver(proxy)
+        get_paper_type_number(driver)
+    finally:
+        sql = f"UPDATE `Paper`.`proxy_pool` SET `status` = '0' WHERE `id` = {ID};"
         Date_base().update(sql)
         driver.close()
+
+

@@ -14,7 +14,6 @@ import re
 def create_cnki_index(data):
     ES_URL = ReadConf().elasticsearch()
     UUID = None
-
     try:
         for paper_index in data:
             UUID = paper_index[0]
@@ -380,3 +379,56 @@ def create_cnki_index(data):
             Log().write_log(f'写入Es失败 {UUID}', 'error')
             err1(e)
             time.sleep(3)
+
+
+def create_cnki_page_flag():
+    ES_URL = ReadConf().elasticsearch()
+    sql = f"SELECT * FROM `Paper`.`cnki_page_flag` WHERE ES_flag is null and `flag` is not null"
+    flag, data = Date_base().select(sql)
+
+    for i in data:
+        date = str(i[0])
+        xxkq = i[2]
+        xwlw = i[3]
+        hy = i[4]
+        bz = i[5]
+        ts = i[6]
+        bs = i[7]
+        cg = i[8]
+        xxkj = i[9]
+        tsqk = i[10]
+        sp = i[11]
+
+        date = datetime.strptime(date, "%Y-%m-%d")
+
+        utc_offset = timedelta(hours=8)
+        date = date.replace(tzinfo=timezone.utc) + utc_offset
+        # 将datetime对象转换为ISO 8601字符串
+        date = date.isoformat()
+
+        cnki_page_flag_body = {
+            "date": date,
+            "学术期刊": xxkq,
+            "学位论文": xwlw,
+            "会议": hy,
+            "报纸": bz,
+            "图书": ts,
+            "标准": bs,
+            "成果": cg,
+            "学术辑刊": xxkj,
+            "特色期刊": tsqk,
+            "视频": sp
+        }
+
+        response = requests.post(f"{ES_URL}/cnki_page_flag/_doc",
+                                 json=cnki_page_flag_body,
+                                 headers={'Content-Type': 'application/json'})
+
+        response_data = response.json()
+        if response_data.get('result') == 'created' or response_data.get('result') == 'updated':
+            Log().write_log(f"写入日期成功 {str(i[0])}", 'info')
+        else:
+            Log().write_log(f"写入日期失败 {str(i[0])}", 'error')
+
+        sql = f"update `Paper`.`cnki_page_flag` SET ES_flag = '1' where `date` = '{str(i[0])}'"
+        Date_base().update(sql)

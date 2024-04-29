@@ -75,15 +75,11 @@ class ReadConf:
 
     def cnki_proxy(self):
         status = self.config.get('cnki_proxy', 'status')
-        host = self.config.get('cnki_proxy', 'host')
-        port = self.config.get('cnki_proxy', 'port')
-        proxy_url = "http://" + host + ":" + port
-
         # print(type(if_true))
         if status == "True":
-            return True, proxy_url
+            return True
         else:
-            return False, proxy_url
+            return False
 
     def elasticsearch(self):
         host = self.config.get('elasticsearch', 'host')

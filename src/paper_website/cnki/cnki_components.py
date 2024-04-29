@@ -1,9 +1,7 @@
 import time
 import re
-import random
-import getpass
 from datetime import datetime, timedelta
-from selenium import webdriver
+import random
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
@@ -11,11 +9,15 @@ from src.module.execution_db import Date_base
 from src.module.read_conf import CNKI, ReadConf
 from src.model.cnki import date_choose_end_table, date_choose_start_table
 from src.module.now_time import year, moon, day, today
-from selenium.webdriver.chrome.service import Service as ChromeService
-from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from src.model.cnki import Crawl, positioned_element
 from src.module.log import Log, err2
 from concurrent.futures import ThreadPoolExecutor
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.common.proxy import Proxy, ProxyType
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+from src.model.cnki import proxy_pool
+
 
 open_page_data = positioned_element()
 crawl_xp = Crawl()
@@ -25,7 +27,17 @@ dts = date_choose_start_table()
 dte = date_choose_end_table()
 
 
-def webserver():
+def get_proxy_address():
+    pool = proxy_pool()
+    pool_flag = random.randint(0, 99)
+    address = proxy_pool()[pool_flag][0]
+    ID = proxy_pool()[pool_flag][1]
+    sql = f"UPDATE `Paper`.`proxy_pool` SET `status` = '1' WHERE `id` = {ID};"
+    Date_base().update(sql)
+    return address, ID
+
+
+def webserver(proxy_url):
     desired_capabilities = DesiredCapabilities.CHROME
     desired_capabilities["pageLoadStrategy"] = "none"
     options = webdriver.ChromeOptions()
@@ -36,14 +48,15 @@ def webserver():
     options.add_argument('--silent')  # 完全禁止 DevTools 输出
     options.add_experimental_option('excludeSwitches', ['enable-logging'])  # 禁用 DevTools 监听输出
 
-    # options.add_argument('--headless')  # 不唤起实体浏览器
+    options.add_argument('--headless')  # 不唤起实体浏览器
 
-    # proxy_flag, proxy_url = read_conf.cnki_proxy()
-    # if proxy_flag is True:
-    #     proxy = Proxy()
-    #     proxy.proxy_type = ProxyType.MANUAL
-    #     proxy.http_proxy = proxy_url
-    #     options.add_argument(f"--proxy-server={proxy.http_proxy}")
+    proxy_flag = read_conf.cnki_proxy()
+    if proxy_flag:
+        proxy = Proxy()
+        proxy.proxy_type = ProxyType.MANUAL
+        proxy.http_proxy = proxy_url
+        proxy.ssl_proxy = proxy_url
+        options.add_argument(f"--proxy-server={proxy_url}")
 
     # 指定chromedriver.exe的位置
     driver = webdriver.Chrome(service=ChromeService(r"chromedriver.exe"), options=options)
@@ -122,9 +135,10 @@ def setting_select_date(driver, time_out, yy, mm, dd):
 def choose_banner(driver, time_out, paper_day):
     sql = f"select flag from cnki_page_flag WHERE date = '{paper_day}'"
     flag, data = Date_base().select(sql)
+    data = data[0][0]
+
     if data:
-        date_temp = data[0][0]
-        data = data[0][0]
+        date_temp = data
         if data == '1111111111':
             # logger.write_log(f'今日已获取{data}')
             revise_cnki_date()
@@ -262,12 +276,17 @@ def choose_banner(driver, time_out, paper_day):
 
         item_flag = f"{a0}{a1}{a2}{a3}{a5}{a7}{a8}{a9}{a10}{a11}"
 
-        sql = (f"INSERT INTO `Paper`.`cnki_page_flag`"
-               f"(`date`, `flag`, `xxkq`, `xwlw`, `hy`, `bz`, `ts`, `bs`, `cg`, `xxkj`, `tsqk`, `sp`) "
-               f"VALUES ('{paper_day}', '{item_flag}', '{xx_sum}', '{xw_sum}', '{hy_sum}', '{pa_sum}', '{ts_sum}', "
-               f"'{bz_sum}', '{cg_sum}', '{kj_sum}', '{tsqk_sum}', '{sp_sum}');").replace("'0'", "NULL")
+        # sql = (f"INSERT INTO `Paper`.`cnki_page_flag`"
+        #        f"(`date`, `flag`, `xxkq`, `xwlw`, `hy`, `bz`, `ts`, `bs`, `cg`, `xxkj`, `tsqk`, `sp`) "
+        #        f"VALUES ('{paper_day}', '{item_flag}', '{xx_sum}', '{xw_sum}', '{hy_sum}', '{pa_sum}', '{ts_sum}', "
+        #        f"'{bz_sum}', '{cg_sum}', '{kj_sum}', '{tsqk_sum}', '{sp_sum}');").replace("'0'", "NULL")
+        # Date_base().insert(sql)
 
-        Date_base().insert(sql)
+        sql = (f"UPDATE `Paper`.`cnki_page_flag` SET `flag` = '{item_flag}', `xxkq` = {xx_sum}, `xwlw` = {xw_sum}, "
+               f"`hy` = {hy_sum},  `bz` = {pa_sum}, `ts` = {ts_sum}, `bs` = {bz_sum}, `cg` = {cg_sum}, "
+               f"`xxkj` = {kj_sum}, `tsqk` = {tsqk_sum}, `sp` = {sp_sum} WHERE `date` = '{paper_day}';")
+        Date_base().update(sql)
+
         WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data[0]))).click()
         return 0, item_flag
 
@@ -316,6 +335,47 @@ def open_page_of_title(driver):
         err2(e)
 
 
+def get_paper_type_number(driver):
+    # 打开页面，等待两秒
+
+    while True:
+        yy, mm, dd = CNKI().read_cnki_date()
+        sql = f"SELECT * FROM `Paper`.`cnki_page_flag` WHERE `date` = '{yy}-{mm}-{dd}'"
+        flag, data = Date_base().select(sql)
+        if data:
+            revise_cnki_date_desc(yy, mm, dd)
+            continue
+        else:
+            sql = f"INSERT INTO `Paper`.`cnki_page_flag` (`date`) VALUES ('{yy}-{mm}-{dd}');"
+            flag = Date_base().insert(sql)
+            if flag == '重复数据':
+                continue
+            else:
+                break
+    print(f"正在获取 - {yy}-{mm}-{dd} 日文章数量")
+
+    try:
+        url = f"https://kns.cnki.net/kns8/AdvSearch"
+        driver.get(url)
+        time_out = 10
+        time.sleep(3)
+        # 设置时间
+        yy, mm, dd = CNKI().read_cnki_date()
+        paper_day = setting_select_date(driver, time_out, yy, mm, dd)
+
+        # 点击搜索
+        WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['cs']))).click()
+        time.sleep(2)
+
+        # 切换搜索文章类型
+        paper_type, date_str = choose_banner(driver, time_out, paper_day)
+
+        logger.write_log(f"{yy}-{mm}-{dd} - 已获取文章数量", 'info')
+        return True
+    except Exception as e:
+        err2(e)
+
+
 def open_paper_info(driver, keyword):
     time_out = 5
     driver.get("https://kns.cnki.net/kns8/AdvSearch")
@@ -334,7 +394,7 @@ def open_paper_info(driver, keyword):
     paper_sum = 20
     res_unm = int(res_unm.replace(",", ''))
     page_unm = int(res_unm / paper_sum) + 1
-    print(f"共找到 {res_unm} 条结果, {page_unm} 页。")
+    # print(f"共找到 {res_unm} 条结果, {page_unm} 页。")
     return res_unm
 
 
@@ -480,12 +540,11 @@ def revise_cnki_date():
     return True
 
 
-def revise_cnki_date_desc():
-    cnki = CNKI()
-    yy, mm, dd = cnki.read_cnki_date()
-    dd += 1
+def revise_cnki_date_desc(yy, mm, dd):
+    yy, mm, dd = int(yy), int(mm), int(dd)
+    dd -= 1
     if dd == 0:
-        mm += 1
+        mm -= 1
         if mm in {1, 3, 5, 7, 8, 10, 12}:
             dd = 31
         elif mm == 2:
@@ -494,14 +553,12 @@ def revise_cnki_date_desc():
             else:
                 dd = 28
         elif mm == 0:
-
             yy -= 1
             mm = 12
             dd = 31
         else:
             dd = 30
-
-    cnki.write_cnki_date(str(yy), str(mm), str(dd))
+    CNKI().write_cnki_date(str(yy), str(mm), str(dd))
     return True
 
 

@@ -9,7 +9,7 @@ class Index:
         self.conf = ReadConf()
 
     def index(self):
-        flag = '5'
+        flag = '6'
 
         if flag == '1':
             from src.paper_website.arxiv.arxivorg import ArxivOrg
@@ -49,8 +49,9 @@ class Index:
         if flag == '6':
             from src.paper_website.cnki.run_cnki import run_get_paper_info
             print("获取cnki论文详细数据")
-            sql = (f"SELECT * FROM `cnki_index` WHERE `status` = '0' AND db_type in ('1', '2', '3') and "
-                   f"receive_time >= '2024-03-01' and  receive_time < '2024-04-01' ORDER BY receive_time DESC LIMIT {int(self.conf.processes())}")
+            sql = (f"SELECT * FROM `cnki_index` WHERE `status` = '0' AND db_type in ('1', '2', '3') "
+                   f"ORDER BY receive_time "
+                   f"DESC LIMIT {int(self.conf.processes())}")
             self.process.multi_process_as_up_group(sql, run_get_paper_info)
 
         if flag == '7':
@@ -66,14 +67,26 @@ class Index:
             self.process.multi_process_as_up_group(sql, run_multi_title_info)
 
         if flag == '9':
-            from src.ES.cnki import create_cnki_index
             from src.ES.arXiv import create_arxiv_index
-            print("向ES添加arXiv数据")
-            sql = f"SELECT * FROM `index` WHERE ES_date is NULL and `from` = 'arxiv' and `state` not in ('00', '01') limit 5000"
+            print("向ES添加arxiv数据")
+            sql = (f"SELECT * FROM `index` WHERE ES_date is NULL and `from` = 'arxiv' "
+                   f"and `state` not in ('00', '01') limit 5000")
             self.process.multi_process_as_up_group(sql, create_arxiv_index)
 
-            # sql = f"SELECT * FROM `index` WHERE `from` = 'cnki' and ES_date is NULL limit 10000"
-            # self.process.multi_process_as_up_group(sql, create_cnki_index)
+        if flag == '10':
+            from src.ES.cnki import create_cnki_index
+            print("向ES添加cnki数据")
+            sql = f"SELECT * FROM `index` WHERE `from` = 'cnki' and ES_date is NULL limit 10000"
+            self.process.multi_process_as_up_group(sql, create_cnki_index)
+
+        if flag == '11':
+            from src.ES.cnki import create_cnki_page_flag
+            print("向ES添加CNKI_date_flag数据")
+            create_cnki_page_flag()
+
+        if flag == '12':
+            from src.paper_website.cnki.run_cnki import run_paper_type_number
+            run_paper_type_number()
 
         if flag == 'a':
             from src.data_processing.index_table_processing import cnki_index_data_processing

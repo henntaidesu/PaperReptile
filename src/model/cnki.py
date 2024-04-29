@@ -1,3 +1,17 @@
+from src.module.execution_db import Date_base
+
+
+def proxy_pool():
+    sql = f"SELECT * FROM `proxy_pool` WHERE `status` = '0' limit 100"
+    flag, data = Date_base().select(sql)
+    pool = {}
+    for i in range(len(data)):
+        ID = data[i][0]
+        address = data[i][1]
+        port = data[i][2]
+        pool[i] = f"{address}:{port}", f"{ID}"
+    return pool
+
 def paper_DB_flag():
     table = {
         0: 'xxkq',
