@@ -10,8 +10,7 @@ from src.paper_website.cnki.get_cnki_paper_infomation import get_paper_info
 def run_get_paper_title(click_flag, total_page, total_count, None_message):
     try:
         time_out = 3
-        proxy, ID = get_proxy_address()
-        driver = webserver(proxy)
+        driver = webserver()
         try:
             res_unm, paper_type, paper_day, date_str, paper_sum = open_page_of_title(driver)
             page_click_sort_type(driver, click_flag)
@@ -28,8 +27,6 @@ def run_get_paper_title(click_flag, total_page, total_count, None_message):
                 run_get_paper_title(0, 0, 0, False)
         finally:
             driver.close()
-            sql = f"UPDATE `Paper`.`proxy_pool` SET `status` = '0' WHERE `id` = {ID};"
-            Date_base().update(sql)
     except Exception as e:
         err2(e)
 
@@ -42,8 +39,7 @@ def run_get_paper_info(data):
         receive_time = i[2]
         # start = i[3]
         db_type = i[4]
-        proxy, ID = get_proxy_address()
-        driver = webserver(proxy)
+        driver, proxy_ID, proxy_flag = webserver()
         try:
             page_flag = open_paper_info(driver, title)
             Log().write_log(f"{title} - 共找到 {page_flag}条结果 ", 'info')
@@ -58,10 +54,19 @@ def run_get_paper_info(data):
                 continue
             get_flag = get_paper_info(driver, time_out, uuid, title, db_type, receive_time)
         except Exception as e:
-            err2(e)
+            if type(e).__name__ == 'WebDriverException' and proxy_flag is True:
+                Log().write_log(f"代理编号{proxy_ID}已失效", 'error')
+                # sql = f"UPDATE `Paper`.`proxy_pool` SET `status` = 'D' WHERE `id` = {proxy_ID};"
+                # Date_base().update(sql)
+            elif type(e).__name__ == 'TimeoutException' and proxy_flag is True:
+                Log().write_log(f"代理编号{proxy_ID}已失效", 'error')
+                # sql = f"UPDATE `Paper`.`proxy_pool` SET `status` = 'D' WHERE `id` = {proxy_ID};"
+                # Date_base().update(sql)
+            else:
+                err2(e)
         finally:
-            driver.close()
-            sql = f"UPDATE `Paper`.`proxy_pool` SET `status` = '0' WHERE `id` = {ID};"
+            pass
+            # driver.close()
 
 
 def run_multi_title_data(data):
@@ -72,9 +77,7 @@ def run_multi_title_data(data):
         # start = i[3]
         db_type = i[4]
         try:
-
-            proxy, ID = get_proxy_address()
-            driver = webserver(proxy)
+            driver = webserver()
             title_number = open_paper_info(driver, title)
             time.sleep(1)
             flag = get_multi_title_data(driver, title_number)
@@ -84,8 +87,6 @@ def run_multi_title_data(data):
         except Exception as e:
             err2(e)
         finally:
-            sql = f"UPDATE `Paper`.`proxy_pool` SET `status` = '0' WHERE `id` = {ID};"
-            Date_base().update(sql)
             driver.close()
 
 
@@ -98,8 +99,7 @@ def run_multi_title_info(data):
         # start = i[3]
         db_type = i[4]
         try:
-            proxy, ID = get_proxy_address()
-            driver = webserver(proxy)
+            driver = webserver()
             if_paper = open_multi_info(driver, receive_time, title)
             if if_paper:
                 sql = (f"UPDATE `Paper`.`cnki_index` SET `status` = '?' "
@@ -114,19 +114,14 @@ def run_multi_title_info(data):
             Date_base().update(sql)
             driver.close()
         finally:
-            sql = f"UPDATE `Paper`.`proxy_pool` SET `status` = '0' WHERE `id` = {ID};"
-            Date_base().update(sql)
             driver.close()
 
 
 def run_paper_type_number():
     try:
-        proxy, ID = get_proxy_address()
-        driver = webserver(proxy)
+        driver = webserver()
         get_paper_type_number(driver)
     finally:
-        sql = f"UPDATE `Paper`.`proxy_pool` SET `status` = '0' WHERE `id` = {ID};"
-        Date_base().update(sql)
         driver.close()
 
 

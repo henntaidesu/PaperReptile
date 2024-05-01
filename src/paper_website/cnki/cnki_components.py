@@ -1,3 +1,4 @@
+import sys
 import time
 import re
 from datetime import datetime, timedelta
@@ -29,38 +30,46 @@ dte = date_choose_end_table()
 
 def get_proxy_address():
     pool = proxy_pool()
-    pool_flag = random.randint(0, 99)
-    address = proxy_pool()[pool_flag][0]
-    ID = proxy_pool()[pool_flag][1]
-    sql = f"UPDATE `Paper`.`proxy_pool` SET `status` = '1' WHERE `id` = {ID};"
-    Date_base().update(sql)
-    return address, ID
+    if len(pool) == 0:
+        logger.write_log(f"当前代理池无可用代理", 'error')
+        sys.exit()
+    pool_flag = random.randint(0, len(pool) - 1)
+    proxy_url = pool[pool_flag][0]
+    proxy_ID = pool[pool_flag][1]
+    return proxy_url, proxy_ID
 
 
-def webserver(proxy_url):
-    desired_capabilities = DesiredCapabilities.CHROME
-    desired_capabilities["pageLoadStrategy"] = "none"
-    options = webdriver.ChromeOptions()
-    # 设置浏览器不加载图片，提高速度
-    options.add_experimental_option("prefs", {"profile.managed_default_content_settings.images": 2})
-    options.add_argument("--disable-gpu")
-    options.add_argument('--log-level=3')  # 设置日志级别减少输出信息
-    options.add_argument('--silent')  # 完全禁止 DevTools 输出
-    options.add_experimental_option('excludeSwitches', ['enable-logging'])  # 禁用 DevTools 监听输出
+def webserver():
+    ID = None
+    proxy_flag = False
+    proxy_ID = None
+    try:
+        desired_capabilities = DesiredCapabilities.CHROME
+        desired_capabilities["pageLoadStrategy"] = "none"
+        options = webdriver.ChromeOptions()
+        # 设置浏览器不加载图片，提高速度
+        options.add_experimental_option("prefs", {"profile.managed_default_content_settings.images": 2})
+        options.add_argument("--disable-gpu")
+        options.add_argument('--log-level=3')  # 设置日志级别减少输出信息
+        options.add_argument('--silent')  # 完全禁止 DevTools 输出
+        options.add_experimental_option('excludeSwitches', ['enable-logging'])  # 禁用 DevTools 监听输出
 
-    options.add_argument('--headless')  # 不唤起实体浏览器
+        options.add_argument('--headless')  # 不唤起实体浏览器
 
-    proxy_flag = read_conf.cnki_proxy()
-    if proxy_flag:
-        proxy = Proxy()
-        proxy.proxy_type = ProxyType.MANUAL
-        proxy.http_proxy = proxy_url
-        proxy.ssl_proxy = proxy_url
-        options.add_argument(f"--proxy-server={proxy_url}")
+        proxy_flag = read_conf.cnki_proxy()
 
-    # 指定chromedriver.exe的位置
-    driver = webdriver.Chrome(service=ChromeService(r"chromedriver.exe"), options=options)
-    return driver
+        if proxy_flag:
+            proxy = Proxy()
+            proxy_url, proxy_ID = get_proxy_address()
+            proxy.proxy_type = ProxyType.MANUAL
+            proxy.http_proxy = proxy_url
+            proxy.ssl_proxy = proxy_url
+            options.add_argument(f"--proxy-server={proxy_url}")
+        # 指定chromedriver.exe的位置
+        driver = webdriver.Chrome(service=ChromeService(r"chromedriver.exe"), options=options)
+        return driver, proxy_ID, proxy_flag
+    except Exception as e:
+        err2(e)
 
 
 def setting_select_date(driver, time_out, yy, mm, dd):
@@ -378,7 +387,9 @@ def get_paper_type_number(driver):
 
 def open_paper_info(driver, keyword):
     time_out = 5
-    driver.get("https://kns.cnki.net/kns8/AdvSearch")
+    url = f"https://kns.cnki.net/kns8/AdvSearch"
+    # url = f"https://www.cnki.net/index/"
+    driver.get(url)
     WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['ik']))).send_keys(
         keyword)
 

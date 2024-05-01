@@ -51,7 +51,7 @@ class Index:
             print("获取cnki论文详细数据")
             sql = (f"SELECT * FROM `cnki_index` WHERE `status` = '0' AND db_type in ('1', '2', '3') "
                    f"ORDER BY receive_time "
-                   f"DESC LIMIT {int(self.conf.processes())}")
+                   f"DESC LIMIT 500, {int(self.conf.processes()) * 10}")
             self.process.multi_process_as_up_group(sql, run_get_paper_info)
 
         if flag == '7':

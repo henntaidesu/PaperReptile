@@ -36,7 +36,9 @@ class Process:
             chunks = self.split_list(work_list, processes)
             # 创建进程池
             pool = multiprocessing.Pool(processes=processes)
-            pool.imap_unordered(func, chunks)
+            for chunk in chunks:
+                pool.apply_async(func, args=(chunk,))
+                time.sleep(0.25)  # 添加0.25秒间隔
             pool.close()
             pool.join()
 
