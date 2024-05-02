@@ -28,7 +28,7 @@ class Process:
 
     def multi_process_as_up_group(self, sql, func):
         try:
-            processes = int(self.conf.processes())
+            processes, start_sleep = self.conf.processes()
             date_base = Date_base()
             flag, work_list = date_base.select(sql)
             if len(work_list) == 0:
@@ -38,7 +38,7 @@ class Process:
             pool = multiprocessing.Pool(processes=processes)
             for chunk in chunks:
                 pool.apply_async(func, args=(chunk,))
-                time.sleep(0.5)  # 启动间隔
+                time.sleep(start_sleep)  # 启动间隔
             pool.close()
             pool.join()
 

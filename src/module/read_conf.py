@@ -64,8 +64,9 @@ class ReadConf:
         return key, model, base_url, prompt
 
     def processes(self):
-        number = self.config.get('processes', 'number')
-        return number
+        number = int(self.config.get('processes', 'number'))
+        start_sleep = int(self.config.get('processes', 'state_sleep'))
+        return number, start_sleep
 
     def down_path(self):
         path = self.config.get('Paper_Down_Path', 'path')

@@ -32,7 +32,7 @@ def run_get_paper_title(click_flag, total_page, total_count, None_message):
 
 
 def run_get_paper_info(data):
-    time_out = 3
+    time_out = 15
     for i in data:
         uuid = i[0]
         title = i[1]
