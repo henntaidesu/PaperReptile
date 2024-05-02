@@ -10,7 +10,7 @@ from src.paper_website.cnki.get_cnki_paper_infomation import get_paper_info
 def run_get_paper_title(click_flag, total_page, total_count, None_message):
     try:
         time_out = 3
-        driver = webserver()
+        driver, proxy_ID, proxy_flag = webserver()
         try:
             res_unm, paper_type, paper_day, date_str, paper_sum = open_page_of_title(driver)
             page_click_sort_type(driver, click_flag)
@@ -54,19 +54,15 @@ def run_get_paper_info(data):
                 continue
             get_flag = get_paper_info(driver, time_out, uuid, title, db_type, receive_time)
         except Exception as e:
-            if type(e).__name__ == 'WebDriverException' and proxy_flag is True:
+            if type(e).__name__ == 'TimeoutException' and proxy_flag is True:
                 Log().write_log(f"代理编号{proxy_ID}已失效", 'error')
                 # sql = f"UPDATE `Paper`.`proxy_pool` SET `status` = 'D' WHERE `id` = {proxy_ID};"
                 # Date_base().update(sql)
-            elif type(e).__name__ == 'TimeoutException' and proxy_flag is True:
-                Log().write_log(f"代理编号{proxy_ID}已失效", 'error')
-                # sql = f"UPDATE `Paper`.`proxy_pool` SET `status` = 'D' WHERE `id` = {proxy_ID};"
-                # Date_base().update(sql)
+                driver.close()
             else:
                 err2(e)
         finally:
-            pass
-            # driver.close()
+            driver.close()
 
 
 def run_multi_title_data(data):
@@ -77,7 +73,7 @@ def run_multi_title_data(data):
         # start = i[3]
         db_type = i[4]
         try:
-            driver = webserver()
+            driver, proxy_ID, proxy_flag = webserver()
             title_number = open_paper_info(driver, title)
             time.sleep(1)
             flag = get_multi_title_data(driver, title_number)
@@ -99,7 +95,7 @@ def run_multi_title_info(data):
         # start = i[3]
         db_type = i[4]
         try:
-            driver = webserver()
+            driver, proxy_ID, proxy_flag = webserver()
             if_paper = open_multi_info(driver, receive_time, title)
             if if_paper:
                 sql = (f"UPDATE `Paper`.`cnki_index` SET `status` = '?' "
@@ -119,7 +115,7 @@ def run_multi_title_info(data):
 
 def run_paper_type_number():
     try:
-        driver = webserver()
+        driver, proxy_ID, proxy_flag = webserver()
         get_paper_type_number(driver)
     finally:
         driver.close()

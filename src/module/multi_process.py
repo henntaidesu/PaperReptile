@@ -38,7 +38,7 @@ class Process:
             pool = multiprocessing.Pool(processes=processes)
             for chunk in chunks:
                 pool.apply_async(func, args=(chunk,))
-                time.sleep(0.25)  # 添加0.25秒间隔
+                time.sleep(0.5)  # 启动间隔
             pool.close()
             pool.join()
 

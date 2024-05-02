@@ -1,23 +1,33 @@
+import time
+
 from src.module.execution_db import Date_base
 from src.module.now_time import proxy_time
 import requests
+
 
 def proxy_pool():
     sql = f"SELECT * FROM `proxy_pool` where `status` = '1' and expire_time > '{proxy_time()}' limit 100"
     flag, data = Date_base().select(sql)
     pool = {}
-    if len(data) < 3:
+    if data:
+        if len(data) < 8:
+            url = f"http://makuro.cn:22023/proxy/get_new_proxy"
+            requests.get(url)
+            time.sleep(1)
+            proxy_pool()
+    else:
         url = f"http://makuro.cn:22023/proxy/get_new_proxy"
         requests.get(url)
+        time.sleep(1)
         proxy_pool()
-    else:
-        for i in range(len(data)):
-            ID = data[i][0]
-            address = data[i][1]
-            port = data[i][2]
-            proxy_type = data[i][4]
-            pool[i] = f"{proxy_type}://{address}:{port}", f"{ID}"
-        return pool
+
+    for i in range(len(data)):
+        ID = data[i][0]
+        address = data[i][1]
+        port = data[i][2]
+        proxy_type = data[i][4]
+        pool[i] = f"{proxy_type}://{address}:{port}", f"{ID}"
+    return pool
 
 
 def paper_DB_flag():
