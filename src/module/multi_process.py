@@ -44,3 +44,16 @@ class Process:
 
         except Exception as e:
             err2(e)
+
+    def multi_process(self, func):
+        try:
+            processes, start_sleep = self.conf.processes()
+            pool = multiprocessing.Pool(processes=processes)
+            for i in range(processes):
+                pool.apply_async(func)
+                time.sleep(start_sleep)  # 启动间隔
+            pool.close()
+            pool.join()
+
+        except Exception as e:
+            err2(e)

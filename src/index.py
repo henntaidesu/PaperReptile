@@ -49,11 +49,7 @@ class Index:
         if flag == '6':
             from src.paper_website.cnki.run_cnki import run_get_paper_info
             print("获取cnki论文详细数据")
-            end_limit, state_sleep = self.conf.processes()
-            sql = (f"SELECT * FROM `cnki_index` WHERE `status` = '0' AND db_type in ('1', '2', '3') "
-                   f"ORDER BY receive_time "
-                   f"DESC LIMIT 3000, {end_limit}")
-            self.process.multi_process_as_up_group(sql, run_get_paper_info)
+            self.process.multi_process(run_get_paper_info)
 
         if flag == '7':
             from src.paper_website.cnki.run_cnki import run_multi_title_data

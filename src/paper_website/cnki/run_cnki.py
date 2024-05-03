@@ -1,4 +1,7 @@
 import time
+
+import requests
+
 from src.module.execution_db import Date_base
 from src.paper_website.cnki.get_cnki_paper_title import get_multi_title_data, get_paper_title
 from src.paper_website.cnki.cnki_components import open_paper_info, page_click_sort_type, get_paper_type_number
@@ -23,7 +26,6 @@ def run_get_paper_title(click_flag, total_page, total_count, None_message):
                 run_get_paper_title(click_flag, total_page, total_count, None_message)
 
             else:
-                driver.close()
                 run_get_paper_title(0, 0, 0, False)
         finally:
             driver.close()
@@ -31,18 +33,26 @@ def run_get_paper_title(click_flag, total_page, total_count, None_message):
         err2(e)
 
 
-def run_get_paper_info(data):
+def run_get_paper_info():
+    proxy_flag = None
+    proxy_ID = None
     time_out = 15
-    for i in data:
-        uuid = i[0]
-        title = i[1]
-        receive_time = i[2]
-        # start = i[3]
-        db_type = i[4]
-        driver, proxy_ID, proxy_flag = webserver()
-        try:
+    try:
+        while True:
+            data = requests.get(f"http://makuro.cn:22023/cnki/get_spider_title").json()
+            uuid = data[0]
+            title = data[1]
+            receive_time = data[2]
+            status = data[3]
+            db_type = data[4]
+            driver, proxy_ID, proxy_flag = webserver()
             page_flag = open_paper_info(driver, title)
             Log().write_log(f"{title} - 共找到 {page_flag}条结果 ", 'info')
+            if page_flag > 1:
+                sql = f"UPDATE `cnki_index` SET `status` = 'a' WHERE `UUID` = '{uuid}';"
+                Date_base().update(sql)
+                driver.close()
+                continue
             if len(title) < 6:
                 sql = f"UPDATE `Paper`.`cnki_index` SET  `status` = '8' WHERE UUID = '{uuid}';"
                 Date_base().update(sql)
@@ -53,16 +63,20 @@ def run_get_paper_info(data):
                 driver.close()
                 continue
             get_flag = get_paper_info(driver, time_out, uuid, title, db_type, receive_time)
-        except Exception as e:
-            if type(e).__name__ == 'TimeoutException' and proxy_flag is True:
-                Log().write_log(f"代理编号{proxy_ID}已失效", 'error')
-                # sql = f"UPDATE `Paper`.`proxy_pool` SET `status` = 'D' WHERE `id` = {proxy_ID};"
-                # Date_base().update(sql)
-                driver.close()
-            else:
-                err2(e)
-        finally:
+    except Exception as e:
+        if type(e).__name__ == 'TimeoutException' and proxy_flag is True:
+            Log().write_log(f"代理编号{proxy_ID}已失效", 'error')
+            sql = f"UPDATE `Paper`.`cnki_index` SET `status` = '0' where `uuid` = '{uuid}';"
+            Date_base().update(sql)
             driver.close()
+            run_get_paper_info()
+        else:
+            sql = f"UPDATE `Paper`.`cnki_index` SET `status` = '0' where `uuid` = '{uuid}';"
+            Date_base().update(sql)
+            err2(e)
+            run_get_paper_info()
+    finally:
+        driver.close()
 
 
 def run_multi_title_data(data):
@@ -108,7 +122,6 @@ def run_multi_title_info(data):
             sql = (f"UPDATE `Paper`.`cnki_index` SET `status` = 'c' "
                    f"WHERE `title` = '{title}' AND `receive_time` = '{receive_time}'")
             Date_base().update(sql)
-            driver.close()
         finally:
             driver.close()
 

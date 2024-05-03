@@ -32,18 +32,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
     xpath_information = crawl_xp.xpath_inf()
 
     # new_paper_sum = 0
-
-    time.sleep(2)
-
-    title_list = WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.CLASS_NAME, "fz14")))
-    # 循环网页一页中的条目
-    if len(title_list) > 1:
-        sql = f"UPDATE `cnki_index` SET `status` = 'a' WHERE `UUID` = '{uuid}';"
-        Date_base().update(sql)
-        driver.close()
-        print(f'{title1} - 该文章普通搜索存在多条数据')
-        return
-
+    title_list = WebDriverWait(driver, time_out).until(EC.presence_of_all_elements_located((By.CLASS_NAME, "fz14")))
     gc.collect()
 
     title_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[2]/a'''

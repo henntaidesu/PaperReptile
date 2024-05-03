@@ -17,8 +17,8 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.common.proxy import Proxy, ProxyType
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+from selenium.common.exceptions import TimeoutException
 from src.model.cnki import proxy_pool
-
 
 open_page_data = positioned_element()
 crawl_xp = Crawl()
@@ -57,7 +57,6 @@ def webserver():
         options.add_argument('--headless')  # 不唤起实体浏览器
 
         proxy_flag = read_conf.cnki_proxy()
-
         if proxy_flag:
             proxy = Proxy()
             proxy_url, proxy_ID = get_proxy_address()
@@ -65,7 +64,6 @@ def webserver():
             proxy.http_proxy = proxy_url
             proxy.ssl_proxy = proxy_url
             options.add_argument(f"--proxy-server={proxy_url}")
-        # 指定chromedriver.exe的位置
         driver = webdriver.Chrome(service=ChromeService(r"chromedriver.exe"), options=options)
         return driver, proxy_ID, proxy_flag
     except Exception as e:
@@ -386,20 +384,32 @@ def get_paper_type_number(driver):
 
 
 def open_paper_info(driver, keyword):
-    time_out = 5
+    time_out = 8
     url = f"https://kns.cnki.net/kns8/AdvSearch"
     # url = f"https://www.cnki.net/index/"
     driver.get(url)
-    WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['ik']))).send_keys(
-        keyword)
 
-    WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['cs']))).click()
+    try:
+        WebDriverWait(driver, time_out).until(
+            EC.presence_of_element_located((By.XPATH, open_page_data['ik']))).send_keys(
+            keyword)
+    except TimeoutException:
+        print("输入框加载超时")
+        return False
+
+    try:
+        WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['cs']))).click()
+    except TimeoutException:
+        print("搜索按钮加载超时")
+        return False
+
     time.sleep(2)
 
     try:
         res_unm = WebDriverWait(driver, time_out).until(
             EC.presence_of_element_located((By.XPATH, open_page_data['gn']))).text
-    except:
+    except TimeoutException:
+        print("结果数量加载超时")
         return False
 
     paper_sum = 20
@@ -435,7 +445,7 @@ def open_multi_info(driver, receive_time, title):
         return True
     else:
         return False
-
+#
 
 
 def TrimString(Str):
@@ -470,7 +480,7 @@ def extract_number(item):
 
 
 def TrSQL(sql):
-    sql = sql.replace("None", "NULL").replace("'NULL'", "NULL")
+    sql = sql.replace("None", "NULL").replace("'NULL'", "NULL").replace("'", "\'")
     return sql
 
 
@@ -597,8 +607,6 @@ def whit_file(date_str, paper_type, paper_day):
                     time.sleep(3600)
     else:
         return True
-
-
 
 
 def page_click_sort_type(driver, flag):
