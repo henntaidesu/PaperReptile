@@ -39,7 +39,7 @@ def run_get_paper_info():
     uuid = None
     time_out = 15
     try:
-        data = requests.get(f"http://makuro.cn:22023/cnki/get_spider_title").json()
+        data = requests.get(f"http://172.16.1.25:22023/cnki/get_spider_title").json()
         uuid = data[0]
         title = data[1]
         receive_time = data[2]
@@ -60,7 +60,7 @@ def run_get_paper_info():
             driver.close()
             run_get_paper_info()
         if page_flag is False:
-            sql = f"UPDATE `Paper`.`cnki_index` SET  `status` = '0' WHERE UUID = '{uuid}';"
+            sql = f"UPDATE `Paper`.`cnki_index` SET  `status` = '9' WHERE UUID = '{uuid}';"
             Date_base().update(sql)
             driver.close()
             run_get_paper_info()

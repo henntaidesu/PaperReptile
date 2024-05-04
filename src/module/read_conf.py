@@ -87,6 +87,9 @@ class ReadConf:
         ES_URL = f'http://{host}:9200'
         return ES_URL
 
+    def proxy_pool(self):
+        return int(self.config.get('proxy_pool', 'max'))
+
 
 class ArxivYYMM:
     def __init__(self):

@@ -155,13 +155,13 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
         else:
             uuid = uuid1
 
-    print(f"\n"
-          f"标题:    {title}\n"
-          f"作者:    {authors}\n"
-          f"文章来源: {source}\n"
-          f"数据来源: {db_flag}\n"
-          f"引用次数: {quote}\n"
-          f"下载次数: {down_sun}")
+    # print(f"\n"
+    #       f"标题:    {title}\n"
+    #       f"作者:    {authors}\n"
+    #       f"文章来源: {source}\n"
+    #       f"数据来源: {db_flag}\n"
+    #       f"引用次数: {quote}\n"
+    #       f"下载次数: {down_sun}")
 
     try:
         title_list[0].click()  # 点击条目
@@ -188,7 +188,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
         except Exception as e:
             err3(e)
             institute = None
-        print(f"作者单位 : {institute}")
+        # print(f"作者单位 : {institute}")
 
         # 获取摘要
         try:
@@ -198,7 +198,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
             err3(e)
             abstract = None
             driver.refresh()
-        print(f"摘要 : {abstract}")
+        # print(f"摘要 : {abstract}")
 
         # 获取关键词
         try:
@@ -209,7 +209,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
             err3(e)
             classification_zh = None
 
-        print(f"关键词 : {classification_zh}")
+        # print(f"关键词 : {classification_zh}")
 
         class_list = get_choose_info(driver)
 
@@ -227,10 +227,10 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
         if classification_number is None and version_Number is not None:
             classification_number = version_Number + edition_name
 
-        print(f"专辑 - {publication}")
-        print(f"专题 - {topic}")
-        print(f"分类号 - {classification_number}")
-        print(f"DOI - {DOI}")
+        # print(f"专辑 - {publication}")
+        # print(f"专题 - {topic}")
+        # print(f"分类号 - {classification_number}")
+        # print(f"DOI - {DOI}")
 
         driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.END)
 
@@ -242,7 +242,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
         except Exception as e:
             err3(e)
             funding = None
-        print(f"资金资助 : {funding}")
+        # print(f"资金资助 : {funding}")
 
         # print('获取论文大小')
         paper_size_flag = 0
@@ -256,7 +256,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
             if paper_size_flag > 8:
                 paper_size = None
                 break
-        print(f"论文大小 : {paper_size}k")
+        # print(f"论文大小 : {paper_size}k")
 
         # print('获取论文页数')
         paper_page_flag = 0
@@ -270,7 +270,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
             if paper_page_flag > 8:
                 page_sum = None
                 break
-        print(f"论文页数 : {page_sum}")
+        # print(f"论文页数 : {page_sum}")
 
         # 获取层级
         level = None
@@ -282,7 +282,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
             except Exception as e:
                 err3(e)
                 level = None
-        print(f"报纸层级 : {level}")
+        # print(f"报纸层级 : {level}")
 
         # 拉取页面到最低端
         # driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.END)
@@ -300,7 +300,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
         except Exception as e:
             err3(e)
             if_journal_reference = None
-            print("该论文无引用文章")
+            # print("该论文无引用文章")
 
         # if_journal_reference = None
         if if_journal_reference == '引文网络':
@@ -332,7 +332,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
                         break
 
                 if paper_sum:
-                    print(f"存在引用{rn[paper_flag]} {paper_sum} 篇")
+                    # print(f"存在引用{rn[paper_flag]} {paper_sum} 篇")
                     # journal_paper_sum = int((paper_sum / 10) + 1)
                     flag = 0
                     paper_list = []
@@ -369,7 +369,8 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
                             time.sleep(3)
 
                     for iii in paper_list:
-                        print(f"[{iii[1:]}")
+                        # print(f"[{iii[1:]}")
+                        pass
 
                 paper_list = trim_quote(paper_list)
                 pl_list[paper_flag] = paper_list
@@ -379,11 +380,11 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
         try:
             article_directory = WebDriverWait(driver, time_out).until(
                 EC.presence_of_element_located((By.CLASS_NAME, cp['catalog']))).text
-            print(f"文章目录 : \n{article_directory}")
+            # print(f"文章目录 : \n{article_directory}")
         except Exception as e:
             err3(e)
             article_directory = None
-            print(f"文章目录 : {article_directory}")
+            # print(f"文章目录 : {article_directory}")
 
         # url = driver.current_url[46:][:-32]
         # 获取下载链接
@@ -403,7 +404,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
         except Exception as e:
             err3(e)
             new_title = None
-        print(f"内页标题 : {new_title}")
+        # print(f"内页标题 : {new_title}")
 
         insert_time = now_time()
 
@@ -451,6 +452,14 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
             finally:
                 Date_base().update(sql3)
 
+        logger.write_log(f"已获取 ： {new_title}, UUID : {uuid}", 'info')
+
+    except Exception as e:
+        logger.write_log(f"错误 ： {new_title}, UUID : {uuid}", 'error')
+        err2(e)
+        return
+
+    finally:
         all_handles = driver.window_handles
 
         if len(all_handles) > 1:
@@ -461,13 +470,5 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
             for handle in all_handles[1:]:
                 driver.switch_to.window(handle)
                 driver.close()
-
             # 切换回第一个页面
             driver.switch_to.window(main_handle)
-
-        logger.write_log(f"已获取 ： {new_title}, UUID : {uuid}", 'info')
-
-    except Exception as e:
-        logger.write_log(f"错误 ： {new_title}, UUID : {uuid}", 'error')
-        err2(e)
-        return
