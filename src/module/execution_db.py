@@ -19,7 +19,7 @@ class Date_base:
             return True
         except Exception as e:
             if "PRIMARY" in str(e):
-                self.print_log.write_log(f"重复数据 {sql}", 'warning')
+                self.print_log.write_log(f"重复数据", 'warning')
                 return '重复数据'
             elif "timed out" in str(e):
                 self.print_log.write_log("连接数据库超时", 'error')

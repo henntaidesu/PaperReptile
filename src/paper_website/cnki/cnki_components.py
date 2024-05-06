@@ -383,7 +383,7 @@ def get_paper_type_number(driver):
         err2(e)
 
 
-def open_paper_info(driver, keyword):
+def open_paper_info(driver, paper_title):
     time_out = 8
     url = f"https://kns.cnki.net/kns8/AdvSearch"
     # url = f"https://www.cnki.net/index/"
@@ -391,16 +391,15 @@ def open_paper_info(driver, keyword):
 
     try:
         WebDriverWait(driver, time_out).until(
-            EC.presence_of_element_located((By.XPATH, open_page_data['ik']))).send_keys(
-            keyword)
+            EC.presence_of_element_located((By.XPATH, open_page_data['ik']))).send_keys(paper_title)
     except TimeoutException:
-        print("输入框加载超时")
+        logger.write_log(f"{paper_title} - 输入框加载超时", 'error')
         return False
 
     try:
         WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['cs']))).click()
     except TimeoutException:
-        print("搜索按钮加载超时")
+
         return False
 
     time.sleep(2)
@@ -409,7 +408,7 @@ def open_paper_info(driver, keyword):
         res_unm = WebDriverWait(driver, time_out).until(
             EC.presence_of_element_located((By.XPATH, open_page_data['gn']))).text
     except TimeoutException:
-        print("结果数量加载超时")
+        logger.write_log(f"{paper_title} - 结果数量加载超时", 'error')
         return False
 
     paper_sum = 20
@@ -645,3 +644,17 @@ def page_click_sort_type(driver, flag):
             WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="ZH"]'))).click()
     except ExceptionGroup as e:
         err2(e)
+
+
+def get_spider_paper_title():
+    yy, mm, dd = CNKI().read_cnki_date()
+    sql = f"SELECT * FROM `Paper`.`cnki_index` WHERE  db_type in ('1', '2', '3') and `status` = '0' limit 1"
+    flag, data = Date_base().select(sql)
+    if data:
+        data = data[0]
+        UUID = data[0]
+        sql = f"UPDATE `Paper`.`cnki_index` SET `status` = 'Z' where `uuid` = '{UUID}';"
+        Date_base().update(sql)
+        return data
+    else:
+        revise_cnki_date_desc(yy, mm, dd)

@@ -24,6 +24,22 @@ class ReadConf:
         db = pymysql.connect(host=host, port=port, user=user, password=password, database=database)
         return db
 
+    def rabbitMQ(self):
+        host = self.config.get('rabbitMQ', 'host')
+        port = int(self.config.get('rabbitMQ', 'port'))
+        username = self.config.get('rabbitMQ', 'username')
+        password = self.config.get('rabbitMQ', 'password')
+        rabbitmq_config = {
+            'host': self.config.get('rabbitMQ', 'host'),
+            'port': int(self.config.get('rabbitMQ', 'port')),
+            'username': self.config.get('rabbitMQ', 'username'),
+            'password': self.config.get('rabbitMQ', 'password')
+        }
+        return rabbitmq_config
+
+    def rabbitMQ_max_queue(self):
+        return int(self.config.get('rabbitMQ', 'produce_max_queue'))
+
     def http_proxy(self):
         if_true = self.config.get('http_proxy', 'status')
         host = self.config.get('http_proxy', 'host')

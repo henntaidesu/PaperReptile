@@ -295,7 +295,8 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
             if_journal_reference = WebDriverWait(driver, time_out).until(EC.presence_of_element_located(
                 (By.XPATH, cp['if_literature_reference']))).text
             if if_journal_reference:
-                print("存在引文网络")
+                # print("存在引文网络")
+                pass
 
         except Exception as e:
             err3(e)
@@ -453,22 +454,12 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
                 Date_base().update(sql3)
 
         logger.write_log(f"已获取 ： {new_title}, UUID : {uuid}", 'info')
+        return True
 
     except Exception as e:
-        logger.write_log(f"错误 ： {new_title}, UUID : {uuid}", 'error')
-        err2(e)
-        return
+        if type(e).__name__ in ('ElementClickInterceptedException', 'TimeoutException'):
+            logger.write_log(f"元素获取错误 ： {title}, UUID : {uuid}", 'error')
+        else:
+            err2(e)
 
-    finally:
-        all_handles = driver.window_handles
-
-        if len(all_handles) > 1:
-            # 保留第一个句柄
-            main_handle = all_handles[0]
-
-            # 关闭除第一个页面外的所有页面
-            for handle in all_handles[1:]:
-                driver.switch_to.window(handle)
-                driver.close()
-            # 切换回第一个页面
-            driver.switch_to.window(main_handle)
+        return False

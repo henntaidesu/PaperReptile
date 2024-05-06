@@ -2,8 +2,7 @@ import time
 from src.module.execution_db import Date_base
 import multiprocessing
 from src.module.read_conf import ReadConf
-from src.module.log import Log
-from src.module.log import err2
+from src.module.log import Log, err2
 
 
 class Process:
@@ -26,6 +25,19 @@ class Process:
 
         return chunks
 
+    def multi_process(self, func):
+        try:
+            processes, start_sleep = self.conf.processes()
+            pool = multiprocessing.Pool(processes=processes)
+            for i in range(processes):
+                pool.apply_async(func)
+                time.sleep(start_sleep)  # 启动间隔
+            pool.close()
+            pool.join()
+
+        except Exception as e:
+            err2(e)
+
     def multi_process_as_up_group(self, sql, func):
         try:
             processes, start_sleep = self.conf.processes()
@@ -38,19 +50,6 @@ class Process:
             pool = multiprocessing.Pool(processes=processes)
             for chunk in chunks:
                 pool.apply_async(func, args=(chunk,))
-                time.sleep(start_sleep)  # 启动间隔
-            pool.close()
-            pool.join()
-
-        except Exception as e:
-            err2(e)
-
-    def multi_process(self, func):
-        try:
-            processes, start_sleep = self.conf.processes()
-            pool = multiprocessing.Pool(processes=processes)
-            for i in range(processes):
-                pool.apply_async(func)
                 time.sleep(start_sleep)  # 启动间隔
             pool.close()
             pool.join()
