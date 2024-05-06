@@ -47,11 +47,36 @@ def get_queue_quantity(queue_name):
     return message_count
 
 
-def get_new_proxy():
+def paper_title_status0():
     queue_name = "paper_title_status=0"
     while True:
         if get_queue_quantity(queue_name) < ReadConf().rabbitMQ_max_queue():
             sql = f"SELECT * FROM `Paper`.`cnki_index` WHERE db_type in ('1', '2', '3') and `status` = '0' limit 1"
+            flag, data = Date_base().select(sql)
+            data = data[0]
+            UUID = data[0]
+            title = data[1]
+            receive_time = str(data[2])
+            status = data[3]
+            db_type = data[4]
+            sql = f"UPDATE `Paper`.`cnki_index` SET `status` = 'Z' where `uuid` = '{UUID}';"
+            Date_base().update(sql)
+            try:
+                title_producer(queue_name, f"{UUID},{title},{receive_time},{status},{db_type}")
+                Log().write_log(f"{queue_name} - {title}", 'info')
+            except Exception as e:
+                Log().write_log(f"{queue_name} - {title}", 'error')
+                err2(e)
+        else:
+            time.sleep(0.2)
+            continue
+
+
+def paper_title_status9():
+    queue_name = "paper_title_status=9"
+    while True:
+        if get_queue_quantity(queue_name) < ReadConf().rabbitMQ_max_queue():
+            sql = f"SELECT * FROM `Paper`.`cnki_index` WHERE db_type in ('1', '2', '3') and `status` = '9' limit 1"
             flag, data = Date_base().select(sql)
             data = data[0]
             UUID = data[0]
@@ -73,4 +98,5 @@ def get_new_proxy():
 
 if __name__ == '__main__':
     print("生产者已启动")
-    get_new_proxy()
+    paper_title_status0()
+    paper_title_status9()

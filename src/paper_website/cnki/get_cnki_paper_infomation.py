@@ -47,6 +47,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
     try:
         authors = WebDriverWait(driver, time_out).until(
             EC.presence_of_element_located((By.XPATH, authors_xpath))).text
+        authors = authors.replace("'", "\'")
     except Exception as e:
         err3(e)
         authors = None
@@ -54,6 +55,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
     try:
         source = WebDriverWait(driver, time_out).until(
             EC.presence_of_element_located((By.XPATH, source_xpath))).text
+        source = source.replace("'", "\'")
     except Exception as e:
         err3(e)
         source = None
@@ -185,6 +187,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
                 (By.XPATH, cp['institute']))).text
             if '.' in institute:
                 institute = re.sub(r'\d*\.', ';', institute)[1:].replace(' ', '')
+            institute = institute.replace("'", "\'")
         except Exception as e:
             err3(e)
             institute = None
@@ -194,6 +197,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
         try:
             abstract = WebDriverWait(driver, time_out).until(
                 EC.presence_of_element_located((By.CLASS_NAME, cp['abstract']))).text
+            abstract = abstract.replace("'", "\'")
         except Exception as e:
             err3(e)
             abstract = None
@@ -204,7 +208,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
         try:
             classification_zh = WebDriverWait(driver, time_out).until(
                 EC.presence_of_element_located((By.CLASS_NAME, cp['keywords']))).text[:-1]
-            classification_zh = Trim_passkey(classification_zh).replace('  ', ';')
+            classification_zh = Trim_passkey(classification_zh).replace('  ', ';').replace("'", "\'")
         except Exception as e:
             err3(e)
             classification_zh = None
@@ -238,7 +242,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
         try:
             funding = WebDriverWait(driver, time_out).until(
                 EC.presence_of_element_located((By.CLASS_NAME, cp['funds']))).text
-            funding = funding.replace(' ', '').replace('；', ';')
+            funding = funding.replace(' ', '').replace('；', ';').replace("'", "\'")
         except Exception as e:
             err3(e)
             funding = None
@@ -277,7 +281,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
         if '报' in db_type or '报纸' in db_type:
             try:
                 level = WebDriverWait(driver, time_out).until(EC.presence_of_element_located(
-                    (By.XPATH, cp['level']))).text
+                    (By.XPATH, cp['level']))).text.replace("'", "\'")
                 # paper_size = int(paper_size[3:][:-1])
             except Exception as e:
                 err3(e)
@@ -381,6 +385,8 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
         try:
             article_directory = WebDriverWait(driver, time_out).until(
                 EC.presence_of_element_located((By.CLASS_NAME, cp['catalog']))).text
+
+            article_directory = article_directory.replace("'", "\'")
             # print(f"文章目录 : \n{article_directory}")
         except Exception as e:
             err3(e)
@@ -402,6 +408,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
                 EC.presence_of_element_located((By.TAG_NAME, "h1"))
             )
             new_title = new_title.text
+            new_title = new_title.replace("'", "\'")
         except Exception as e:
             err3(e)
             new_title = None

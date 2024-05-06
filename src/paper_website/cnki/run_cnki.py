@@ -44,8 +44,8 @@ def run_get_paper_info():
         try:
             data = rabbitmq_consume(queue_name)
             if data is None:
-                Log().write_log("队列无数据", 'error')
-                time.sleep(3600)
+                Log().write_log("队列无数据", 'warning')
+                time.sleep(60)
 
             data = [item.strip() for item in data.split(',')]
 
