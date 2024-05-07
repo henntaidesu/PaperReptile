@@ -24,8 +24,11 @@ def proxy_pool():
                 proxy_data = requests.get(url).text
                 proxy_data = json.loads(proxy_data)
                 if proxy_data['success'] is False:
-                    Log().write_log(f"{proxy_data['msg']}", 'error')
-                    exit()
+                    if proxy_data['msg'] == '今日套餐已用完':
+                        Log().write_log(f"今日套餐已用完", 'warning')
+                        time.sleep(600)
+                    else:
+                        Log().write_log(f"{proxy_data['msg']}", 'error')
                 else:
                     for item in proxy_data['data']:
                         IP = item['ip']

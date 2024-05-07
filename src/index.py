@@ -9,7 +9,7 @@ class Index:
         self.conf = ReadConf()
 
     def index(self):
-        flag = '6'
+        flag = '7'
 
         if flag == '1':
             from src.paper_website.arxiv.arxivorg import ArxivOrg
@@ -54,8 +54,7 @@ class Index:
         if flag == '7':
             from src.paper_website.cnki.run_cnki import run_multi_title_data
             print("处理CNKI查询标题重复数据")
-            sql = f"SELECT * FROM `Paper`.`cnki_index` WHERE `status` = 'a'"
-            self.process.multi_process_as_up_group(sql, run_multi_title_data)
+            self.process.multi_process(run_multi_title_data)
 
         if flag == '8':
             from src.paper_website.cnki.run_cnki import run_multi_title_info

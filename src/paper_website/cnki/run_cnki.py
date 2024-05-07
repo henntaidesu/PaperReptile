@@ -37,29 +37,28 @@ def run_get_paper_info():
     proxy_ID = None
     driver = None
     uuid = None
-    time_out = 15
+    time_out = 10
     queue_name = "paper_title_status=0"
-    while True:
-        mq_key = UUID()
-        try:
-            data = rabbitmq_consume(queue_name)
-            if data is None:
-                Log().write_log("队列无数据", 'warning')
-                time.sleep(60)
 
-            data = [item.strip() for item in data.split(',')]
+    try:
+        data = rabbitmq_consume(queue_name)
+        if data is None:
+            Log().write_log("队列无数据", 'warning')
+            time.sleep(60)
+            return
 
-            uuid = data[0]
-            title = data[1]
-            receive_time = data[2]
-            status = data[3]
-            db_type = data[4]
+        data = [item.strip() for item in data.split(',')]
 
-            if len(title) < 6:
-                sql = f"UPDATE `Paper`.`cnki_index` SET  `status` = '8' WHERE UUID = '{uuid}';"
-                Date_base().update(sql)
-                continue
+        uuid = data[0]
+        title = data[1]
+        receive_time = data[2]
+        status = data[3]
+        db_type = data[4]
 
+        if len(title) < 6:
+            sql = f"UPDATE `Paper`.`cnki_index` SET  `status` = '8' WHERE UUID = '{uuid}';"
+            Date_base().update(sql)
+        else:
             driver, proxy_ID, proxy_flag = webserver()
             page_flag = open_paper_info(driver, title)
             Log().write_log(f"{title} - 共找到 {page_flag}条结果 ", 'info')
@@ -74,46 +73,67 @@ def run_get_paper_info():
                 if flag is False:
                     sql = f"UPDATE `Paper`.`cnki_index` SET `status` = '0' where `uuid` = '{uuid}';"
                     Date_base().update(sql)
-        except Exception as e:
-            if type(e).__name__ == 'WebDriverException' and proxy_flag is True:
-                Log().write_log(f"代理编号{proxy_ID}错误", 'error')
-                # sql = f"UPDATE `Paper`.`proxy_pool` SET `status` = 'D' WHERE `id` = {proxy_ID};"
-                # Date_base().update(sql)
-                sql = f"UPDATE `Paper`.`cnki_index` SET `status` = '0' where `uuid` = '{uuid}';"
-                Date_base().update(sql)
-            elif type(e).__name__ == 'TimeoutException' and proxy_flag is True:
-                Log().write_log(f"代理编号{proxy_ID}超时", 'error')
-                sql = f"UPDATE `Paper`.`cnki_index` SET `status` = '0' where `uuid` = '{uuid}';"
-                Date_base().update(sql)
-            else:
-                sql = f"UPDATE `Paper`.`cnki_index` SET `status` = '0' where `uuid` = '{uuid}';"
-                Date_base().update(sql)
-                err2(e)
-        finally:
-            all_handles = driver.window_handles
-            for handle in all_handles:
-                driver.switch_to.window(handle)
-                driver.close()
-
-
-def run_multi_title_data(data):
-    for i in data:
-        uuid = i[0]
-        title = i[1]
-        receive_time = i[2]
-        # start = i[3]
-        db_type = i[4]
-        try:
-            driver, proxy_ID, proxy_flag = webserver()
-            title_number = open_paper_info(driver, title)
-            time.sleep(1)
-            flag = get_multi_title_data(driver, title_number)
-            sql = (f"UPDATE `Paper`.`cnki_index` SET `status` = 'b' "
-                   f"WHERE `title` = '{title}' AND `receive_time` = '{receive_time}'")
+    except Exception as e:
+        if type(e).__name__ == 'WebDriverException' and proxy_flag is True:
+            Log().write_log(f"代理编号{proxy_ID}错误", 'error')
+            # sql = f"UPDATE `Paper`.`proxy_pool` SET `status` = 'D' WHERE `id` = {proxy_ID};"
+            # Date_base().update(sql)
+            sql = f"UPDATE `Paper`.`cnki_index` SET `status` = '0' where `uuid` = '{uuid}';"
             Date_base().update(sql)
-        except Exception as e:
+        elif type(e).__name__ == 'TimeoutException' and proxy_flag is True:
+            Log().write_log(f"代理编号{proxy_ID}超时", 'error')
+            sql = f"UPDATE `Paper`.`cnki_index` SET `status` = '0' where `uuid` = '{uuid}';"
+            Date_base().update(sql)
+        else:
+            sql = f"UPDATE `Paper`.`cnki_index` SET `status` = '0' where `uuid` = '{uuid}';"
+            Date_base().update(sql)
             err2(e)
-        finally:
+    finally:
+        all_handles = driver.window_handles
+        for handle in all_handles:
+            driver.switch_to.window(handle)
+            driver.close()
+
+
+def run_multi_title_data():
+    driver = None
+    queue_name = "paper_title_status=a"
+    data = rabbitmq_consume(queue_name)
+    if data is None:
+        Log().write_log("队列无数据", 'warning')
+        time.sleep(60)
+        return
+
+    data = [item.strip() for item in data.split(',')]
+
+    uuid = data[0]
+    title = data[1]
+    receive_time = data[2]
+    status = data[3]
+    db_type = data[4]
+    try:
+        driver, proxy_ID, proxy_flag = webserver()
+        title_number = open_paper_info(driver, title)
+        time.sleep(1)
+        flag = get_multi_title_data(driver, title_number)
+        if flag is True:
+            sql = f"UPDATE `Paper`.`cnki_index` SET `status` = 'b' where `uuid` = '{uuid}'"
+        else:
+            sql = f"UPDATE `Paper`.`cnki_index` SET `status` = 'a' where `uuid` = '{uuid}'"
+        Date_base().update(sql)
+    except Exception as e:
+        if type(e).__name__ == 'TimeoutException':
+            Log().write_log(f"{title} 获取超时", 'error')
+        else:
+            err2(e)
+        sql = f"UPDATE `Paper`.`cnki_index` SET `status` = 'a' where `uuid` = '{uuid}'"
+        Date_base().update(sql)
+
+
+    finally:
+        all_handles = driver.window_handles
+        for handle in all_handles:
+            driver.switch_to.window(handle)
             driver.close()
 
 

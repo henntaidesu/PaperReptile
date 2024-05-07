@@ -81,7 +81,7 @@ class ReadConf:
 
     def processes(self):
         number = int(self.config.get('processes', 'number'))
-        start_sleep = int(self.config.get('processes', 'state_sleep'))
+        start_sleep = float(self.config.get('processes', 'state_sleep'))
         return number, start_sleep
 
     def down_path(self):
