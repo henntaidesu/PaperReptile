@@ -4,9 +4,9 @@ from src.module.execution_db import Date_base
 from src.paper_website.cnki.get_cnki_paper_title import get_multi_title_data, get_paper_title
 from src.paper_website.cnki.cnki_components import open_paper_info, page_click_sort_type, get_paper_type_number
 from src.paper_website.cnki.cnki_components import webserver, open_page_of_title, get_spider_paper_title
-from src.module.log import err2, Log
 from src.paper_website.cnki.get_cnki_paper_infomation import get_paper_info
-from src.module.UUID import UUID
+from src.paper_website.cnki.cnki_components import open_multi_info
+from src.module.log import err2, Log
 from src.module.rabbitMQ import rabbitmq_consume
 
 
@@ -97,6 +97,7 @@ def run_get_paper_info():
 
 def run_multi_title_data():
     driver = None
+    time_out = 10
     queue_name = "paper_title_status=a"
     data = rabbitmq_consume(queue_name)
     if data is None:
@@ -115,10 +116,11 @@ def run_multi_title_data():
         driver, proxy_ID, proxy_flag = webserver()
         title_number = open_paper_info(driver, title)
         time.sleep(1)
-        flag = get_multi_title_data(driver, title_number)
+        flag = get_multi_title_data(driver, title_number, time_out)
         if flag is True:
             sql = f"UPDATE `Paper`.`cnki_index` SET `status` = 'b' where `uuid` = '{uuid}'"
         else:
+            Log().write_log(f"获取错误", 'error')
             sql = f"UPDATE `Paper`.`cnki_index` SET `status` = 'a' where `uuid` = '{uuid}'"
         Date_base().update(sql)
     except Exception as e:
@@ -128,8 +130,6 @@ def run_multi_title_data():
             err2(e)
         sql = f"UPDATE `Paper`.`cnki_index` SET `status` = 'a' where `uuid` = '{uuid}'"
         Date_base().update(sql)
-
-
     finally:
         all_handles = driver.window_handles
         for handle in all_handles:
@@ -137,29 +137,37 @@ def run_multi_title_data():
             driver.close()
 
 
-def run_multi_title_info(data):
-    from src.paper_website.cnki.cnki_components import open_multi_info
-    for i in data:
-        uuid = i[0]
-        title = i[1]
-        receive_time = i[2]
-        # start = i[3]
-        db_type = i[4]
-        try:
-            driver, proxy_ID, proxy_flag = webserver()
-            if_paper = open_multi_info(driver, receive_time, title)
-            if if_paper:
-                sql = (f"UPDATE `Paper`.`cnki_index` SET `status` = '?' "
-                       f"WHERE `title` = '{title}' AND `receive_time` = '{receive_time}'")
-                Date_base().update(sql)
-                driver.close()
-                continue
+def run_multi_title_info():
+    driver = None
+    time_out = 10
+    queue_name = "paper_title_status=b"
+    data = rabbitmq_consume(queue_name)
+    if data is None:
+        Log().write_log("队列无数据", 'warning')
+        time.sleep(60)
+        return
 
-            get_flag = get_paper_info(driver, 5, uuid, title, db_type, receive_time)
-            sql = (f"UPDATE `Paper`.`cnki_index` SET `status` = 'c' "
-                   f"WHERE `title` = '{title}' AND `receive_time` = '{receive_time}'")
+    data = [item.strip() for item in data.split(',')]
+
+    uuid = data[0]
+    title = data[1]
+    receive_time = data[2]
+    status = data[3]
+    db_type = data[4]
+    try:
+        driver, proxy_ID, proxy_flag = webserver()
+        if_paper = open_multi_info(driver, receive_time, title, time_out)
+        if if_paper:
+            sql = f"UPDATE `Paper`.`cnki_index` SET `status` = '?'  where `uuid` = '{uuid}' "
             Date_base().update(sql)
-        finally:
+
+        get_flag = get_paper_info(driver, 5, uuid, title, db_type, receive_time)
+        sql = f"UPDATE `Paper`.`cnki_index` SET `status` = 'c'  where `uuid` = '{uuid}' "
+        Date_base().update(sql)
+    finally:
+        all_handles = driver.window_handles
+        for handle in all_handles:
+            driver.switch_to.window(handle)
             driver.close()
 
 

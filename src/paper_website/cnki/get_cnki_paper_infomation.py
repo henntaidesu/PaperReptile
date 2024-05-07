@@ -61,6 +61,8 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
         source = None
     try:
         date = WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, date_xpath))).text
+        if len(date) == 6:
+            date = f"{date[:4]}-{date[4:]}-01"
     except Exception as e:
         err3(e)
         date = None

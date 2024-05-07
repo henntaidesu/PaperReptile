@@ -221,21 +221,30 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum,
         time.sleep(3)
 
 
-def get_multi_title_data(driver, res_unm):
-    time_out = 3
+def get_multi_title_data(driver, res_unm, time_out):
     driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.END)
     count = 0
     # 循环网页一页中的条目
-    for a in range(int(res_unm / 20) + 1):
+    if res_unm <= 20:
+        for_flag = 1
+    else:
+        for_flag = int(res_unm / 20) + 1
+
+    print(res_unm)
+
+    for a in range(for_flag):
         if a > 0:
             try:
                 time.sleep(3)
                 ActionChains(driver).key_down(Keys.ARROW_RIGHT).key_up(Keys.ARROW_RIGHT).perform()
+                # WebDriverWait(driver, 10).until(
+                #     EC.presence_of_element_located((By.XPATH, "//a[@id='PageNext']"))).click()
             except Exception as e:
                 err2(e)
-
-        title_list = WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.CLASS_NAME, "fz14")))
-        for i in range(len(title_list)):
+        # title_list = None
+        # title_list = WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.CLASS_NAME, "fz14")))
+        time.sleep(3)
+        for i in range(20):
             count += 1
 
             print(f"正在爬取第{count}条基础数据,")
@@ -248,7 +257,10 @@ def get_multi_title_data(driver, res_unm):
             try:
                 title = WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, title_xpath))).text
             except:
-                title = WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, title_xpath2))).text
+                if count - 1 == res_unm:
+                    return True
+                else:
+                    return False
 
             try:
                 db_type = WebDriverWait(driver, time_out).until(
@@ -260,6 +272,8 @@ def get_multi_title_data(driver, res_unm):
             try:
                 date = WebDriverWait(driver, time_out).until(
                     EC.presence_of_element_located((By.XPATH, date_xpath))).text
+                if len(date) == 6:
+                    date = f"{date[:4]}-{date[4:]}-01"
             except Exception as e:
                 err3(e)
                 date = None
@@ -289,11 +303,12 @@ def get_multi_title_data(driver, res_unm):
             else:
                 db_type = '9'
 
-            title = title.replace(':', '：').replace('：', ':').replace('——', '—')
+            title = title.replace(':', '：').replace('——', '—')
 
             if "<font color='red'>" in title:
                 title = title.replace("<font color='red'>", "")
 
+            title = title.replace("'", r"\'")
             uuid = UUID()
             sql3 = (f"INSERT INTO `Paper`.`cnki_index`"
                     f"(`UUID`, `title`, `receive_time`, `status`, `db_type`) "

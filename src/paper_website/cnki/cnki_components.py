@@ -54,7 +54,7 @@ def webserver():
         options.add_argument('--silent')  # 完全禁止 DevTools 输出
         options.add_experimental_option('excludeSwitches', ['enable-logging'])  # 禁用 DevTools 监听输出
 
-        options.add_argument('--headless')  # 不唤起实体浏览器
+        # options.add_argument('--headless')  # 不唤起实体浏览器
 
         proxy_flag = read_conf.cnki_proxy()
         if proxy_flag:
@@ -418,8 +418,8 @@ def open_paper_info(driver, paper_title):
     return res_unm
 
 
-def open_multi_info(driver, receive_time, title):
-    time_out = 5
+def open_multi_info(driver, receive_time, title, time_out):
+
     time.sleep(1)
     driver.get("https://kns.cnki.net/kns8/AdvSearch")
 
