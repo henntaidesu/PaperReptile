@@ -243,7 +243,7 @@ def get_multi_title_data(driver, res_unm, time_out):
         for i in range(len(title_list)):
             count += 1
 
-            if count > 5980:
+            if count > 5979:
                 return True
 
             print(f"正在爬取第{count}条基础数据,")

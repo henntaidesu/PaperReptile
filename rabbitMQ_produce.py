@@ -52,24 +52,24 @@ def paper_title_status_0():
     queue_name = "paper_title_status=0"
     while True:
         if get_queue_quantity(queue_name) < ReadConf().rabbitMQ_max_queue():
-            sql = f"SELECT * FROM `Paper`.`cnki_index` WHERE db_type in ('1', '2', '3') and `status` = '0' limit 1"
+            sql = f"SELECT * FROM `Paper`.`cnki_index` WHERE receive_time > '2023-01-01' and db_type in ('1', '2', '3') and `status` = '0' limit 200"
             flag, data = Date_base().select(sql)
-            data = data[0]
-            UUID = data[0]
-            title = data[1]
-            receive_time = str(data[2])
-            status = data[3]
-            db_type = data[4]
-            sql = f"UPDATE `Paper`.`cnki_index` SET `status` = 'Z' where `uuid` = '{UUID}';"
-            Date_base().update(sql)
-            try:
-                title_producer(queue_name, f"{UUID},{title},{receive_time},{status},{db_type}")
-                Log().write_log(f"{queue_name} - {title}", 'info')
-            except Exception as e:
-                Log().write_log(f"{queue_name} - {title}", 'error')
-                err2(e)
+            for i in data:
+                UUID = i[0]
+                title = i[1]
+                receive_time = str(i[2])
+                status = i[3]
+                db_type = i[4]
+                sql = f"UPDATE `Paper`.`cnki_index` SET `status` = 'Z' where `uuid` = '{UUID}';"
+                Date_base().update(sql)
+                try:
+                    title_producer(queue_name, f"{UUID},{title},{receive_time},{status},{db_type}")
+                    Log().write_log(f"{queue_name} - {title} - {receive_time}", 'info')
+                except Exception as e:
+                    Log().write_log(f"{queue_name} - {title}", 'error')
+                    err2(e)
         else:
-            time.sleep(0.2)
+            time.sleep(60)
             continue
 
 
@@ -77,48 +77,48 @@ def paper_title_status_a():
     queue_name = "paper_title_status=a"
     while True:
         if get_queue_quantity(queue_name) < ReadConf().rabbitMQ_max_queue():
-            sql = f"SELECT * FROM `Paper`.`cnki_index` WHERE db_type in ('1', '2', '3') and `status` = 'a' limit 1"
+            sql = f"SELECT * FROM `Paper`.`cnki_index` WHERE db_type in ('1', '2', '3') and `status` = 'a' limit 20"
             flag, data = Date_base().select(sql)
-            data = data[0]
-            UUID = data[0]
-            title = data[1]
-            receive_time = str(data[2])
-            status = data[3]
-            db_type = data[4]
-            sql = f"UPDATE `Paper`.`cnki_index` SET `status` = 'X' where `uuid` = '{UUID}';"
-            Date_base().update(sql)
-            try:
-                title_producer(queue_name, f"{UUID},{title},{receive_time},{status},{db_type}")
-                Log().write_log(f"{queue_name} - {title}", 'info')
-            except Exception as e:
-                Log().write_log(f"{queue_name} - {title}", 'error')
-                err2(e)
+            for i in data:
+                UUID = i[0]
+                title = i[1]
+                receive_time = str(i[2])
+                status = i[3]
+                db_type = i[4]
+                sql = f"UPDATE `Paper`.`cnki_index` SET `status` = 'X' where `uuid` = '{UUID}';"
+                Date_base().update(sql)
+                try:
+                    title_producer(queue_name, f"{UUID},{title},{receive_time},{status},{db_type}")
+                    Log().write_log(f"{queue_name} - {title}", 'info')
+                except Exception as e:
+                    Log().write_log(f"{queue_name} - {title}", 'error')
+                    err2(e)
         else:
-            time.sleep(1)
+            time.sleep(60)
 
 
 def paper_title_status_b():
     queue_name = "paper_title_status=b"
     while True:
         if get_queue_quantity(queue_name) < ReadConf().rabbitMQ_max_queue():
-            sql = f"SELECT * FROM `Paper`.`cnki_index` WHERE db_type in ('1', '2', '3') and `status` = 'b' limit 1"
+            sql = f"SELECT * FROM `Paper`.`cnki_index` WHERE db_type in ('1', '2', '3') and `status` = 'b' limit 20"
             flag, data = Date_base().select(sql)
-            data = data[0]
-            UUID = data[0]
-            title = data[1]
-            receive_time = str(data[2])
-            status = data[3]
-            db_type = data[4]
-            sql = f"UPDATE `Paper`.`cnki_index` SET `status` = 'Y' where `uuid` = '{UUID}';"
-            Date_base().update(sql)
-            try:
-                title_producer(queue_name, f"{UUID},{title},{receive_time},{status},{db_type}")
-                Log().write_log(f"{queue_name} - {title}", 'info')
-            except Exception as e:
-                Log().write_log(f"{queue_name} - {title}", 'error')
-                err2(e)
+            for i in data:
+                UUID = i[0]
+                title = i[1]
+                receive_time = str(i[2])
+                status = i[3]
+                db_type = i[4]
+                sql = f"UPDATE `Paper`.`cnki_index` SET `status` = 'Y' where `uuid` = '{UUID}';"
+                Date_base().update(sql)
+                try:
+                    title_producer(queue_name, f"{UUID},{title},{receive_time},{status},{db_type}")
+                    Log().write_log(f"{queue_name} - {title}", 'info')
+                except Exception as e:
+                    Log().write_log(f"{queue_name} - {title}", 'error')
+                    err2(e)
         else:
-            time.sleep(1)
+            time.sleep(60)
 
 
 if __name__ == '__main__':
@@ -129,9 +129,7 @@ if __name__ == '__main__':
 
     # 启动线程
     thread1.start()
-    time.sleep(1)
     thread2.start()
-    time.sleep(1)
     thread3.start()
 
     thread1.join()

@@ -9,6 +9,8 @@ from src.paper_website.cnki.cnki_components import open_multi_info
 from src.module.log import err2, Log
 from src.module.rabbitMQ import rabbitmq_consume
 
+logger = Log()
+
 
 def run_get_paper_title(click_flag, total_page, total_count, None_message):
     try:
@@ -43,7 +45,7 @@ def run_get_paper_info():
     try:
         data = rabbitmq_consume(queue_name)
         if data is None:
-            Log().write_log("队列无数据", 'warning')
+            logger.write_log("队列无数据", 'warning')
             time.sleep(60)
             return
 
@@ -61,7 +63,7 @@ def run_get_paper_info():
         else:
             driver, proxy_ID, proxy_flag = webserver()
             page_flag = open_paper_info(driver, title)
-            Log().write_log(f"{title} - 共找到 {page_flag}条结果 ", 'info')
+            logger.write_log(f"{title} - 共找到 {page_flag}条结果 ", 'info')
             if page_flag > 1:
                 sql = f"UPDATE `cnki_index` SET `status` = 'a' WHERE `UUID` = '{uuid}';"
                 Date_base().update(sql)
@@ -75,13 +77,13 @@ def run_get_paper_info():
                     Date_base().update(sql)
     except Exception as e:
         if type(e).__name__ == 'WebDriverException' and proxy_flag is True:
-            Log().write_log(f"代理编号{proxy_ID}错误", 'error')
+            logger.write_log(f"代理编号{proxy_ID}错误", 'error')
             # sql = f"UPDATE `Paper`.`proxy_pool` SET `status` = 'D' WHERE `id` = {proxy_ID};"
             # Date_base().update(sql)
             sql = f"UPDATE `Paper`.`cnki_index` SET `status` = '0' where `uuid` = '{uuid}';"
             Date_base().update(sql)
         elif type(e).__name__ == 'TimeoutException' and proxy_flag is True:
-            Log().write_log(f"代理编号{proxy_ID}超时", 'error')
+            logger.write_log(f"代理编号{proxy_ID}超时", 'error')
             sql = f"UPDATE `Paper`.`cnki_index` SET `status` = '0' where `uuid` = '{uuid}';"
             Date_base().update(sql)
         else:
@@ -104,7 +106,7 @@ def run_multi_title_data():
 
     data = rabbitmq_consume(queue_name)
     if data is None:
-        Log().write_log("队列无数据", 'warning')
+        logger.write_log("队列无数据", 'warning')
         time.sleep(60)
         return
 
@@ -115,6 +117,7 @@ def run_multi_title_data():
     receive_time = data[2]
     status = data[3]
     db_type = data[4]
+    logger.write_log(f"当前获取 - {title}", 'info')
     try:
         title_number = open_paper_info(driver, title)
         time.sleep(1)
@@ -122,12 +125,12 @@ def run_multi_title_data():
         if flag is True:
             sql = f"UPDATE `Paper`.`cnki_index` SET `status` = 'b' where `uuid` = '{uuid}'"
         else:
-            Log().write_log(f"{title} - {uuid} - 获取错误", 'error')
+            logger.write_log(f"{title} - {uuid} - 获取错误", 'error')
             sql = f"UPDATE `Paper`.`cnki_index` SET `status` = 'a' where `uuid` = '{uuid}'"
         Date_base().update(sql)
     except Exception as e:
         if type(e).__name__ == 'TimeoutException':
-            Log().write_log(f"{title} 获取超时", 'error')
+            logger.write_log(f"{title} 获取超时", 'error')
         else:
             err2(e)
         sql = f"UPDATE `Paper`.`cnki_index` SET `status` = 'a' where `uuid` = '{uuid}'"
@@ -148,7 +151,7 @@ def run_multi_title_info():
     try:
         data = rabbitmq_consume(queue_name)
         if data is None:
-            Log().write_log("队列无数据", 'warning')
+            logger.write_log("队列无数据", 'warning')
             time.sleep(60)
             return
 
