@@ -27,11 +27,11 @@ class Process:
 
     def multi_process(self, func):
         try:
-            processes, start_sleep = self.conf.processes()
+            processes, state_interval = self.conf.processes()
             pool = multiprocessing.Pool(processes=processes)
             for i in range(processes):
                 pool.apply_async(func)
-                time.sleep(start_sleep)  # 启动间隔
+                time.sleep(state_interval)  # 启动间隔
             pool.close()
             pool.join()
 
@@ -40,7 +40,7 @@ class Process:
 
     def multi_process_as_up_group(self, sql, func):
         try:
-            processes, start_sleep = self.conf.processes()
+            processes, state_interval = self.conf.processes()
             date_base = Date_base()
             flag, work_list = date_base.select(sql)
             if len(work_list) == 0:
@@ -50,7 +50,7 @@ class Process:
             pool = multiprocessing.Pool(processes=processes)
             for chunk in chunks:
                 pool.apply_async(func, args=(chunk,))
-                time.sleep(start_sleep)  # 启动间隔
+                time.sleep(state_interval)
             pool.close()
             pool.join()
 

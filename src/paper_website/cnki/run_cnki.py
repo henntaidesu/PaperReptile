@@ -26,7 +26,9 @@ def run_get_paper_title(click_flag, total_page, total_count, None_message):
         if res_unm:
             page_click_sort_type(driver, click_flag)
             flag, total_page, click_flag, total_count, None_message = get_paper_title(driver, res_unm, paper_type,
-                paper_day, date_str, paper_sum,total_page, total_count,click_flag, None_message)
+                                                                                      paper_day, date_str, paper_sum,
+                                                                                      total_page, total_count,
+                                                                                      click_flag, None_message)
 
         else:
             get_title_data_is_none(paper_flag, paper_day)
@@ -37,18 +39,23 @@ def run_get_paper_title(click_flag, total_page, total_count, None_message):
             run_get_paper_title(click_flag, total_page, total_count, None_message)
 
         else:
+            try:
+                all_handles = driver.window_handles
+                for handle in all_handles:
+                    driver.switch_to.window(handle)
+                    driver.close()
+            finally:
+                pass
+
             run_get_paper_title(0, 0, 0, False)
 
     except Exception as e:
         err2(e)
-
-    # finally:
-    #     all_handles = driver.window_handles
-    #     for handle in all_handles:
-    #         driver.switch_to.window(handle)
-    #         driver.close()
-
-
+    finally:
+        all_handles = driver.window_handles
+        for handle in all_handles:
+            driver.switch_to.window(handle)
+            driver.close()
 
 
 def run_get_paper_info():

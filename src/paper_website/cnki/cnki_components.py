@@ -55,7 +55,7 @@ def webserver():
         options.add_argument('--silent')  # 禁止 DevTools 输出
         options.add_experimental_option('excludeSwitches', ['enable-logging'])  # 禁用 DevTools 监听输出
 
-        options.add_argument('--headless')  # 不唤起实体浏览器
+        # options.add_argument('--headless')  # 不唤起实体浏览器
 
         proxy_flag = read_conf.cnki_proxy()
         if proxy_flag:
@@ -314,12 +314,6 @@ def choose_banner_new_data(driver, time_out, paper_day):
             a11 = '1'
 
         item_flag = f"{a0}{a1}{a2}{a3}{a5}{a7}{a8}{a9}{a10}{a11}"
-
-        # sql = (f"INSERT INTO `Paper`.`cnki_page_flag`"
-        #        f"(`date`, `flag`, `xxkq`, `xwlw`, `hy`, `bz`, `ts`, `bs`, `cg`, `xxkj`, `tsqk`, `sp`) "
-        #        f"VALUES ('{paper_day}', '{item_flag}', '{xx_sum}', '{xw_sum}', '{hy_sum}', '{pa_sum}', '{ts_sum}', "
-        #        f"'{bz_sum}', '{cg_sum}', '{kj_sum}', '{tsqk_sum}', '{sp_sum}');").replace("'0'", "NULL")
-        # Date_base().insert(sql)
 
         sql = (f"UPDATE `Paper`.`cnki_page_flag` SET `flag` = '{item_flag}', `xxkq` = {xx_sum}, `xwlw` = {xw_sum}, "
                f"`hy` = {hy_sum},  `bz` = {pa_sum}, `ts` = {ts_sum}, `bs` = {bz_sum}, `cg` = {cg_sum}, "
@@ -640,23 +634,6 @@ def whit_file(date_str, paper_type, paper_day):
     date_str = date_str[1:][:-1].replace(',', '').replace("'", "").replace(" ", "")
     sql = f"UPDATE `Paper`.`cnki_page_flag` SET `flag` = '{date_str}' WHERE `date` = '{paper_day}'"
     Date_base().update(sql)
-    if date_str == '1111111111':
-
-        paper_day = datetime.strptime(paper_day, "%Y-%m-%d")
-        next_day = paper_day + timedelta(days=1)
-
-        if next_day < datetime.strptime(today(), "%Y-%m-%d"):
-            revise_cnki_date()
-
-        else:
-            while True:
-                if next_day < datetime.strptime(today(), "%Y-%m-%d"):
-                    revise_cnki_date()
-                else:
-                    print("暂停1小时")
-                    time.sleep(3600)
-    else:
-        return True
 
 
 def page_click_sort_type(driver, flag):
