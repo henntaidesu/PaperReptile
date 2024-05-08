@@ -42,7 +42,7 @@ class Log:
             elif log_type == 'error':
                 self.logger.error(text)
             elif log_type == 'warning':
-                self.logger.warning(text)
+                print(f"{now_time()} - WARNING - {text}")
         elif self.log_level == "info":
             if log_type == 'info':
                 self.logger.info(text)

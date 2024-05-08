@@ -9,7 +9,7 @@ class Index:
         self.conf = ReadConf()
 
     def index(self):
-        flag = '8'
+        flag = '7'
 
         if flag == '1':
             from src.paper_website.arxiv.arxivorg import ArxivOrg
@@ -28,8 +28,7 @@ class Index:
             from src.paper_website.arxiv.arxivorg import translate_title
             print("翻译title")
             while True:
-                sql = (f" SELECT UUID, title_en FROM `Paper`.`index`"
-                       f" WHERE state = '01' and `from` = 'arxiv'"
+                sql = (f" SELECT UUID, title_en FROM `Paper`.`index` WHERE state = '01' and `from` = 'arxiv'"
                        f" ORDER BY receive_time desc limit 10000")
                 self.process.multi_process_as_up_group(sql, translate_title)
 

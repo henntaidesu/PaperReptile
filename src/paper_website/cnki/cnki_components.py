@@ -31,8 +31,9 @@ dte = date_choose_end_table()
 def get_proxy_address():
     pool = proxy_pool()
     if len(pool) == 0:
-        logger.write_log(f"当前代理池无可用代理", 'error')
-        sys.exit()
+        logger.write_log(f"当前代理池无可用代理", 'warning')
+        time.sleep(600)
+        get_proxy_address()
     pool_flag = random.randint(0, len(pool) - 1)
     proxy_url = pool[pool_flag][0]
     proxy_ID = pool[pool_flag][1]
@@ -54,7 +55,7 @@ def webserver():
         options.add_argument('--silent')  # 完全禁止 DevTools 输出
         options.add_experimental_option('excludeSwitches', ['enable-logging'])  # 禁用 DevTools 监听输出
 
-        # options.add_argument('--headless')  # 不唤起实体浏览器
+        options.add_argument('--headless')  # 不唤起实体浏览器
 
         proxy_flag = read_conf.cnki_proxy()
         if proxy_flag:

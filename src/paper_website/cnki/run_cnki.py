@@ -99,6 +99,9 @@ def run_multi_title_data():
     driver = None
     time_out = 10
     queue_name = "paper_title_status=a"
+
+    driver, proxy_ID, proxy_flag = webserver()
+
     data = rabbitmq_consume(queue_name)
     if data is None:
         Log().write_log("队列无数据", 'warning')
@@ -113,7 +116,6 @@ def run_multi_title_data():
     status = data[3]
     db_type = data[4]
     try:
-        driver, proxy_ID, proxy_flag = webserver()
         title_number = open_paper_info(driver, title)
         time.sleep(1)
         flag = get_multi_title_data(driver, title_number, time_out)
@@ -141,22 +143,23 @@ def run_multi_title_info():
     driver = None
     time_out = 10
     queue_name = "paper_title_status=b"
-    data = rabbitmq_consume(queue_name)
-    if data is None:
-        Log().write_log("队列无数据", 'warning')
-        time.sleep(60)
-        return
 
-    data = [item.strip() for item in data.split(',')]
-
-    uuid = data[0]
-    title = data[1]
-    receive_time = data[2]
-    status = data[3]
-    db_type = data[4]
-
+    driver, proxy_ID, proxy_flag = webserver()
     try:
-        driver, proxy_ID, proxy_flag = webserver()
+        data = rabbitmq_consume(queue_name)
+        if data is None:
+            Log().write_log("队列无数据", 'warning')
+            time.sleep(60)
+            return
+
+        data = [item.strip() for item in data.split(',')]
+
+        uuid = data[0]
+        title = data[1]
+        receive_time = data[2]
+        status = data[3]
+        db_type = data[4]
+
         if_paper = open_multi_info(driver, receive_time, title, time_out)
         if if_paper:
             sql = f"UPDATE `Paper`.`cnki_index` SET `status` = '?'  where `uuid` = '{uuid}' "

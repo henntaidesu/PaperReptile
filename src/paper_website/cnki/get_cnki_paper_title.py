@@ -243,6 +243,9 @@ def get_multi_title_data(driver, res_unm, time_out):
         for i in range(len(title_list)):
             count += 1
 
+            if count > 5980:
+                return True
+
             print(f"正在爬取第{count}条基础数据,")
 
             title_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr[{i + 1}]/td[2]'''

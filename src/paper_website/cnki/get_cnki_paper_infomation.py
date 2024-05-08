@@ -48,7 +48,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
     author_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[3]'''
     source_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[4]'''
     date_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[5]'''
-    database_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr]/td[6]'''
+    database_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[6]'''
     quote_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[7]/div/a'''
     download_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[8]'''
     xpaths = [title_xpath, author_xpath, source_xpath, date_xpath, database_xpath, quote_xpath, download_xpath]
@@ -92,47 +92,6 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
     else:
         ndb_type = '9'
 
-    if ":" in title:
-        title = title.replace(':', '：')
-    elif "：" in title:
-        title = title.replace('：', ':')
-
-    if ":" in title1:
-        title1 = title1.replace(':', '：')
-    elif "：" in title1:
-        title1 = title1.replace('：', ':')
-
-    if "<font color='red'>" in title:
-        title = title.replace("<font color='red'>", "")
-
-    if "——" in title:
-        title = title.replace('——', '—')
-    if "——" in title1:
-        title1 = title1.replace('——', '—')
-
-    # 判断是否重复数据
-    duplicate_data = False
-    if title == title1:
-        duplicate_data = True
-    elif len(title_list) == 1 and date == receive_time:
-        duplicate_data = True
-
-    if duplicate_data is False:
-        uuid1 = UUID()
-        title = TrimString(title)
-        sql3 = (f"INSERT INTO `Paper`.`cnki_index`"
-                f"(`UUID`, `title`, `receive_time`, `status`, `db_type`) "
-                f"VALUES ('{uuid1}', '{title}', '{date}', '1', '{ndb_type}');")
-        sql3 = TrSQL(sql3)
-        flag = Date_base().insert(sql3)
-        # print(sql3)
-        if flag == '重复数据':
-            print("重复数据")
-            sql3 = f"UPDATE `Paper`.`cnki_index` SET  `status` = '*' WHERE UUID = '{uuid}';"
-            Date_base().update(sql3)
-            return
-        else:
-            uuid = uuid1
 
     # print(f"\n"
     #       f"标题:    {title}\n"
@@ -413,7 +372,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
                 f"`master`, `PhD`, `international_journals`, `book`, "
                 f"`Chinese_and_foreign`, `newpaper`) "
                 f"VALUES "
-                f"('{uuid}', '{institute}', '{source}', '{db_type}', {down_sun}, {quote}, '{insert_time}',"
+                f"('{uuid}', '{institute}', '{source}', '{ndb_type}', {down_sun}, {quote}, '{insert_time}',"
                 f" '{update_time}', '{funding}', '{publication}', '{classification_number}',"
                 f" '{article_directory}', '{topic}', '{level}', '{page_sum}', '{pl_list[0]}',"
                 f" '{pl_list[1]}', '{pl_list[2]}', '{pl_list[3]}', '{pl_list[4]}',"
