@@ -52,7 +52,7 @@ def paper_title_status_0():
     queue_name = "paper_title_status=0"
     while True:
         if get_queue_quantity(queue_name) < ReadConf().rabbitMQ_max_queue():
-            sql = f"SELECT * FROM `Paper`.`cnki_index` WHERE receive_time > '2023-01-01' and db_type in ('1', '2', '3') and `status` = '0' limit 200"
+            sql = f"SELECT * FROM `Paper`.`cnki_index` WHERE receive_time > '2023-01-01' and db_type in ('1') and `status` = '0' limit 200"
             flag, data = Date_base().select(sql)
             for i in data:
                 UUID = i[0]

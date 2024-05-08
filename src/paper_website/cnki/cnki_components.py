@@ -52,7 +52,7 @@ def webserver():
         options.add_experimental_option("prefs", {"profile.managed_default_content_settings.images": 2})
         options.add_argument("--disable-gpu")
         options.add_argument('--log-level=3')  # 设置日志级别减少输出信息
-        options.add_argument('--silent')  # 完全禁止 DevTools 输出
+        options.add_argument('--silent')  # 禁止 DevTools 输出
         options.add_experimental_option('excludeSwitches', ['enable-logging'])  # 禁用 DevTools 监听输出
 
         options.add_argument('--headless')  # 不唤起实体浏览器
@@ -140,7 +140,38 @@ def setting_select_date(driver, time_out, yy, mm, dd):
         err2(e)
 
 
-def choose_banner(driver, time_out, paper_day):
+def choose_banner(driver, time_out, paper_day, paper_flag):
+    data = list(paper_flag)
+    WebDriverWait(driver, time_out).until(
+        EC.presence_of_element_located((By.XPATH, open_page_data['all_item']))).click()
+    time.sleep(3)
+
+    for i in range(9):
+        if data[i] == '0':
+            WebDriverWait(driver, time_out).until(
+                EC.presence_of_element_located((By.XPATH, open_page_data[i]))).click()
+            return i, paper_flag
+
+
+def get_title_data_is_none(paper_flag, paper_day):
+    from src.model.cnki import paper_DB_flag
+    paper_day = str(paper_day)
+    data = list(paper_flag)
+    for i in range(9):
+        if data[i] == '0':
+            data[i] = '1'
+            sql = f"UPDATE `cnki_page_flag` SET `{paper_DB_flag()[i]}` = 0 WHERE `date` ='{paper_day}';"
+            Date_base().update(sql)
+            break
+
+    data = str(data).replace(',', '').replace("'", "").replace(" ", "").replace('[', '').replace(']', '')
+
+    sql = f"UPDATE `Paper`.`cnki_page_flag` SET `flag` = '{data}' WHERE `date` = '{paper_day}'"
+    Date_base().update(sql)
+    return False
+
+
+def choose_banner_new_data(driver, time_out, paper_day):
     sql = f"select flag from cnki_page_flag WHERE date = '{paper_day}'"
     flag, data = Date_base().select(sql)
     data = data[0][0]
@@ -299,7 +330,7 @@ def choose_banner(driver, time_out, paper_day):
         return 0, item_flag
 
 
-def open_page_of_title(driver):
+def open_page_of_title(driver, paper_day, paper_flag):
     # 打开页面，等待两秒
     try:
         url = f"https://kns.cnki.net/kns8/AdvSearch"
@@ -307,7 +338,11 @@ def open_page_of_title(driver):
         time_out = 10
         time.sleep(3)
         # 设置时间
-        yy, mm, dd = CNKI().read_cnki_date()
+
+        yy = paper_day.year
+        mm = paper_day.month
+        dd = paper_day.day
+
         paper_day = setting_select_date(driver, time_out, yy, mm, dd)
 
         # 点击搜索
@@ -315,31 +350,42 @@ def open_page_of_title(driver):
         time.sleep(2)
 
         # 切换搜索文章类型
-        paper_type, date_str = choose_banner(driver, time_out, paper_day)
+
+        paper_type, date_str = choose_banner(driver, time_out, paper_day, paper_flag)
         time.sleep(5)
 
         # 文献数和页数
-        res_unm = WebDriverWait(driver, time_out).until(
-            EC.presence_of_element_located((By.XPATH, open_page_data['gn']))).text
+        try:
+            res_unm = WebDriverWait(driver, time_out).until(
+                EC.presence_of_element_located((By.XPATH, open_page_data['gn']))).text
+        except:
+            xpath = '''//*[@id="fakediv"]'''
+            res_unm = WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, xpath))).text
+            print(res_unm)
+            if res_unm == '抱歉，暂无数据，可尝试更换检索词。':
+                res_unm = None
+                return res_unm, paper_type, paper_day, date_str, 50
 
-        res_unm = int(res_unm.replace(",", ''))
-        if res_unm > 5950:
-            # 按发表顺序正
-            WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="PT"]'))).click()
-            time.sleep(2)
-        if res_unm > 49:
-            WebDriverWait(driver, time_out).until(
-                EC.presence_of_element_located((By.XPATH, open_page_data['display']))).click()
-            time.sleep(2)
-            WebDriverWait(driver, time_out).until(
-                EC.presence_of_element_located((By.XPATH, open_page_data['50']))).click()
-            time.sleep(2)
+        if res_unm:
+            res_unm = int(res_unm.replace(",", ''))
+            if res_unm > 5950:
+                # 按发表顺序正
+                WebDriverWait(driver, time_out).until(
+                    EC.presence_of_element_located((By.XPATH, '//*[@id="PT"]'))).click()
+                time.sleep(2)
+            if res_unm > 49:
+                WebDriverWait(driver, time_out).until(
+                    EC.presence_of_element_located((By.XPATH, open_page_data['display']))).click()
+                time.sleep(2)
+                WebDriverWait(driver, time_out).until(
+                    EC.presence_of_element_located((By.XPATH, open_page_data['50']))).click()
+                time.sleep(2)
 
         paper_sum = 50
-
         print(f"共找到 {res_unm} 条结果, {int(res_unm / paper_sum + 1)} 页。")
         return res_unm, paper_type, paper_day, date_str, paper_sum
     except Exception as e:
+        # driver.close()
         err2(e)
 
 
@@ -429,7 +475,8 @@ def open_multi_info(driver, receive_time, title, time_out):
 
         setting_select_date(driver, 5, yy, mm, dd)
 
-        WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['ik']))).send_keys(
+        WebDriverWait(driver, time_out).until(
+            EC.presence_of_element_located((By.XPATH, open_page_data['ik']))).send_keys(
             title)
 
         WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['cs']))).click()
@@ -446,6 +493,8 @@ def open_multi_info(driver, receive_time, title, time_out):
             return False
     except Exception as e:
         err2(e)
+
+
 #
 
 
