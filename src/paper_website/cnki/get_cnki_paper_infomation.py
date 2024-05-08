@@ -14,6 +14,7 @@ from src.model.cnki import Crawl, positioned_element, crawl_xpath, reference_pap
 from src.module.log import Log, err2, err3
 from src.module.read_conf import ReadConf
 from concurrent.futures import ThreadPoolExecutor
+import concurrent.futures
 
 open_page_data = positioned_element()
 crawl_xp = Crawl()
@@ -35,55 +36,29 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
     title_list = WebDriverWait(driver, time_out).until(EC.presence_of_all_elements_located((By.CLASS_NAME, "fz14")))
     gc.collect()
 
-    title_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[2]/a'''
-    authors_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[3]/a'''
-    source_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[4]/p/a'''
+    # title_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[2]'''
+    # authors_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[3]'''
+    # source_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[4]/p/a'''
+    # date_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[5]'''
+    # ndb_type_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[6]/span'''
+    # quote_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[7]/div/a'''
+    # down_sun_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[8]/div/a'''
+
+    title_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[2]'''
+    author_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[3]'''
+    source_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[4]'''
     date_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[5]'''
-    ndb_type_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[6]/span'''
+    database_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr]/td[6]'''
     quote_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[7]/div/a'''
-    down_sun_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[8]/div/a'''
-
-    title = WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, title_xpath))).text
-    try:
-        authors = WebDriverWait(driver, time_out).until(
-            EC.presence_of_element_located((By.XPATH, authors_xpath))).text
-        authors = authors.replace("'", "\'")
-    except Exception as e:
-        err3(e)
-        authors = None
-
-    try:
-        source = WebDriverWait(driver, time_out).until(
-            EC.presence_of_element_located((By.XPATH, source_xpath))).text
-        source = source.replace("'", "\'")
-    except Exception as e:
-        err3(e)
-        source = None
-    try:
-        date = WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, date_xpath))).text
-        if len(date) == 6:
-            date = f"{date[:4]}-{date[4:]}-01"
-    except Exception as e:
-        err3(e)
-        date = None
-
-    try:
-        ndb_type = WebDriverWait(driver, time_out).until(
-            EC.presence_of_element_located((By.XPATH, ndb_type_xpath))).text
-    except Exception as e:
-        err3(e)
-        ndb_type = None
-    try:
-        quote = WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, quote_xpath))).text
-    except Exception as e:
-        err3(e)
+    download_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[8]'''
+    xpaths = [title_xpath, author_xpath, source_xpath, date_xpath, database_xpath, quote_xpath, download_xpath]
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        future_elements = [executor.submit(get_info, driver, xpath) for xpath in xpaths]
+    title, authors, source, date, ndb_type, quote, down_sun = [future.result() for future in future_elements]
+    if quote is None:
         quote = '0'
-    try:
-        down_sun = WebDriverWait(driver, time_out).until(
-            EC.presence_of_element_located((By.XPATH, down_sun_xpath))).text
-    except Exception as e:
-        err3(e)
-        down_sun = '0'
+    if down_sun is None:
+        download = '0'
 
     if '增强出版' in title:
         title = title[:-5]
@@ -291,12 +266,12 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
         # print(f"报纸层级 : {level}")
 
         # 拉取页面到最低端
-        # driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.END)
+        driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.END)
 
         # 判断是否有参考文献
         rn = qp.reference_name()
         pl_list = qp.paper_list()
-        # journal_reference = None
+        journal_reference = None
         try:
             if_journal_reference = WebDriverWait(driver, time_out).until(EC.presence_of_element_located(
                 (By.XPATH, cp['if_literature_reference']))).text
@@ -340,7 +315,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
 
                 if paper_sum:
                     # print(f"存在引用{rn[paper_flag]} {paper_sum} 篇")
-                    # journal_paper_sum = int((paper_sum / 10) + 1)
+                    journal_paper_sum = int((paper_sum / 10) + 1)
                     flag = 0
                     paper_list = []
                     while True:
@@ -410,7 +385,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
                 EC.presence_of_element_located((By.TAG_NAME, "h1"))
             )
             new_title = new_title.text
-            new_title = new_title.replace("'", "\'")
+            new_title = new_title.replace("'", r"\'")
         except Exception as e:
             err3(e)
             new_title = None
@@ -438,7 +413,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
                 f"`master`, `PhD`, `international_journals`, `book`, "
                 f"`Chinese_and_foreign`, `newpaper`) "
                 f"VALUES "
-                f"('{uuid}', '{institute}', '{source}', '{db_type}',' {down_sun}', '{quote}', '{insert_time}',"
+                f"('{uuid}', '{institute}', '{source}', '{db_type}', {down_sun}, {quote}, '{insert_time}',"
                 f" '{update_time}', '{funding}', '{publication}', '{classification_number}',"
                 f" '{article_directory}', '{topic}', '{level}', '{page_sum}', '{pl_list[0]}',"
                 f" '{pl_list[1]}', '{pl_list[2]}', '{pl_list[3]}', '{pl_list[4]}',"

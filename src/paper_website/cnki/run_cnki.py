@@ -120,7 +120,7 @@ def run_multi_title_data():
         if flag is True:
             sql = f"UPDATE `Paper`.`cnki_index` SET `status` = 'b' where `uuid` = '{uuid}'"
         else:
-            Log().write_log(f"获取错误", 'error')
+            Log().write_log(f"{title} - {uuid} - 获取错误", 'error')
             sql = f"UPDATE `Paper`.`cnki_index` SET `status` = 'a' where `uuid` = '{uuid}'"
         Date_base().update(sql)
     except Exception as e:
@@ -154,6 +154,7 @@ def run_multi_title_info():
     receive_time = data[2]
     status = data[3]
     db_type = data[4]
+
     try:
         driver, proxy_ID, proxy_flag = webserver()
         if_paper = open_multi_info(driver, receive_time, title, time_out)
@@ -161,8 +162,11 @@ def run_multi_title_info():
             sql = f"UPDATE `Paper`.`cnki_index` SET `status` = '?'  where `uuid` = '{uuid}' "
             Date_base().update(sql)
 
-        get_flag = get_paper_info(driver, 5, uuid, title, db_type, receive_time)
-        sql = f"UPDATE `Paper`.`cnki_index` SET `status` = 'c'  where `uuid` = '{uuid}' "
+        get_flag = get_paper_info(driver, time_out, uuid, title, db_type, receive_time)
+        if get_flag:
+            sql = f"UPDATE `Paper`.`cnki_index` SET `status` = '1'  where `uuid` = '{uuid}' "
+        else:
+            sql = f"UPDATE `Paper`.`cnki_index` SET `status` = 'b'  where `uuid` = '{uuid}' "
         Date_base().update(sql)
     finally:
         all_handles = driver.window_handles

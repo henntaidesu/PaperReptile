@@ -230,33 +230,30 @@ def get_multi_title_data(driver, res_unm, time_out):
     else:
         for_flag = int(res_unm / 20) + 1
 
-    print(res_unm)
-
     for a in range(for_flag):
         if a > 0:
             try:
                 time.sleep(3)
                 ActionChains(driver).key_down(Keys.ARROW_RIGHT).key_up(Keys.ARROW_RIGHT).perform()
-                # WebDriverWait(driver, 10).until(
-                #     EC.presence_of_element_located((By.XPATH, "//a[@id='PageNext']"))).click()
             except Exception as e:
                 err2(e)
-        # title_list = None
-        # title_list = WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.CLASS_NAME, "fz14")))
+
+        title_list = WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.CLASS_NAME, "fz14")))
         time.sleep(3)
-        for i in range(20):
+        for i in range(len(title_list)):
             count += 1
 
             print(f"正在爬取第{count}条基础数据,")
 
-            title_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr[{count}]/td[2]/a'''
-            title_xpath2 = f'''//*[@id="gridTable"]/div/div/table/tbody/tr[{count}]/td[2]/div/div/a'''
-            date_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr[{count}]/td[5]'''
-            ndb_type_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr[{count}]/td[6]/span'''
+            title_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr[{i + 1}]/td[2]'''
+            title_xpath2 = f'''//*[@id="gridTable"]/div/div/table/tbody/tr[{i + 1}]/td[2]/div/div/a'''
+            date_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr[{i + 1}]/td[5]'''
+            ndb_type_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr[{i + 1}]/td[6]'''
 
             try:
                 title = WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, title_xpath))).text
             except:
+                f'''//*[@id="gridTable"]/div/div/table/tbody/tr[7]/td[2]/a'''
                 if count - 1 == res_unm:
                     return True
                 else:
@@ -323,4 +320,5 @@ def get_multi_title_data(driver, res_unm, time_out):
             print(f"标题:    {title}")
 
             logger.write_log(f"已获取 ： {title}, UUID : {uuid} \n", 'info')
+
     return True

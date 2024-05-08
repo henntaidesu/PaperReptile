@@ -419,31 +419,32 @@ def open_paper_info(driver, paper_title):
 
 
 def open_multi_info(driver, receive_time, title, time_out):
-
-    time.sleep(1)
-    driver.get("https://kns.cnki.net/kns8/AdvSearch")
-
-    yy = receive_time.year
-    mm = receive_time.month
-    dd = receive_time.day
-
-    setting_select_date(driver, 5, yy, mm, dd)
-
-    WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['ik']))).send_keys(
-        title)
-
-    WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['cs']))).click()
-
-    flag_xpath = '''//*[@id="briefBox"]/p'''
     try:
-        flag = WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, flag_xpath))).text
-    except:
-        flag = None
 
-    if flag:
-        return True
-    else:
-        return False
+        time.sleep(1)
+        driver.get("https://kns.cnki.net/kns8/AdvSearch")
+
+        yy, mm, dd = receive_time.split("-")
+
+        setting_select_date(driver, 5, yy, mm, dd)
+
+        WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['ik']))).send_keys(
+            title)
+
+        WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['cs']))).click()
+
+        flag_xpath = '''//*[@id="briefBox"]/p'''
+        try:
+            flag = WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, flag_xpath))).text
+        except:
+            flag = None
+
+        if flag:
+            return True
+        else:
+            return False
+    except Exception as e:
+        err2(e)
 #
 
 
