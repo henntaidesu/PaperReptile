@@ -49,16 +49,17 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
     source_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[4]'''
     date_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[5]'''
     database_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[6]'''
-    quote_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[7]/div/a'''
+    quote_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[7]'''
     download_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[8]'''
     xpaths = [title_xpath, author_xpath, source_xpath, date_xpath, database_xpath, quote_xpath, download_xpath]
     with concurrent.futures.ThreadPoolExecutor() as executor:
         future_elements = [executor.submit(get_info, driver, xpath) for xpath in xpaths]
     title, authors, source, date, ndb_type, quote, down_sun = [future.result() for future in future_elements]
-    if quote is None:
-        quote = '0'
-    if down_sun is None:
-        download = '0'
+
+    if quote is None or quote == '':
+        quote = None
+    if down_sun is None or down_sun == '':
+        down_sun = None
 
     if '增强出版' in title:
         title = title[:-5]

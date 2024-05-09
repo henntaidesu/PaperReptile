@@ -20,7 +20,7 @@ def proxy_pool():
 
         else:
             try:
-                url = f"http://zltiqu.pyhttp.taolop.com/getip?count=1&neek=104794&type=2&yys=0&port=1&sb=&mr=1&sep=0&ts=1&ys=1&cs=1&regions=440000,520000,450000,500000,430000,330000&pack=41643"
+                url = f"http://zltiqu.pyhttp.taolop.com/getip?count=1&neek=104794&type=2&yys=0&port=1&sb=&mr=1&sep=0&ts=1&ys=1&cs=1&regions=440000,520000,450000&pack=41673"
                 proxy_data = requests.get(url).text
                 proxy_data = json.loads(proxy_data)
                 if proxy_data['success'] is False:
