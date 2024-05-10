@@ -11,7 +11,7 @@ def now_time():
 
 def proxy_time():
     current_time = time.time()
-    next_minute_time = current_time + 30  # 添加一分钟的秒数
+    next_minute_time = current_time + 30  # 秒
     datetime_obj = datetime.fromtimestamp(next_minute_time)
     formatted_date = datetime_obj.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
     return formatted_date

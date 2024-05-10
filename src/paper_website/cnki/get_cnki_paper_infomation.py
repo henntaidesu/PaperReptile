@@ -23,75 +23,78 @@ read_conf = ReadConf()
 
 
 def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
-    new_title = None
+    try:
+        new_title = None
 
-    cp = crawl_xpath()
-    rp = reference_papers()
-    qp = QuotePaper()
+        cp = crawl_xpath()
+        rp = reference_papers()
+        qp = QuotePaper()
 
-    count = 1
-    xpath_information = crawl_xp.xpath_inf()
+        count = 1
+        xpath_information = crawl_xp.xpath_inf()
+        # new_paper_sum = 0
+        title_list = WebDriverWait(driver, time_out).until(EC.presence_of_all_elements_located((By.CLASS_NAME, "fz14")))
+        gc.collect()
 
-    # new_paper_sum = 0
-    title_list = WebDriverWait(driver, time_out).until(EC.presence_of_all_elements_located((By.CLASS_NAME, "fz14")))
-    gc.collect()
+        # title_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[2]'''
+        # authors_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[3]'''
+        # source_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[4]/p/a'''
+        # date_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[5]'''
+        # ndb_type_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[6]/span'''
+        # quote_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[7]/div/a'''
+        # down_sun_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[8]/div/a'''
 
-    # title_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[2]'''
-    # authors_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[3]'''
-    # source_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[4]/p/a'''
-    # date_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[5]'''
-    # ndb_type_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[6]/span'''
-    # quote_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[7]/div/a'''
-    # down_sun_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[8]/div/a'''
+        title_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[2]'''
+        author_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[3]'''
+        source_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[4]'''
+        date_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[5]'''
+        database_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[6]'''
+        quote_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[7]'''
+        download_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[8]'''
+        xpaths = [title_xpath, author_xpath, source_xpath, date_xpath, database_xpath, quote_xpath, download_xpath]
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future_elements = [executor.submit(get_info, driver, xpath) for xpath in xpaths]
+        title, authors, source, date, ndb_type, quote, down_sun = [future.result() for future in future_elements]
 
-    title_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[2]'''
-    author_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[3]'''
-    source_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[4]'''
-    date_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[5]'''
-    database_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[6]'''
-    quote_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[7]'''
-    download_xpath = f'''//*[@id="gridTable"]/div/div/table/tbody/tr/td[8]'''
-    xpaths = [title_xpath, author_xpath, source_xpath, date_xpath, database_xpath, quote_xpath, download_xpath]
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        future_elements = [executor.submit(get_info, driver, xpath) for xpath in xpaths]
-    title, authors, source, date, ndb_type, quote, down_sun = [future.result() for future in future_elements]
+        if quote is None or quote == '':
+            quote = None
+        if down_sun is None or down_sun == '':
+            down_sun = None
 
-    if quote is None or quote == '':
-        quote = None
-    if down_sun is None or down_sun == '':
-        down_sun = None
+        if '增强出版' in title:
+            title = title[:-5]
+        if '网络首发' in title:
+            title = title[:-5]
 
-    if '增强出版' in title:
-        title = title[:-5]
-    if '网络首发' in title:
-        title = title[:-5]
+        db_flag = ndb_type
 
-    db_flag = ndb_type
-
-    if ndb_type == '期刊':
-        ndb_type = '1'
-    elif ndb_type == '报纸':
-        ndb_type = '0'
-    elif ndb_type == '硕士':
-        ndb_type = '2'
-    elif ndb_type == '博士':
-        ndb_type = '3'
-    elif ndb_type == '图书':
-        ndb_type = '4'
-    elif ndb_type == '特色期刊':
-        ndb_type = '5'
-    elif ndb_type == '刊辑':
-        ndb_type = '6'
-    elif ndb_type == '中国会议':
-        ndb_type = 'a'
-    elif ndb_type == '国际会议':
-        ndb_type = 'b'
-    elif ndb_type == '国家标准':
-        ndb_type = 'c'
-    elif ndb_type == '国家标准':
-        ndb_type = 'd'
-    else:
-        ndb_type = '9'
+        if ndb_type == '期刊':
+            ndb_type = '1'
+        elif ndb_type == '报纸':
+            ndb_type = '0'
+        elif ndb_type == '硕士':
+            ndb_type = '2'
+        elif ndb_type == '博士':
+            ndb_type = '3'
+        elif ndb_type == '图书':
+            ndb_type = '4'
+        elif ndb_type == '特色期刊':
+            ndb_type = '5'
+        elif ndb_type == '刊辑':
+            ndb_type = '6'
+        elif ndb_type == '中国会议':
+            ndb_type = 'a'
+        elif ndb_type == '国际会议':
+            ndb_type = 'b'
+        elif ndb_type == '国家标准':
+            ndb_type = 'c'
+        elif ndb_type == '国家标准':
+            ndb_type = 'd'
+        else:
+            ndb_type = '9'
+    except Exception as e:
+        err3(e)
+        return False
 
 
     # print(f"\n"
@@ -124,7 +127,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
                 (By.XPATH, cp['institute']))).text
             if '.' in institute:
                 institute = re.sub(r'\d*\.', ';', institute)[1:].replace(' ', '')
-            institute = institute.replace("'", "\'")
+            institute = institute.replace("'", r"\'")
         except Exception as e:
             err3(e)
             institute = None
@@ -145,7 +148,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
         try:
             classification_zh = WebDriverWait(driver, time_out).until(
                 EC.presence_of_element_located((By.CLASS_NAME, cp['keywords']))).text[:-1]
-            classification_zh = Trim_passkey(classification_zh).replace('  ', ';').replace("'", "\'")
+            classification_zh = Trim_passkey(classification_zh).replace('  ', ';').replace("'", r"\'")
         except Exception as e:
             err3(e)
             classification_zh = None
@@ -218,7 +221,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
         if '报' in db_type or '报纸' in db_type:
             try:
                 level = WebDriverWait(driver, time_out).until(EC.presence_of_element_located(
-                    (By.XPATH, cp['level']))).text.replace("'", "\'")
+                    (By.XPATH, cp['level']))).text.replace("'", r"\'")
                 # paper_size = int(paper_size[3:][:-1])
             except Exception as e:
                 err3(e)
@@ -323,7 +326,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
             article_directory = WebDriverWait(driver, time_out).until(
                 EC.presence_of_element_located((By.CLASS_NAME, cp['catalog']))).text
 
-            article_directory = article_directory.replace("'", "\'")
+            article_directory = article_directory.replace("'", r"\'")
             # print(f"文章目录 : \n{article_directory}")
         except Exception as e:
             err3(e)

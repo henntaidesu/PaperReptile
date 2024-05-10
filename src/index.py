@@ -48,7 +48,7 @@ class Index:
         if flag == '6':
             from src.paper_website.cnki.run_cnki import run_get_paper_info
             print("获取cnki论文详细数据")
-            self.process.multi_process(run_get_paper_info)
+            run_get_paper_info()
 
         if flag == '7':
             from src.paper_website.cnki.run_cnki import run_multi_title_data

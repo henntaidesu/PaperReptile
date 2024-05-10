@@ -135,6 +135,73 @@ def setting_select_date(driver, time_out, yy, mm, dd):
         WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, dte[list_flag]))).click()
         time.sleep(2)
 
+    except Exception as e:
+        err2(e)
+
+
+def setting_multi_select_date(driver, time_out, yy, mm, dd):
+    try:
+        paper_day = f"{yy}-{mm}-{dd}"
+        now_yy = int(year())
+        now_mm = int(moon())
+        now_day = int(day())
+
+
+        flag_page = 0
+        flag_yy = now_yy - yy
+        flag_page += flag_yy * 12
+        flag_mm = now_mm - mm
+        flag_page += flag_mm
+
+        WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.ID, 'datebox0'))).click()
+        time.sleep(1)
+        for i in range(flag_page):
+            WebDriverWait(driver, time_out).until(EC.presence_of_element_located
+                                                  ((By.XPATH, open_page_data['start_previous_page']))).click()
+
+        time.sleep(1)
+
+        date_list = str(WebDriverWait(driver, time_out).until(
+            EC.presence_of_element_located((By.XPATH, open_page_data['start']))).text)[14:]
+        date_list = date_list.splitlines()
+        # 将每行的内容转化为整数列表
+        date_list = [int(line) for line in date_list]
+        list_flag = 0
+        list_flag = date_list.index(1)
+
+        while True:
+            list_flag += 1
+            if dd == date_list[list_flag - 1]:
+                break
+
+        WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, dts[list_flag]))).click()
+
+        time.sleep(2)
+
+        # 设置结束时间
+        WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.ID, 'datebox1'))).click()
+        time.sleep(1)
+        for i in range(flag_page):
+            # time.sleep(0.5)
+            WebDriverWait(driver, time_out).until(EC.presence_of_element_located
+                                                  ((By.XPATH, open_page_data['end_previous_page']))).click()
+
+        time.sleep(2)
+
+        date_list = str(WebDriverWait(driver, time_out).until(
+            EC.presence_of_element_located((By.XPATH, open_page_data['end']))).text)[14:]
+        date_list = date_list.splitlines()
+        # 将每行的内容转化为整数列表
+        date_list = [int(line) for line in date_list]
+        list_flag = 0
+        list_flag = date_list.index(1)
+        while True:
+            list_flag += 1
+            if dd == date_list[list_flag - 1]:
+                break
+        WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, dte[list_flag]))).click()
+        time.sleep(2)
+
         return paper_day
     except Exception as e:
         err2(e)
@@ -383,15 +450,14 @@ def open_page_of_title(driver, paper_day, paper_flag):
         err2(e)
 
 
-def get_paper_type_number(driver):
+def get_paper_type_number(driver, yy, mm, dd):
     # 打开页面，等待两秒
-
     while True:
         yy, mm, dd = CNKI().read_cnki_date()
         sql = f"SELECT * FROM `Paper`.`cnki_page_flag` WHERE `date` = '{yy}-{mm}-{dd}'"
         flag, data = Date_base().select(sql)
         if data:
-            revise_cnki_date_desc(yy, mm, dd)
+            revise_cnki_date(yy, mm, dd)
             continue
         else:
             sql = f"INSERT INTO `Paper`.`cnki_page_flag` (`date`) VALUES ('{yy}-{mm}-{dd}');"
@@ -425,38 +491,46 @@ def get_paper_type_number(driver):
 
 
 def open_paper_info(driver, paper_title):
-    time_out = 8
-    url = f"https://kns.cnki.net/kns8/AdvSearch"
-    # url = f"https://www.cnki.net/index/"
-    driver.get(url)
-
     try:
-        WebDriverWait(driver, time_out).until(
-            EC.presence_of_element_located((By.XPATH, open_page_data['ik']))).send_keys(paper_title)
-    except TimeoutException:
-        logger.write_log(f"{paper_title} - 输入框加载超时", 'error')
-        return False
+        time_out = 8
+        url = f"https://kns.cnki.net/kns8/AdvSearch"
+        # url = f"https://www.cnki.net/index/"
+        driver.get(url)
 
-    try:
-        WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['cs']))).click()
-    except TimeoutException:
+        try:
+            WebDriverWait(driver, time_out).until(
+                EC.presence_of_element_located((By.XPATH, open_page_data['ik']))).send_keys(paper_title)
+        except TimeoutException:
+            logger.write_log(f"{paper_title} - 输入框加载超时", 'error')
+            return False
 
-        return False
+        try:
+            WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['cs']))).click()
+        except TimeoutException:
 
-    time.sleep(2)
+            return False
 
-    try:
-        res_unm = WebDriverWait(driver, time_out).until(
-            EC.presence_of_element_located((By.XPATH, open_page_data['gn']))).text
-    except TimeoutException:
-        logger.write_log(f"{paper_title} - 结果数量加载超时", 'error')
-        return False
+        time.sleep(2)
 
-    paper_sum = 20
-    res_unm = int(res_unm.replace(",", ''))
-    page_unm = int(res_unm / paper_sum) + 1
-    # print(f"共找到 {res_unm} 条结果, {page_unm} 页。")
-    return res_unm
+        try:
+            res_unm = WebDriverWait(driver, time_out).until(
+                EC.presence_of_element_located((By.XPATH, open_page_data['gn']))).text
+        except TimeoutException:
+            logger.write_log(f"{paper_title} - 结果数量加载超时", 'error')
+            return False
+
+        paper_sum = 20
+        res_unm = int(res_unm.replace(",", ''))
+        page_unm = int(res_unm / paper_sum) + 1
+        # print(f"共找到 {res_unm} 条结果, {page_unm} 页。")
+        return res_unm
+    except Exception as e:
+        if type(e).__name__ == 'TimeoutException':
+            logger.write_log(f"启动浏览器超时 - {TimeoutException}", 'error')
+            return False
+        else:
+            err2(e)
+            return False
 
 
 def open_multi_info(driver, receive_time, title, time_out):
@@ -465,13 +539,15 @@ def open_multi_info(driver, receive_time, title, time_out):
         time.sleep(1)
         driver.get("https://kns.cnki.net/kns8/AdvSearch")
 
-        yy, mm, dd = receive_time.split("-")
+        receive_time = datetime.strptime(receive_time, "%Y-%m-%d %H:%M:%S")
 
-        setting_select_date(driver, 5, yy, mm, dd)
+        yy = int(receive_time.year)
+        mm = int(receive_time.month)
+        dd = int(receive_time.day)
 
+        setting_select_date(driver, 10, yy, mm, dd)
         WebDriverWait(driver, time_out).until(
-            EC.presence_of_element_located((By.XPATH, open_page_data['ik']))).send_keys(
-            title)
+            EC.presence_of_element_located((By.XPATH, open_page_data['ik']))).send_keys(title)
 
         WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['cs']))).click()
 

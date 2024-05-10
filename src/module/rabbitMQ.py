@@ -4,13 +4,6 @@ from src.module.log import Log
 
 
 def rabbitmq_consume(queue_name):
-    # connection_params = pika.ConnectionParameters(
-    #     host="172.16.1.23",
-    #     port=5672,
-    #     credentials=pika.PlainCredentials(username="admin", password="12345678")
-    # )
-    #
-
     conf = ReadConf().rabbitMQ()
     connection_params = pika.ConnectionParameters(
         host=conf['host'],
@@ -32,10 +25,22 @@ def rabbitmq_consume(queue_name):
         connection.close()
         return None
 
-# if __name__ == '__main__':
-#     for i  in range(25):
-#         message = rabbitmq_consume("paper_title_status=0")
-#         if message:
-#             print("Received:", message)
-#         else:
-#             print("No message received.")
+
+def rabbitmq_produce(queue_name, message):
+    conf = ReadConf().rabbitMQ()
+    connection_params = pika.ConnectionParameters(
+        host=conf['host'],
+        port=conf['port'],
+        credentials=pika.PlainCredentials(username=conf['username'], password=conf['password'])
+    )
+
+    connection = pika.BlockingConnection(connection_params)
+    channel = connection.channel()
+
+    # 声明队列
+    channel.queue_declare(queue=queue_name)
+
+    # 发送消息到指定队列，同时传入键
+    channel.basic_publish(exchange='',
+                          routing_key=queue_name,
+                          body=message)
