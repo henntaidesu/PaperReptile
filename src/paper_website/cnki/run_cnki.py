@@ -84,7 +84,7 @@ def run_get_paper_info():
 
         if len(title) < 6:
             sql = f"UPDATE `Paper`.`cnki_index` SET  `status` = '8' WHERE UUID = '{uuid}';"
-            Date_base().update(sql)
+            rabbitmq_produce('MYSQL_UPDATE', sql)
         else:
             driver, proxy_ID, proxy_flag = webserver()
             page_flag = open_paper_info(driver, title)
@@ -102,7 +102,7 @@ def run_get_paper_info():
                     rabbitmq_produce('MYSQL_UPDATE', sql)
     except KeyboardInterrupt:
         sql = f"UPDATE `Paper`.`cnki_index` SET `status` = '0' where `uuid` = '{uuid}';"
-        Date_base().update(sql)
+        rabbitmq_produce('MYSQL_UPDATE', sql)
         logger.write_log(f"程序正在关闭", 'info')
 
     except Exception as e:

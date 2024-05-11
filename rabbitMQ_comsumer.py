@@ -58,6 +58,7 @@ def mysql_insert():
         logger.write_log("程序关闭", 'ERROR')
         connection.close()
 
+
 if __name__ == '__main__':
     print("数据库消费者已启动")
     thread1 = threading.Thread(target=mysql_updata)
@@ -70,4 +71,3 @@ if __name__ == '__main__':
         thread1.join()
         thread2.join()
         logger.write_log("程序关闭", 'ERROR')
-

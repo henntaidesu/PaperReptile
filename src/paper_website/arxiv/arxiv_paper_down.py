@@ -5,6 +5,8 @@ from src.module.execution_db import Date_base
 from src.module.log import Log
 from src.module.read_conf import ReadConf
 from src.module.now_time import now_time
+from src.module.rabbitMQ import rabbitmq_produce
+
 import os
 
 
@@ -72,7 +74,7 @@ class Arxiv_paper_down:
                                 Time = now_time()
                                 sql = f"UPDATE `index` SET  `state` = '03' ,`update_time` = '{Time}' WHERE " \
                                       f"`uuid` = '{uuid}';"
-                                Date_base().update(sql)
+                                rabbitmq_produce('MYSQL_UPDATE', sql)
 
                                 download_complete = True  # 下载完成
 

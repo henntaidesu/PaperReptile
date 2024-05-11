@@ -37,11 +37,14 @@ class Date_base:
             cursor.close()
             return True
         except Exception as e:
-            err2(e)
             if "timed out" in str(e):
                 self.print_log.write_log("连接数据库超时", 'error')
+            elif "PRIMARY" in str(e):
+                # self.print_log.write_log(f"重复数据", 'info')
+                return '重复数据'
             else:
                 self.print_log.write_log(f'{sql}', 'error')
+                err2(e)
             return False
         finally:
             if hasattr(self, 'db') and self.db:

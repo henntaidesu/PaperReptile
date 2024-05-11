@@ -9,7 +9,7 @@ class Index:
         self.conf = ReadConf()
 
     def index(self):
-        flag = '7'
+        flag = '3'
 
         if flag == '1':
             from src.paper_website.arxiv.arxivorg import ArxivOrg
@@ -18,19 +18,13 @@ class Index:
 
         if flag == '2':
             from src.paper_website.arxiv.arxivorg import translate_classification
-            import asyncio
             print("翻译classification")
-            while True:
-                sql = f"SELECT UUID, classification_en FROM `index` WHERE state = '00'  and `from` = 'arxiv' "
-                asyncio.run(self.process.multi_process_as_up_group(sql, translate_classification))
+            self.process.multi_process(translate_classification)
 
         if flag == '3':
             from src.paper_website.arxiv.arxivorg import translate_title
             print("翻译title")
-            while True:
-                sql = (f" SELECT UUID, title_en FROM `Paper`.`index` WHERE state = '01' and `from` = 'arxiv'"
-                       f" ORDER BY receive_time desc limit 10000")
-                self.process.multi_process_as_up_group(sql, translate_title)
+            self.process.multi_process(translate_title)
 
         if flag == '4':
             from src.paper_website.arxiv.arxiv_paper_down import Arxiv_paper_down

@@ -7,12 +7,12 @@ from lxml import html
 from src.module.read_conf import ReadConf, ArxivYYMM
 from bs4 import BeautifulSoup
 from src.model.arxiv_org import ArxivOrgPageModel
-from src.module.execution_db import Date_base
 from src.module.now_time import now_time, year, moon
 from src.module.UUID import UUID
 from src.module.log import Log, err1, err2
 from src.module.translate import translate
 from src.module.chatGPT import openAI
+from src.module.rabbitMQ import rabbitmq_produce, rabbitmq_consume
 
 
 class ArxivOrg:
@@ -116,7 +116,8 @@ class ArxivOrg:
                     self.get_exhaustive_url()
 
             title_en = self.TrimString(str(tree.xpath('//*[@id="abs"]/h1/text()')[0])[2:-2])
-            authors_list = self.TrimString(" , ".join([p.get_text() for p in soup.find('div', class_='authors').find_all('a')]))
+            authors_list = self.TrimString(
+                " , ".join([p.get_text() for p in soup.find('div', class_='authors').find_all('a')]))
             if len(authors_list) > 512:
                 authors_list = authors_list[:512]
             introduction = self.TrimString(" , ".join(tree.xpath('//*[@id="abs"]/blockquote/text()')[1:]))
@@ -212,7 +213,6 @@ class ArxivOrg:
                 version = '1'
 
             Now_time, uuid = now_time(), UUID()
-
             sql = (f"INSERT INTO `index`"
                    f"(`UUID`, `web_site_id`, `classification_en`, `classification_zh`, `source_language`, "
                    f"`title_zh`, `title_en`, `update_time`, `insert_time`, `from`, `state`, `authors`, `Introduction`, "
@@ -223,8 +223,7 @@ class ArxivOrg:
 
             sql = self.TrSQL(sql)
             self.logger.write_log(f"获取成功", 'info')
-            date_base = Date_base()
-            date_base.insert(sql)
+            rabbitmq_produce('MYSQL_INSERT', sql)
             self.write_code(yy_mm, code)
             self.logger.write_log(f"更新配置文件成功", 'info')
             # self.logger.write_log(f"[EN : {classification_en}] -> [CN : {classification_zh}]")
@@ -232,39 +231,61 @@ class ArxivOrg:
             # time.sleep(2)
 
 
-def translate_classification(data):
+def translate_classification():
     logger = Log()
     tr = translate()
-    try:
-        for i in data:
+
+    while True:
+        uuid = None
+        data = rabbitmq_consume('ARXIV_paper_status_00')
+        if data is None:
+            logger.write_log("队列无数据", 'warning')
+            time.sleep(32600)
+            return
+        try:
+            data = [item.strip() for item in data.split(',')]
             Now_time = now_time()
-            uuid = i[0]
-            classification_en = i[1]
+            uuid = data[0]
+            classification_en = data[1]
             # classification_cn = openAI().openai_chat(classification_en)
             classification_cn = tr.GoogleTR(classification_en, 'zh-CN')
-
             classification_en = ArxivOrg.TrimString(classification_en)
             logger.write_log(f"[EN : {classification_en}] -> [CN : {classification_cn}]", 'info')
             sql = (f"UPDATE `index` SET `classification_zh` = '{classification_cn}' "
                    f" , `state` = '01', `update_time` = '{Now_time}' WHERE `UUID` = '{uuid}';")
-            date_base = Date_base()
-            date_base.update(sql)
-    except Exception as e:
-        if type(e).__name__ == 'SSLError':
-            logger.write_log("SSL Error", 'error')
-            time.sleep(3)
-        err2(e)
+            rabbitmq_produce('MYSQL_UPDATE', sql)
+        except Exception as e:
+            if type(e).__name__ == 'SSLError':
+                logger.write_log("SSL Error", 'error')
+                time.sleep(3)
+            elif type(e).__name__ == 'APIStatusError':
+                logger.write_log("APIStatusError", 'error')
+                logger.write_log(f"Err Message:,{str(e)}", 'error')
+            else:
+                err2(e)
+            sql = f"UPDATE `index` SET `state` = '00' WHERE `UUID` = '{uuid}';"
+            rabbitmq_produce('MYSQL_UPDATE', sql)
+        except KeyboardInterrupt:
+            sql = f"UPDATE `index` SET `state` = '00' WHERE `UUID` = '{uuid}';"
+            rabbitmq_produce('MYSQL_UPDATE', sql)
 
 
-def translate_title(data):
+def translate_title():
     logger = Log()
     tr = translate()
     GPT = openAI()
-    try:
-        for i in data:
+
+    while True:
+        try:
+            data = rabbitmq_consume('ARXIV_paper_status_01')
+            if data is None:
+                logger.write_log("队列无数据", 'warning')
+                time.sleep(32600)
+                return
+            data = [item.strip() for item in data.split(',')]
             Now_time = now_time()
-            uuid = i[0]
-            title_en = i[1]
+            uuid = data[0]
+            title_en = data[1]
             title_en = f"{title_en}"
             # title_cn = GPT.openai_chat(title_en)
             title_cn = tr.GoogleTR(title_en, 'zh-CN')
@@ -272,16 +293,19 @@ def translate_title(data):
             logger.write_log(f"[EN : {title_en}] -> [CN : {title_cn}]", 'info')
             sql = (f"UPDATE `index` SET `title_zh` = '{title_cn}' "
                    f" , `state` = '02', `update_time` = '{Now_time}' WHERE `UUID` = '{uuid}';")
-            date_base = Date_base()
-            date_base.update(sql)
+            rabbitmq_produce('MYSQL_UPDATE', sql)
 
-    except Exception as e:
-        if type(e).__name__ == 'SSLError':
-            logger.write_log("SSL Error", 'error')
-            time.sleep(3)
-        if type(e).__name__ == 'APIStatusError':
-            logger.write_log("APIStatusError", 'error')
-            logger.write_log(f"Err Message:,{str(e)}", 'error')
-            sys.exit()
-        else:
-            err2(e)
+        except Exception as e:
+            if type(e).__name__ == 'SSLError':
+                logger.write_log("SSL Error", 'error')
+                time.sleep(3)
+            elif type(e).__name__ == 'APIStatusError':
+                logger.write_log("APIStatusError", 'error')
+                logger.write_log(f"Err Message:,{str(e)}", 'error')
+            else:
+                err2(e)
+            sql = f"UPDATE `index` SET `state` = '01' WHERE `UUID` = '{uuid}';"
+            rabbitmq_produce('MYSQL_UPDATE', sql)
+        except KeyboardInterrupt:
+            sql = f"UPDATE `index` SET `state` = '01' WHERE `UUID` = '{uuid}';"
+            rabbitmq_produce('MYSQL_UPDATE', sql)

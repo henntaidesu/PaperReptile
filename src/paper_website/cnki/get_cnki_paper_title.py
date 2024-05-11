@@ -10,6 +10,7 @@ from src.module.UUID import UUID
 from src.model.cnki import Crawl, positioned_element, paper_DB_flag, paper_DB_DT
 from src.module.log import Log, err2, err3
 from src.module.read_conf import ReadConf
+from src.module.rabbitMQ import rabbitmq_produce, rabbitmq_consume
 
 open_page_data = positioned_element()
 crawl_xp = Crawl()
@@ -24,7 +25,7 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum,
     new_paper_sum = 0
     all_handles = None
     sql = f"UPDATE `cnki_page_flag` SET `{paper_DB_flag()[paper_type]}` = {res_unm} WHERE `date` ='{paper_day}';"
-    Date_base().update(sql)
+    rabbitmq_produce('MYSQL_UPDATE', sql)
 
     sql = (f"SELECT title FROM cnki_index where receive_time >= '{paper_day} 00:00:00' "
            f"and receive_time <= '{paper_day} 23:59:59' and db_type in ({paper_DB_DT()[paper_type]})")
@@ -186,7 +187,7 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum,
                                 f"VALUES ('{uuid}', '{title}', '{paper_day}', '0', '{db_type}');")
 
                         sql3 = TrSQL(sql3)
-                        flag = Date_base().insert(sql3)
+                        rabbitmq_produce('MYSQL_INSERT', sql)
                         if flag == '重复数据':
                             new_paper_sum += 1
                             logger.write_log(f"重复数据 ： {title}, UUID : {uuid}", 'info')
@@ -327,7 +328,7 @@ def get_multi_title_data(driver, res_unm, time_out):
                     f"VALUES ('{uuid}', '{title}', '{date}', '0', '{db_type}');")
 
             sql3 = TrSQL(sql3)
-            flag = Date_base().insert(sql3)
+            rabbitmq_produce('MYSQL_INSERT', sql3)
             if flag == '重复数据':
                 logger.write_log(f"重复数据 ： {title}, UUID : {uuid}", 'info')
                 continue
