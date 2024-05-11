@@ -7,14 +7,12 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from src.module.execution_db import Date_base
-from src.module.UUID import UUID
 from src.module.now_time import now_time
 from src.model.cnki import Crawl, positioned_element, crawl_xpath, reference_papers, QuotePaper
 from src.module.log import Log, err2, err3
 from src.module.read_conf import ReadConf
-from concurrent.futures import ThreadPoolExecutor
-import concurrent.futures
+from src.module.rabbitMQ import rabbitmq_produce
+
 
 open_page_data = positioned_element()
 crawl_xp = Crawl()
@@ -392,13 +390,9 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
         sql2 = TrSQL(sql2)
         sql3 = TrSQL(sql3)
 
-        try:
-            Date_base().insert(sql1)
-        finally:
-            try:
-                Date_base().insert(sql2)
-            finally:
-                Date_base().update(sql3)
+        rabbitmq_produce('MYSQL_INSERT', sql1)
+        rabbitmq_produce('MYSQL_INSERT', sql2)
+        rabbitmq_produce('MYSQL_UPDATE', sql3)
 
         logger.write_log(f"已获取 ： {new_title}, UUID : {uuid}", 'info')
         return True

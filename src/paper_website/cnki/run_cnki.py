@@ -8,7 +8,7 @@ from src.paper_website.cnki.cnki_components import webserver, open_page_of_title
 from src.paper_website.cnki.get_cnki_paper_infomation import get_paper_info
 from src.paper_website.cnki.cnki_components import open_multi_info, get_title_data_is_none
 from src.module.log import err2, Log
-from src.module.rabbitMQ import rabbitmq_consume
+from src.module.rabbitMQ import rabbitmq_consume, rabbitmq_produce
 import ctypes
 import signal
 
@@ -91,15 +91,15 @@ def run_get_paper_info():
             logger.write_log(f"{title} - 共找到 {page_flag}条结果 ", 'info')
             if page_flag > 1:
                 sql = f"UPDATE `cnki_index` SET `status` = 'a' WHERE `UUID` = '{uuid}';"
-                Date_base().update(sql)
+                rabbitmq_produce('MYSQL_UPDATE', sql)
             elif page_flag is False:
                 sql = f"UPDATE `Paper`.`cnki_index` SET  `status` = '9' WHERE UUID = '{uuid}';"
-                Date_base().update(sql)
+                rabbitmq_produce('MYSQL_UPDATE', sql)
             else:
                 flag = get_paper_info(driver, time_out, uuid, title, db_type, receive_time)
                 if flag is False:
                     sql = f"UPDATE `Paper`.`cnki_index` SET `status` = '0' where `uuid` = '{uuid}';"
-                    Date_base().update(sql)
+                    rabbitmq_produce('MYSQL_UPDATE', sql)
     except KeyboardInterrupt:
         sql = f"UPDATE `Paper`.`cnki_index` SET `status` = '0' where `uuid` = '{uuid}';"
         Date_base().update(sql)
@@ -111,14 +111,14 @@ def run_get_paper_info():
             # sql = f"UPDATE `Paper`.`proxy_pool` SET `status` = 'D' WHERE `id` = {proxy_ID};"
             # Date_base().update(sql)
             sql = f"UPDATE `Paper`.`cnki_index` SET `status` = '0' where `uuid` = '{uuid}';"
-            Date_base().update(sql)
+            rabbitmq_produce('MYSQL_UPDATE', sql)
         elif type(e).__name__ == 'TimeoutException' and proxy_flag is True:
             logger.write_log(f"代理编号{proxy_ID}超时", 'error')
             sql = f"UPDATE `Paper`.`cnki_index` SET `status` = '0' where `uuid` = '{uuid}';"
-            Date_base().update(sql)
+            rabbitmq_produce('MYSQL_UPDATE', sql)
         else:
             sql = f"UPDATE `Paper`.`cnki_index` SET `status` = '0' where `uuid` = '{uuid}';"
-            Date_base().update(sql)
+            rabbitmq_produce('MYSQL_UPDATE', sql)
             err2(e)
     finally:
         if driver:
