@@ -24,7 +24,7 @@ def run_get_paper_title(click_flag, total_page, total_count, None_message):
         paper_day = data[0][0]
         paper_flag = data[0][1]
 
-        res_unm, paper_type, paper_day, date_str, paper_sum = open_page_of_title(driver, paper_day, paper_flag)
+        res_unm, paper_type, date_str, paper_sum = open_page_of_title(driver, paper_day, paper_flag)
         if res_unm:
             page_click_sort_type(driver, click_flag)
             flag, total_page, click_flag, total_count, None_message = get_paper_title(driver, res_unm, paper_type,
@@ -42,22 +42,28 @@ def run_get_paper_title(click_flag, total_page, total_count, None_message):
 
         else:
             try:
-                all_handles = driver.window_handles
-                for handle in all_handles:
-                    driver.switch_to.window(handle)
-                    driver.close()
-            finally:
-                pass
+                if driver:
+                    all_handles = driver.window_handles
+                    for handle in all_handles:
+                        driver.switch_to.window(handle)
+                        driver.close()
+            except Exception as e:
+                if type(e).__name__ == 'InvalidSessionIdException':
+                    pass
+                else:
+                    err2(e)
 
             run_get_paper_title(0, 0, 0, False)
 
+    except KeyboardInterrupt:
+        if driver:
+            all_handles = driver.window_handles
+            for handle in all_handles:
+                driver.switch_to.window(handle)
+                driver.close()
+
     except Exception as e:
         err2(e)
-    finally:
-        all_handles = driver.window_handles
-        for handle in all_handles:
-            driver.switch_to.window(handle)
-            driver.close()
 
 
 def run_get_paper_info():

@@ -424,7 +424,7 @@ def open_page_of_title(driver, paper_day, paper_flag):
             print(res_unm)
             if res_unm == '抱歉，暂无数据，可尝试更换检索词。':
                 res_unm = None
-                return res_unm, paper_type, paper_day, date_str, 50
+                return res_unm, paper_type, date_str, 50
 
         if res_unm:
             res_unm = int(res_unm.replace(",", ''))
@@ -443,7 +443,7 @@ def open_page_of_title(driver, paper_day, paper_flag):
 
         paper_sum = 50
         print(f"共找到 {res_unm} 条结果, {int(res_unm / paper_sum + 1)} 页。")
-        return res_unm, paper_type, paper_day, date_str, paper_sum
+        return res_unm, paper_type, date_str, paper_sum
     except Exception as e:
         # driver.close()
         err2(e)

@@ -139,6 +139,10 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum,
                             # 期刊
                             db_type = '1'
 
+                        elif paper_type == 1:
+                            # 会议
+                            db_type = '2'
+
                         elif paper_type == 2:
                             # 会议
                             db_type = 'c'
@@ -171,11 +175,11 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum,
                             # 视频
                             db_type = '7'
 
-                        elif db_type == '硕士':
-                            db_type = '2'
-
-                        elif db_type == '博士':
-                            db_type = '3'
+                        # elif db_type == '硕士':
+                        #     db_type = '2'
+                        #
+                        # elif db_type == '博士':
+                        #     db_type = '3'
 
                         else:
                             db_type = '9'
@@ -195,7 +199,7 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum,
 
                         print(f"标题:    {title}")
 
-                        logger.write_log(f"已获取 ： {title}, UUID : {uuid} \n", 'info')
+                        logger.write_log(f"已获取 ：DAY: {paper_day} - {paper_type} - {title}, UUID : {uuid} \n", 'info')
 
                     except Exception as e:
                         if type(e).__name__ == 'TimeoutException' and issuing_time_flag is False:
@@ -329,9 +333,9 @@ def get_multi_title_data(driver, res_unm, time_out):
 
             sql3 = TrSQL(sql3)
             rabbitmq_produce('MYSQL_INSERT', sql3)
-            if flag == '重复数据':
-                logger.write_log(f"重复数据 ： {title}, UUID : {uuid}", 'info')
-                continue
+            # if flag == '重复数据':
+            #     logger.write_log(f"重复数据 ： {title}, UUID : {uuid}", 'info')
+            #     continue
 
             print(f"标题:    {title}")
 

@@ -52,7 +52,10 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
         with concurrent.futures.ThreadPoolExecutor() as executor:
             future_elements = [executor.submit(get_info, driver, xpath) for xpath in xpaths]
         title, authors, source, date, ndb_type, quote, down_sun = [future.result() for future in future_elements]
+
         authors = str(authors).replace(r"'", r"\'")
+        source = source.replace(r"'", r"\'")
+
         if quote is None or quote == '':
             quote = None
         if down_sun is None or down_sun == '':
