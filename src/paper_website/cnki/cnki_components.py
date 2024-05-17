@@ -146,7 +146,6 @@ def setting_multi_select_date(driver, time_out, yy, mm, dd):
         now_mm = int(moon())
         now_day = int(day())
 
-
         flag_page = 0
         flag_yy = now_yy - yy
         flag_page += flag_yy * 12
@@ -505,7 +504,8 @@ def open_paper_info(driver, paper_title):
             return False
 
         try:
-            WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['cs']))).click()
+            WebDriverWait(driver, time_out).until(
+                EC.presence_of_element_located((By.XPATH, open_page_data['cs']))).click()
         except TimeoutException:
 
             return False
@@ -525,12 +525,11 @@ def open_paper_info(driver, paper_title):
         # print(f"共找到 {res_unm} 条结果, {page_unm} 页。")
         return res_unm
     except Exception as e:
-        if type(e).__name__ == 'TimeoutException':
-            logger.write_log(f"启动浏览器超时 - {TimeoutException}", 'error')
-            return False
+        if type(e).__name__ == 'TimeoutException' or type(e).__name__ == 'WebDriverException':
+            logger.write_log(f"启动浏览器超时 - {paper_title}", 'error')
         else:
             err2(e)
-            return False
+        return False
 
 
 def open_multi_info(driver, receive_time, title, time_out):
@@ -562,7 +561,9 @@ def open_multi_info(driver, receive_time, title, time_out):
         else:
             return False
     except Exception as e:
+
         err2(e)
+        return False
 
 
 #
@@ -620,6 +621,7 @@ def is_english_string(s):
 def process_element(driver, div, li):
     xpath1 = f"/html/body/div[2]/div[1]/div[3]/div/div/div[{div}]/ul/li[{li}]/span"
     xpath2 = f"/html/body/div[2]/div[1]/div[3]/div/div/div[{div}]/ul/li[{li}]/p"
+
     try:
         class_name_elem = WebDriverWait(driver, 0.05).until(EC.presence_of_element_located((By.XPATH, xpath1)))
         class_name = class_name_elem.text
@@ -638,6 +640,34 @@ def get_choose_info(driver):
         for div in range(3, 9):
             for li in range(1, 9):
                 futures.append(executor.submit(process_element, driver, div, li))
+        for future in futures:
+            result = future.result()
+            if result:
+                class_list.append(result)
+    return class_list
+
+
+def get_advisor_element(driver, div, li):
+    xpath1 = f"/html/body/div[2]/div[1]/div[3]/div/div/div[{div}]/span"
+    xpath2 = f"/html/body/div[2]/div[1]/div[3]/div/div/div[{div}]/p"
+    try:
+        class_name_elem = WebDriverWait(driver, 0.05).until(EC.presence_of_element_located((By.XPATH, xpath1)))
+        class_name = class_name_elem.text
+        if class_name:
+            class_data_elem = WebDriverWait(driver, 0.05).until(EC.presence_of_element_located((By.XPATH, xpath2)))
+            class_data = class_data_elem.text
+            return class_name, class_data
+    except:
+        return None
+
+
+def get_advisor_info(driver):
+    class_list = []
+    with ThreadPoolExecutor() as executor:
+        futures = []
+        for div in range(3, 9):
+            for li in range(1, 9):
+                futures.append(executor.submit(get_advisor_element, driver, div, li))
         for future in futures:
             result = future.result()
             if result:

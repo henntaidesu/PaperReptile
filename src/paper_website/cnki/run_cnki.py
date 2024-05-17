@@ -68,19 +68,25 @@ def run_get_paper_info():
     driver = None
     uuid = None
     try:
-        data = rabbitmq_consume(queue_name)
-        if data is None:
-            logger.write_log("队列无数据", 'warning')
-            time.sleep(60)
-            return
+        # data = rabbitmq_consume(queue_name)
+        # if data is None:
+        #     logger.write_log("队列无数据", 'warning')
+        #     time.sleep(60)
+        #     return
+        #
+        # data = [item.strip() for item in data.split(',')]
 
-        data = [item.strip() for item in data.split(',')]
+        # uuid = data[0]
+        # title = data[1]
+        # receive_time = data[2]
+        # status = data[3]
+        # db_type = data[4]
 
-        uuid = data[0]
-        title = data[1]
-        receive_time = data[2]
-        status = data[3]
-        db_type = data[4]
+        uuid = "41d9659a-d592-45bc-a413-49f22fe8a9a8"
+        title = '“00后”大学生认知特点及教育管理对策研究—基于认知风格的实证调查'
+        receive_time = '2023-06-01 00:00:00'
+        status = '1'
+        db_type = '2'
 
         if len(title) < 6:
             sql = f"UPDATE `Paper`.`cnki_index` SET  `status` = '8' WHERE UUID = '{uuid}';"

@@ -9,7 +9,7 @@ class Index:
         self.conf = ReadConf()
 
     def index(self):
-        flag = '3'
+        flag = '6'
 
         if flag == '1':
             from src.paper_website.arxiv.arxivorg import ArxivOrg

@@ -10,9 +10,8 @@ import json
 def proxy_pool():
     while True:
         sql = f"SELECT * FROM `proxy_pool` where `status` = '1' and expire_time > '{proxy_time()}'"
+        proxy_max, url = ReadConf().proxy_pool()
         flag, data = Date_base().select(sql)
-        pool = {}
-        proxy_max = ReadConf().proxy_pool()
         if len(data) >= proxy_max:
             Log().write_log(f"Current number of agents {proxy_max}", 'info')
             time.sleep(30)
@@ -20,7 +19,6 @@ def proxy_pool():
 
         else:
             try:
-                url = f"http://zltiqu.pyhttp.taolop.com/getip?count=1&neek=104794&type=2&yys=0&port=1&sb=&mr=1&sep=0&ts=1&ys=1&cs=1&regions=440000,520000,450000&pack=41673"
                 proxy_data = requests.get(url).text
                 proxy_data = json.loads(proxy_data)
                 if proxy_data['success'] is False:

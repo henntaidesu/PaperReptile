@@ -13,7 +13,6 @@ from src.module.log import Log, err2, err3
 from src.module.read_conf import ReadConf
 from src.module.rabbitMQ import rabbitmq_produce
 
-
 open_page_data = positioned_element()
 crawl_xp = Crawl()
 logger = Log()
@@ -53,7 +52,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
         with concurrent.futures.ThreadPoolExecutor() as executor:
             future_elements = [executor.submit(get_info, driver, xpath) for xpath in xpaths]
         title, authors, source, date, ndb_type, quote, down_sun = [future.result() for future in future_elements]
-
+        authors = str(authors).replace(r"'", r"\'")
         if quote is None or quote == '':
             quote = None
         if down_sun is None or down_sun == '':
@@ -94,7 +93,6 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
         err3(e)
         return False
 
-
     # print(f"\n"
     #       f"标题:    {title}\n"
     #       f"作者:    {authors}\n"
@@ -108,6 +106,9 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
         n = driver.window_handles  # 获取driver的句柄
         driver.switch_to.window(n[-1])  # driver切换至最新生产的页面
         time.sleep(3)
+        if len(driver.window_handles) > 2:
+            return False
+
         driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.END)  # 拉取页面到最低端
         # 开始获取页面信息
         # 点击展开
@@ -152,9 +153,8 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
             classification_zh = None
 
         # print(f"关键词 : {classification_zh}")
-
+        driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.END)  # 拉取页面到最低端
         class_list = get_choose_info(driver)
-
         class_dict = {}
         for item in class_list:
             class_dict[item[0]] = item[1]
@@ -165,6 +165,28 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
         classification_number = class_dict.get('分类号：')
         version_Number = class_dict.get('版号：')
         edition_name = class_dict.get('版名：')
+
+        advisor = None
+        subject = None
+        if ndb_type in ('2', '3'):
+            from src.paper_website.cnki.cnki_components import get_advisor_info
+            class_list = get_advisor_info(driver)
+
+            class_dict = {}
+            for item in class_list:
+                class_dict[item[0]] = item[1]
+
+            advisor = class_dict.get('导师：')
+            subject = class_dict.get('学科专业：')
+
+            electronic_journal_xpath = f'''//*[@id="bsdzqkcbxx"]/p'''
+            try:
+                electronic_journal = WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, electronic_journal_xpath))).text
+            except:
+                electronic_journal = None
+
+        if len(driver.window_handles) > 2:
+            return False
 
         if classification_number is None and version_Number is not None:
             classification_number = version_Number + edition_name
@@ -247,11 +269,13 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
 
         # if_journal_reference = None
         if if_journal_reference == '引文网络':
+            driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.END)  # 拉取页面到最低端
             el = WebDriverWait(driver, time_out).until(EC.element_to_be_clickable((By.XPATH, cp['references'])))
             el.click()
             paper_flag = 0
 
             while True:
+                driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.END)  # 拉取页面到最低端
                 if paper_flag == len(pl_list):
                     break
                 paper_list = None
@@ -372,13 +396,13 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
                 f"`update_time`, `funding`, `album`, `classification_number`, "
                 f"`article_directory`, `Topics`, `level`, `page_sum`, `journal`, "
                 f"`master`, `PhD`, `international_journals`, `book`, "
-                f"`Chinese_and_foreign`, `newpaper`) "
+                f"`Chinese_and_foreign`, `newpaper`, `advisor`, `subject`, `electronic_journal`) "
                 f"VALUES "
                 f"('{uuid}', '{institute}', '{source}', '{ndb_type}', {down_sun}, {quote}, '{insert_time}',"
                 f" '{update_time}', '{funding}', '{publication}', '{classification_number}',"
                 f" '{article_directory}', '{topic}', '{level}', '{page_sum}', '{pl_list[0]}',"
                 f" '{pl_list[1]}', '{pl_list[2]}', '{pl_list[3]}', '{pl_list[4]}',"
-                f" '{pl_list[5]}', '{pl_list[6]}');")
+                f" '{pl_list[5]}', '{pl_list[6]}', '{advisor}', '{subject}', '{electronic_journal}');")
 
         sql3 = (f"UPDATE `Paper`.`cnki_index` SET "
                 f"`receive_time` = '{date}', "
