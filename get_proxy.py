@@ -1,4 +1,4 @@
-from src.module.execution_db import Date_base
+from src.module.execution_db import DB
 from src.module.now_time import proxy_time
 from src.module.log import Log, err2
 from src.module.read_conf import ReadConf
@@ -11,7 +11,7 @@ def proxy_pool():
     while True:
         sql = f"SELECT * FROM `proxy_pool` where `status` = '1' and expire_time > '{proxy_time()}'"
         proxy_max, url = ReadConf().proxy_pool()
-        flag, data = Date_base().select(sql)
+        flag, data = DB().select(sql)
         if len(data) >= proxy_max:
             Log().write_log(f"Current number of agents {proxy_max}", 'info')
             time.sleep(30)
@@ -35,7 +35,7 @@ def proxy_pool():
                         city = item['city']
                         isp = item['isp']
                         sql = f"INSERT INTO `Paper`.`proxy_pool` (`address`, `port`, `status`, `proxy_type`, `expire_time`, `city`, `isp`) VALUES ('{IP}', {Port}, '1', 'http', '{expire_time}', '{city}', '{isp}');"
-                        Date_base().insert(sql)
+                        DB().insert(sql)
                         Log().write_log(f"GET_NEW_PROXY_IP_INFO - {IP} - {city}", 'info')
                     time.sleep(60)
             except Exception as e:

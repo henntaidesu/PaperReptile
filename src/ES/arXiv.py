@@ -3,7 +3,7 @@ import time
 
 import requests
 from src.module.log import Log, err1
-from src.module.execution_db import Date_base
+from src.module.execution_db import DB
 from src.module.read_conf import ReadConf
 from src.module.now_time import now_time
 from datetime import datetime, timezone, timedelta
@@ -122,7 +122,7 @@ def create_arxiv_index(data):
                     Log().write_log(f"写入作者失败 {UUID} - {authors}", 'error')
 
             sql = f"UPDATE `Paper`.`index` SET `ES_date` = '{now_time()}', state = '10' WHERE `UUID` = '{UUID}';"
-            Date_base().update(sql)
+            DB().update(sql)
 
             Log().write_log(f'写入Es成功 {title_zh}', 'info')
 

@@ -5,7 +5,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
-from src.module.execution_db import Date_base
+from src.module.execution_db import DB
 from src.module.UUID import UUID
 from src.model.cnki import Crawl, positioned_element, paper_DB_flag, paper_DB_DT
 from src.module.log import Log, err2, err3
@@ -18,83 +18,59 @@ logger = Log()
 read_conf = ReadConf()
 
 
-def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum, total_page, total_count, click_flag,
-                    None_message):
-    time_out = 5
-    count = 1
-    new_paper_sum = 0
-    all_handles = None
-    sql = f"UPDATE `cnki_page_flag` SET `{paper_DB_flag()[paper_type]}` = {res_unm} WHERE `date` ='{paper_day}';"
-    rabbitmq_produce('MYSQL_UPDATE', sql)
-
-    sql = (f"SELECT title FROM cnki_index where receive_time >= '{paper_day} 00:00:00' "
-           f"and receive_time <= '{paper_day} 23:59:59' and db_type in ({paper_DB_DT()[paper_type]})")
-    flag, paper_title = Date_base().select(sql)
-
-    len_data = len(paper_title)
-
-    issuing_time_flag = False
-    None_message = False
-    if res_unm > 5950:
-        issuing_time_flag = True
+def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum):
     try:
+        time_out = 5
+        count = 1
+        new_paper_sum = 0
+        all_handles = None
+        len_data = None
+        sql = f"UPDATE `cnki_page_flag` SET `{paper_DB_flag()[paper_type]}` = {res_unm} WHERE `date` ='{paper_day}';"
+        rabbitmq_produce('MYSQL_UPDATE', sql)
+        time.sleep(2)
+        issuing_time_flag = False
+        if res_unm > 5950:
+            issuing_time_flag = True
+        sort = 0
+        sort_flag = 0
+        total_page = 0
+        if 5950 < res_unm < 7000:
+            sort_flag = 1
+        if 7000 < res_unm < 9000:
+            sort_flag = 2
+        if 9000 < res_unm < 12000:
+            sort_flag = 3
+        if 12000 < res_unm < 15000:
+            sort_flag = 4
+        if 15000 < res_unm < 17000:
+            sort_flag = 5
+        if 17000 < res_unm < 19000:
+            sort_flag = 6
+        if 21000 < res_unm < 21000:
+            sort_flag = 7
+
+        sort = page_click_sort_type(driver, sort)
+
         while True:
-            total_page += 1
-            time.sleep(1)
-            print(f'当前总查询页码   :   {total_page}')
-            if issuing_time_flag is True and None_message is False:
-                if total_page == 120:
-                    # 按引用倒序
-                    return False, total_page, 1, count, False
-
-                elif total_page == 240:
-                    # 按下载正序
-                    return False, total_page, 2, count, False
-
-                elif total_page == 360:
-                    # 按引用正序
-                    return False, total_page, 3, count, False
-
-                elif total_page == 480:
-                    return False, total_page, 4, count, False
-                    # 按下载倒序
-                elif total_page == 600:
-                    # 按发表顺序倒
-                    return False, total_page, 5, count, False
-
-                elif total_page == 720:
-                    # 按发表顺序倒
-                    return False, total_page, 6, count, False
-
-                elif total_page == 840:
-                    # 按发表顺序倒
-                    return False, total_page, 7, count, False
-
-                elif total_page == 960:
-                    flag333 = whit_file(date_str, paper_type, paper_day)
-                    if flag333 is True:
-                        return True, False, -1, count, False
-
-            driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.END)
-
             try:
+                sql = (f"SELECT title FROM cnki_index where receive_time >= '{paper_day} 00:00:00' "
+                       f"and receive_time <= '{paper_day} 23:59:59' and db_type in ({paper_DB_DT()[paper_type]})")
+                flag, paper_title = DB().select(sql)
+                len_data = len(paper_title)
+                total_page += 1
+                print(f'当前总查询页码   :   {total_page }')
+                if total_page == 1080 + 1:
+                    return True
+                time.sleep(3)
+                # driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.END)
+                title_list = WebDriverWait(driver, time_out).until(EC.presence_of_all_elements_located((By.CLASS_NAME, "fz14")))
+                time.sleep(2)
+
                 # 循环网页一页中的条目
-                for i in range((count - 1) % paper_sum + 1, paper_sum + 1):
-                    # print(f"{res_unm} --- {count + len_data - new_paper_sum} --- {total_page}")
-                    if res_unm < count + len_data - new_paper_sum:
-                        logger.write_log("已获取完数据", 'info')
-                        flag333 = whit_file(date_str, paper_type, paper_day)
-                        if flag333 is True:
-                            return True, False, -1, count, False
+                for i in range(1, len(title_list) + 1):
 
-                    if issuing_time_flag is False and total_page > res_unm / 50 + 1:
-                        logger.write_log("已获取完数据", 'info')
-                        flag333 = whit_file(date_str, paper_type, paper_day)
-                        if flag333 is True:
-                            return True, False, -1, count, False
-
-                    print(f"正在爬取第{count + len_data - new_paper_sum}条基础数据,跳过{new_paper_sum}"
-                          f"条(当前查询条件第{(count - 1) // paper_sum + 1}页第{i}条。总第{total_count + count}次查询 共{res_unm}条):")
+                    print(f"正在爬取第{count}条基础数据,跳过{new_paper_sum}"
+                          f"条(当前查询条件第{(count - 1) // paper_sum + 1}页第{i}条。总第{count}次查询 共{res_unm}条):")
 
                     try:
                         try:
@@ -113,7 +89,7 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum,
                                 EC.presence_of_element_located((By.XPATH, xpath))).text
                             if title == '抱歉，暂无数据，请稍后重试。' and issuing_time_flag is True and total_page % 120 != 0:
                                 None_message = True
-                                return False, total_page, click_flag + 1, count, None_message
+                                return False
                             err2(e)
 
                         if '增强出版' in title:
@@ -122,7 +98,7 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum,
                         if '网络首发' in title:
                             title = title[:-5]
 
-                        if_title = None
+                        if_title = False
                         for ii in paper_title:
                             if ii[0] == title:
                                 print(f"数据已存在 : {title} \n")
@@ -131,58 +107,11 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum,
 
                         if if_title is True:
                             new_paper_sum += 1
-                            if i == 50:
+                            if i == 51:
                                 time.sleep(3)
                             continue
 
-                        if paper_type == 0:
-                            # 期刊
-                            db_type = '1'
-
-                        elif paper_type == 1:
-                            # 会议
-                            db_type = '2'
-
-                        elif paper_type == 2:
-                            # 会议
-                            db_type = 'c'
-
-                        elif paper_type == 3:
-                            # 报纸
-                            db_type = '0'
-
-                        elif paper_type == 4:
-                            # 图书
-                            db_type = '4'
-
-                        elif paper_type == 5:
-                            # 标准
-                            db_type = 'a'
-
-                        elif paper_type == 6:
-                            # 成果
-                            db_type = 'b'
-
-                        elif paper_type == 7:
-                            # 辑刊
-                            db_type = '6'
-
-                        elif paper_type == 8:
-                            # 特色期刊
-                            db_type = '5'
-
-                        elif paper_type == 9:
-                            # 视频
-                            db_type = '7'
-
-                        # elif db_type == '硕士':
-                        #     db_type = '2'
-                        #
-                        # elif db_type == '博士':
-                        #     db_type = '3'
-
-                        else:
-                            db_type = '9'
+                        db_type = paper_DB_DT()[paper_type]
 
                         title = TrimString(title)
                         uuid = UUID()
@@ -191,13 +120,9 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum,
                                 f"VALUES ('{uuid}', '{title}', '{paper_day}', '0', '{db_type}');")
 
                         sql3 = TrSQL(sql3)
-                        rabbitmq_produce('MYSQL_INSERT', sql)
-                        if flag == '重复数据':
-                            new_paper_sum += 1
-                            logger.write_log(f"重复数据 ： {title}, UUID : {uuid}", 'info')
-                            continue
+                        rabbitmq_produce('MYSQL_INSERT', sql3)
 
-                        print(f"标题:    {title}")
+                        logger.write_log(f"标题 - {title}", 'info')
 
                         logger.write_log(f"已获取 ：DAY: {paper_day} - {paper_type} - {title}, UUID : {uuid} \n", 'info')
 
@@ -209,7 +134,7 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum,
                                 'info')
 
                             whit_file(date_str, paper_type, paper_day)
-                            return True, False, -1, count, False
+                            return True
                         else:
                             err2(e)
 
@@ -217,11 +142,17 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum,
                         count += 1
                     if res_unm <= count + len_data - new_paper_sum - 1:
                         logger.write_log("已获取完数据 \n", 'info')
-                        flag333 = whit_file(date_str, paper_type, paper_day)
-
-                        if flag333 is True:
-                            return True, False, -1, count, False
+                        whit_file(date_str, paper_type, paper_day)
+                        return True
                 time.sleep(1)
+                if issuing_time_flag is True:
+                    if total_page % 119 == 0:
+                        if sort == sort_flag:
+                            return True
+                        else:
+                            sort = page_click_sort_type(driver, sort)
+                            total_page += 1
+                            continue
                 try:
                     ActionChains(driver).key_down(Keys.ARROW_RIGHT).key_up(Keys.ARROW_RIGHT).perform()
                 finally:
@@ -229,7 +160,7 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum,
                 time.sleep(3)
 
             except Exception as e:
-                pass
+                err2(e)
     finally:
         all_handles = driver.window_handles
         for handle in all_handles:

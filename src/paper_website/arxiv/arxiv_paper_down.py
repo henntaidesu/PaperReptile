@@ -1,7 +1,7 @@
 import time
 import requests
 from tqdm import tqdm
-from src.module.execution_db import Date_base
+from src.module.execution_db import DB
 from src.module.log import Log
 from src.module.read_conf import ReadConf
 from src.module.now_time import now_time
@@ -22,7 +22,7 @@ class Arxiv_paper_down:
         self.logger = Log()
 
     def paper_down(self, sql):
-        flag, data = Date_base().select(sql)
+        flag, data = DB().select(sql)
         url = None
         for i in data:
             uuid = i[0]

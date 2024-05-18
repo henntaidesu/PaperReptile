@@ -6,7 +6,7 @@ import random
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
-from src.module.execution_db import Date_base
+from src.module.execution_db import DB
 from src.module.read_conf import CNKI, ReadConf
 from src.model.cnki import date_choose_end_table, date_choose_start_table
 from src.module.now_time import year, moon, day, today
@@ -55,7 +55,7 @@ def webserver():
         options.add_argument('--silent')  # 禁止 DevTools 输出
         options.add_experimental_option('excludeSwitches', ['enable-logging'])  # 禁用 DevTools 监听输出
 
-        options.add_argument('--headless')  # 不唤起实体浏览器
+        # options.add_argument('--headless')  # 不唤起实体浏览器
 
         proxy_flag = read_conf.cnki_proxy()
         if proxy_flag:
@@ -227,19 +227,19 @@ def get_title_data_is_none(paper_flag, paper_day):
         if data[i] == '0':
             data[i] = '1'
             sql = f"UPDATE `cnki_page_flag` SET `{paper_DB_flag()[i]}` = 0 WHERE `date` ='{paper_day}';"
-            Date_base().update(sql)
+            DB().update(sql)
             break
 
     data = str(data).replace(',', '').replace("'", "").replace(" ", "").replace('[', '').replace(']', '')
 
     sql = f"UPDATE `Paper`.`cnki_page_flag` SET `flag` = '{data}' WHERE `date` = '{paper_day}'"
-    Date_base().update(sql)
+    DB().update(sql)
     return False
 
 
 def choose_banner_new_data(driver, time_out, paper_day):
     sql = f"select flag from cnki_page_flag WHERE date = '{paper_day}'"
-    flag, data = Date_base().select(sql)
+    flag, data = DB().select(sql)
     data = data[0][0]
 
     if data:
@@ -384,7 +384,7 @@ def choose_banner_new_data(driver, time_out, paper_day):
         sql = (f"UPDATE `Paper`.`cnki_page_flag` SET `flag` = '{item_flag}', `xxkq` = {xx_sum}, `xwlw` = {xw_sum}, "
                f"`hy` = {hy_sum},  `bz` = {pa_sum}, `ts` = {ts_sum}, `bs` = {bz_sum}, `cg` = {cg_sum}, "
                f"`xxkj` = {kj_sum}, `tsqk` = {tsqk_sum}, `sp` = {sp_sum} WHERE `date` = '{paper_day}';")
-        Date_base().update(sql)
+        DB().update(sql)
 
         WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data[0]))).click()
         return 0, item_flag
@@ -403,7 +403,7 @@ def open_page_of_title(driver, paper_day, paper_flag):
         mm = paper_day.month
         dd = paper_day.day
 
-        paper_day = setting_select_date(driver, time_out, yy, mm, dd)
+        setting_select_date(driver, time_out, yy, mm, dd)
 
         # 点击搜索
         WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['cs']))).click()
@@ -428,11 +428,11 @@ def open_page_of_title(driver, paper_day, paper_flag):
 
         if res_unm:
             res_unm = int(res_unm.replace(",", ''))
-            if res_unm > 5950:
-                # 按发表顺序正
-                WebDriverWait(driver, time_out).until(
-                    EC.presence_of_element_located((By.XPATH, '//*[@id="PT"]'))).click()
-                time.sleep(2)
+            # if res_unm > 5950:
+            #     # 按发表顺序正
+            #     WebDriverWait(driver, time_out).until(
+            #         EC.presence_of_element_located((By.XPATH, '//*[@id="PT"]'))).click()
+            #     time.sleep(2)
             if res_unm > 49:
                 WebDriverWait(driver, time_out).until(
                     EC.presence_of_element_located((By.XPATH, open_page_data['display']))).click()
@@ -454,13 +454,13 @@ def get_paper_type_number(driver, yy, mm, dd):
     while True:
         yy, mm, dd = CNKI().read_cnki_date()
         sql = f"SELECT * FROM `Paper`.`cnki_page_flag` WHERE `date` = '{yy}-{mm}-{dd}'"
-        flag, data = Date_base().select(sql)
+        flag, data = DB().select(sql)
         if data:
             revise_cnki_date(yy, mm, dd)
             continue
         else:
             sql = f"INSERT INTO `Paper`.`cnki_page_flag` (`date`) VALUES ('{yy}-{mm}-{dd}');"
-            flag = Date_base().insert(sql)
+            flag = DB().insert(sql)
             if flag == '重复数据':
                 continue
             else:
@@ -738,43 +738,44 @@ def whit_file(date_str, paper_type, paper_day):
     date_str = str(date_str)
     date_str = date_str[1:][:-1].replace(',', '').replace("'", "").replace(" ", "")
     sql = f"UPDATE `Paper`.`cnki_page_flag` SET `flag` = '{date_str}' WHERE `date` = '{paper_day}'"
-    Date_base().update(sql)
+    DB().update(sql)
 
 
 def page_click_sort_type(driver, flag):
     time_out = 5
     try:
-        # 被引正序
-        if flag == 0:
-            WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="CF"]'))).click()
         # 下载正序
-        time.sleep(3)
+        if flag == 0:
+            WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="DFR"]'))).click()
+        # 下载倒叙
         if flag == 1:
             WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="DFR"]'))).click()
-        # 发表时间正序
-        if flag == 2:
+            time.sleep(1)
             WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="DFR"]'))).click()
+        # 被引正序
+        if flag == 2:
+            WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="CF"]'))).click()
         # 被引倒序
         if flag == 3:
             WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="CF"]'))).click()
             time.sleep(1)
             WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="CF"]'))).click()
-        # 下载倒序
+        # 发表时间正序
         if flag == 4:
-            WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="DFR"]'))).click()
-            time.sleep(1)
-            WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="DFR"]'))).click()
-        # 发表时间倒序
+            WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="PT"]'))).click()
+        # 发表时间正序
         if flag == 5:
             WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="PT"]'))).click()
             time.sleep(1)
             WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="PT"]'))).click()
-        # 相关度
+        # 综合正序
         if flag == 6:
-            WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="FFD"]'))).click()
-        # 综合
-        if flag == 7:
             WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="ZH"]'))).click()
+        # 相关度
+        if flag == 7:
+            WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, '//*[@id="FFD"]'))).click()
+
+        return flag + 1
     except ExceptionGroup as e:
         err2(e)
 
@@ -782,12 +783,12 @@ def page_click_sort_type(driver, flag):
 def get_spider_paper_title():
     yy, mm, dd = CNKI().read_cnki_date()
     sql = f"SELECT * FROM `Paper`.`cnki_index` WHERE  db_type in ('1', '2', '3') and `status` = '0' limit 1"
-    flag, data = Date_base().select(sql)
+    flag, data = DB().select(sql)
     if data:
         data = data[0]
         UUID = data[0]
         sql = f"UPDATE `Paper`.`cnki_index` SET `status` = 'Z' where `uuid` = '{UUID}';"
-        Date_base().update(sql)
+        DB().update(sql)
         return data
     else:
         revise_cnki_date_desc(yy, mm, dd)

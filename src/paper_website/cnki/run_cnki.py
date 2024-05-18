@@ -1,7 +1,7 @@
 import sys
 import time
 import requests
-from src.module.execution_db import Date_base
+from src.module.execution_db import DB
 from src.paper_website.cnki.get_cnki_paper_title import get_multi_title_data, get_paper_title
 from src.paper_website.cnki.cnki_components import open_paper_info, page_click_sort_type, get_paper_type_number
 from src.paper_website.cnki.cnki_components import webserver, open_page_of_title, get_spider_paper_title
@@ -19,18 +19,15 @@ def run_get_paper_title(click_flag, total_page, total_count, None_message):
     driver, proxy_ID, proxy_flag = webserver()
     try:
         sql = f"SELECT `date`, flag FROM cnki_page_flag WHERE flag != '1111111111' ORDER BY `date` DESC LIMIT 1"
-        flag, data = Date_base().select(sql)
+        flag, data = DB().select(sql)
 
         paper_day = data[0][0]
         paper_flag = data[0][1]
 
         res_unm, paper_type, date_str, paper_sum = open_page_of_title(driver, paper_day, paper_flag)
-        if res_unm:
+        if res_unm and res_unm != 0:
             page_click_sort_type(driver, click_flag)
-            flag, total_page, click_flag, total_count, None_message = get_paper_title(driver, res_unm, paper_type,
-                                                                                      paper_day, date_str, paper_sum,
-                                                                                      total_page, total_count,
-                                                                                      click_flag, None_message)
+            get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum)
 
         else:
             get_title_data_is_none(paper_flag, paper_day)
@@ -38,7 +35,7 @@ def run_get_paper_title(click_flag, total_page, total_count, None_message):
 
         if flag is False:
             driver.close()
-            run_get_paper_title(click_flag, total_page, total_count, None_message)
+            # run_get_paper_title(click_flag, total_page, total_count, None_message)
 
         else:
             try:
@@ -171,11 +168,11 @@ def run_multi_title_data():
         else:
             logger.write_log(f"{title} - {uuid} - 获取错误", 'error')
             sql = f"UPDATE `Paper`.`cnki_index` SET `status` = 'a' where `uuid` = '{uuid}'"
-        Date_base().update(sql)
+        DB().update(sql)
 
     except KeyboardInterrupt:
         sql = f"UPDATE `Paper`.`cnki_index` SET `status` = 'a' where `uuid` = '{uuid}'"
-        Date_base().update(sql)
+        DB().update(sql)
         logger.write_log(f"程序正在关闭", 'info')
 
     except Exception as e:
@@ -184,7 +181,7 @@ def run_multi_title_data():
         else:
             err2(e)
         sql = f"UPDATE `Paper`.`cnki_index` SET `status` = 'a' where `uuid` = '{uuid}'"
-        Date_base().update(sql)
+        DB().update(sql)
     finally:
         all_handles = driver.window_handles
         for handle in all_handles:
@@ -216,18 +213,18 @@ def run_multi_title_info():
         if_paper = open_multi_info(driver, receive_time, title, time_out)
         if if_paper:
             sql = f"UPDATE `Paper`.`cnki_index` SET `status` = '?'  where `uuid` = '{uuid}' "
-            Date_base().update(sql)
+            DB().update(sql)
 
         get_flag = get_paper_info(driver, time_out, uuid, title, db_type, receive_time)
         if get_flag:
             sql = f"UPDATE `Paper`.`cnki_index` SET `status` = '1'  where `uuid` = '{uuid}' "
         else:
             sql = f"UPDATE `Paper`.`cnki_index` SET `status` = 'b'  where `uuid` = '{uuid}' "
-        Date_base().update(sql)
+        DB().update(sql)
 
     except KeyboardInterrupt:
         sql = f"UPDATE `Paper`.`cnki_index` SET `status` = 'b' where `uuid` = '{uuid}'"
-        Date_base().update(sql)
+        DB().update(sql)
         logger.write_log(f"程序正在关闭", 'info')
 
     except Exception as e:
@@ -236,7 +233,7 @@ def run_multi_title_info():
         else:
             err2(e)
         sql = f"UPDATE `Paper`.`cnki_index` SET `status` = 'b' where `uuid` = '{uuid}'"
-        Date_base().update(sql)
+        DB().update(sql)
     finally:
         all_handles = driver.window_handles
         for handle in all_handles:
@@ -244,12 +241,10 @@ def run_multi_title_info():
             driver.close()
 
 
-
-
 def run_paper_type_number():
     try:
         sql = f"SELECT `date`, flag FROM cnki_page_flag  ORDER BY `date` DESC LIMIT 1"
-        flag, data = Date_base().select(sql)
+        flag, data = DB().select(sql)
         print(data)
         data = str(data[0][0])
         yy, mm, dd = data.split('-')

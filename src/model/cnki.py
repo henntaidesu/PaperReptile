@@ -1,6 +1,6 @@
 import time
 
-from src.module.execution_db import Date_base
+from src.module.execution_db import DB
 from src.module.now_time import proxy_time
 import requests
 
@@ -8,7 +8,7 @@ import requests
 def proxy_pool():
     sql = f"SELECT * FROM `proxy_pool` where `status` = '1' and expire_time > '{proxy_time()}' limit 100"
     # sql = f"SELECT * FROM `proxy_pool` where `status` = '1'  and expire_time < '{proxy_time()}' limit 100"
-    flag, data = Date_base().select(sql)
+    flag, data = DB().select(sql)
     pool = {}
 
 
@@ -40,7 +40,7 @@ def paper_DB_flag():
 def paper_DB_DT():
     table = {
         0: "'1'",
-        1: "'2', '3'",
+        1: "'2'",
         2: "'c'",
         3: "'0'",
         4: "'4'",

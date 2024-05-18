@@ -1,7 +1,7 @@
 import time
 import pika
 import threading
-from src.module.execution_db import Date_base
+from src.module.execution_db import DB
 from src.module.read_conf import ReadConf
 from src.module.log import Log, err2
 
@@ -53,7 +53,7 @@ def CNKI_paper_title_status_0():
     while True:
         if get_queue_quantity(queue_name) < ReadConf().rabbitMQ_max_queue():
             sql = f"SELECT * FROM `Paper`.`cnki_index` WHERE receive_time > '2022-01-01' and db_type in ('1', '2', '3', '9') and `status` = '0' limit 200"
-            flag, data = Date_base().select(sql)
+            flag, data = DB().select(sql)
             if data:
                 for i in data:
                     UUID = i[0]
@@ -62,7 +62,7 @@ def CNKI_paper_title_status_0():
                     status = i[3]
                     db_type = i[4]
                     sql = f"UPDATE `Paper`.`cnki_index` SET `status` = 'Z' where `uuid` = '{UUID}';"
-                    flag = Date_base().update(sql)
+                    flag = DB().update(sql)
                     try:
                         title_producer(queue_name, f"{UUID},{title},{receive_time},{status},{db_type}")
                         Log().write_log(f"{queue_name} - {title} - {receive_time}", 'info')
@@ -79,7 +79,7 @@ def CNKI_paper_title_status_a():
     while True:
         if get_queue_quantity(queue_name) < ReadConf().rabbitMQ_max_queue():
             sql = f"SELECT * FROM `Paper`.`cnki_index` WHERE db_type in ('1', '2', '3') and `status` = 'a' limit 20"
-            flag, data = Date_base().select(sql)
+            flag, data = DB().select(sql)
             if data:
                 for i in data:
                     UUID = i[0]
@@ -88,7 +88,7 @@ def CNKI_paper_title_status_a():
                     status = i[3]
                     db_type = i[4]
                     sql = f"UPDATE `Paper`.`cnki_index` SET `status` = 'X' where `uuid` = '{UUID}';"
-                    flag = Date_base().update(sql)
+                    flag = DB().update(sql)
                     try:
                         title_producer(queue_name, f"{UUID},{title},{receive_time},{status},{db_type}")
                         Log().write_log(f"{queue_name} - {title}", 'info')
@@ -104,7 +104,7 @@ def CNKI_paper_title_status_b():
     while True:
         if get_queue_quantity(queue_name) < ReadConf().rabbitMQ_max_queue():
             sql = f"SELECT * FROM `Paper`.`cnki_index` WHERE db_type in ('1', '2', '3') and `status` = 'b' limit 20"
-            flag, data = Date_base().select(sql)
+            flag, data = DB().select(sql)
             if data:
                 for i in data:
                     UUID = i[0]
@@ -113,7 +113,7 @@ def CNKI_paper_title_status_b():
                     status = i[3]
                     db_type = i[4]
                     sql = f"UPDATE `Paper`.`cnki_index` SET `status` = 'Y' where `uuid` = '{UUID}';"
-                    Date_base().update(sql)
+                    DB().update(sql)
                     try:
                         title_producer(queue_name, f"{UUID},{title},{receive_time},{status},{db_type}")
                         Log().write_log(f"{queue_name} - {title}", 'info')
@@ -129,13 +129,13 @@ def ARXIV_paper_status_00():
     while True:
         if get_queue_quantity(queue_name) < ReadConf().rabbitMQ_max_queue():
             sql = f"SELECT UUID, classification_en FROM `index` WHERE  `from` = 'arxiv' and state = '00' limit 2000"
-            flag, data = Date_base().select(sql)
+            flag, data = DB().select(sql)
             if data:
                 for i in data:
                     uuid = i[0]
                     classification_en = i[1]
                     sql = f"UPDATE `Paper`.`cnki_index` SET `status` = 'AA' where `uuid` = '{uuid}';"
-                    Date_base().update(sql)
+                    DB().update(sql)
                     try:
                         title_producer(queue_name, f"{uuid},{classification_en}")
                         Log().write_log(f"{queue_name} - {classification_en}", 'info')
@@ -151,13 +151,13 @@ def ARXIV_paper_status_01():
     while True:
         if get_queue_quantity(queue_name) < ReadConf().rabbitMQ_max_queue():
             sql = f"SELECT UUID, title_en FROM `Paper`.`index` WHERE `from` = 'arxiv' and state = '01' limit 2000"
-            flag, data = Date_base().select(sql)
+            flag, data = DB().select(sql)
             if data:
                 for i in data:
                     UUID = i[0]
                     title_en = i[1]
                     sql = f"UPDATE `Paper`.`cnki_index` SET `status` = 'AB' where `uuid` = '{UUID}';"
-                    Date_base().update(sql)
+                    DB().update(sql)
                     try:
                         title_producer(queue_name, f"{UUID},{title_en}")
                         Log().write_log(f"{queue_name} - {title_en}", 'info')

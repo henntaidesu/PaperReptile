@@ -1,5 +1,5 @@
 import time
-from src.module.execution_db import Date_base
+from src.module.execution_db import DB
 import multiprocessing
 from src.module.read_conf import ReadConf
 from src.module.log import Log, err2
@@ -7,7 +7,7 @@ from src.module.log import Log, err2
 
 class Process:
     def __init__(self):
-        self.database = Date_base()
+        self.database = DB()
         self.conf = ReadConf()
         self.logger = Log()
 
@@ -41,7 +41,7 @@ class Process:
     def multi_process_as_up_group(self, sql, func):
         try:
             processes, state_interval = self.conf.processes()
-            date_base = Date_base()
+            date_base = DB()
             flag, work_list = date_base.select(sql)
             if len(work_list) == 0:
                 return False

@@ -1,5 +1,5 @@
 import pika
-from src.module.execution_db import Date_base
+from src.module.execution_db import DB
 from src.module.read_conf import ReadConf
 from src.module.log import Log, err2
 import threading
@@ -27,7 +27,7 @@ def mysql_updata():
                 method_frame, header_frame, body = channel.basic_get(queue=queue_name)
                 if method_frame:
                     message = body.decode()  # 处理消息
-                    Date_base().update(message)
+                    DB().update(message)
                     channel.basic_ack(delivery_tag=method_frame.delivery_tag)
         except KeyboardInterrupt:
             logger.write_log("程序关闭", 'ERROR')
@@ -54,7 +54,7 @@ def mysql_insert():
                 method_frame, header_frame, body = channel.basic_get(queue=queue_name)
                 if method_frame:
                     message = body.decode()  # 处理消息
-                    Date_base().update(message)
+                    DB().update(message)
                     channel.basic_ack(delivery_tag=method_frame.delivery_tag)
         except KeyboardInterrupt:
             logger.write_log("程序关闭", 'ERROR')

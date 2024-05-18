@@ -3,7 +3,7 @@ import time
 import jieba
 import requests
 from src.module.log import Log, err1
-from src.module.execution_db import Date_base
+from src.module.execution_db import DB
 from src.module.read_conf import ReadConf
 from src.module.now_time import now_time
 from datetime import datetime, timezone, timedelta
@@ -70,7 +70,7 @@ def create_cnki_index(data):
 
             # 写入分类索引
             sql = f"SELECT album FROM `Paper`.`cnki_paper_information` WHERE `UUID` = '{UUID}'"
-            flag, album = Date_base().select(sql)
+            flag, album = DB().select(sql)
             album = album[0][0]
 
             classification_list = []
@@ -188,7 +188,7 @@ def create_cnki_index(data):
             sql = (f"SELECT  `journal`, `master`, `PhD`, `international_journals`, `book`, `Chinese_and_foreign`, "
                    f"`newpaper` FROM `Paper`.`cnki_paper_information` WHERE `UUID` = '{UUID}'")
 
-            flag, data = Date_base().select(sql)
+            flag, data = DB().select(sql)
             data = data[0]
             journal = data[0]
             master = data[1]
@@ -366,7 +366,7 @@ def create_cnki_index(data):
                             Log().write_log(f"写入失败 {a} - {b}", 'error')
 
             sql = f"UPDATE `Paper`.`index` SET `ES_date` = '{now_time()}', state = '10' WHERE `UUID` = '{UUID}';"
-            Date_base().update(sql)
+            DB().update(sql)
 
             Log().write_log(f'写入Es成功 {title_zh}', 'info')
             time.sleep(1)
@@ -384,7 +384,7 @@ def create_cnki_index(data):
 def create_cnki_page_flag():
     ES_URL = ReadConf().elasticsearch()
     sql = f"SELECT * FROM `Paper`.`cnki_page_flag` WHERE ES_flag is null and `flag` is not null"
-    flag, data = Date_base().select(sql)
+    flag, data = DB().select(sql)
 
     for i in data:
         date = str(i[0])
@@ -431,4 +431,4 @@ def create_cnki_page_flag():
             Log().write_log(f"写入日期失败 {str(i[0])}", 'error')
 
         sql = f"update `Paper`.`cnki_page_flag` SET ES_flag = '1' where `date` = '{str(i[0])}'"
-        Date_base().update(sql)
+        DB().update(sql)
