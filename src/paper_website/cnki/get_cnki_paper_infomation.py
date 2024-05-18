@@ -182,11 +182,11 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
             advisor = class_dict.get('导师：')
             subject = class_dict.get('学科专业：')
 
-            electronic_journal_xpath = f'''//*[@id="bsdzqkcbxx"]/p'''
-            try:
-                electronic_journal = WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, electronic_journal_xpath))).text
-            except:
-                electronic_journal = None
+            # electronic_journal_xpath = f'''//*[@id="bsdzqkcbxx"]/p'''
+            # try:
+            #     electronic_journal = WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, electronic_journal_xpath))).text
+            # except:
+            electronic_journal = None
 
         if len(driver.window_handles) > 2:
             return False
@@ -399,13 +399,13 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
                 f"`update_time`, `funding`, `album`, `classification_number`, "
                 f"`article_directory`, `Topics`, `level`, `page_sum`, `journal`, "
                 f"`master`, `PhD`, `international_journals`, `book`, "
-                f"`Chinese_and_foreign`, `newpaper`, `advisor`, `subject`, `electronic_journal`) "
+                f"`Chinese_and_foreign`, `newpaper`, `advisor`, `subject`) "
                 f"VALUES "
                 f"('{uuid}', '{institute}', '{source}', '{ndb_type}', {down_sun}, {quote}, '{insert_time}',"
                 f" '{update_time}', '{funding}', '{publication}', '{classification_number}',"
                 f" '{article_directory}', '{topic}', '{level}', '{page_sum}', '{pl_list[0]}',"
                 f" '{pl_list[1]}', '{pl_list[2]}', '{pl_list[3]}', '{pl_list[4]}',"
-                f" '{pl_list[5]}', '{pl_list[6]}', '{advisor}', '{subject}', '{electronic_journal}');")
+                f" '{pl_list[5]}', '{pl_list[6]}', '{advisor}', '{subject}');")
 
         sql3 = (f"UPDATE `Paper`.`cnki_index` SET "
                 f"`receive_time` = '{date}', "

@@ -507,7 +507,6 @@ def open_paper_info(driver, paper_title):
             WebDriverWait(driver, time_out).until(
                 EC.presence_of_element_located((By.XPATH, open_page_data['cs']))).click()
         except TimeoutException:
-
             return False
 
         time.sleep(2)
