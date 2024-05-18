@@ -21,7 +21,9 @@ class Arxiv_paper_down:
         self.down_path = self.conf.down_path()
         self.logger = Log()
 
-    def paper_down(self, sql):
+    def paper_down(self):
+        sql = (f"SELECT UUID, web_site_id, version, withdrawn FROM `Paper`.`index` "
+               f"WHERE state = '02' and classification_zh like '%cs%' ORDER BY receive_time desc limit 100")
         flag, data = DB().select(sql)
         url = None
         for i in data:

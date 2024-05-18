@@ -29,15 +29,12 @@ class Index:
         if flag == '4':
             from src.paper_website.arxiv.arxiv_paper_down import Arxiv_paper_down
             print("下载arxiv论文")
-            while True:
-                sql = (f"SELECT UUID, web_site_id, version, withdrawn FROM `Paper`.`index` "
-                       f"WHERE state = '02' and classification_zh like '%cs%' ORDER BY receive_time desc limit 100")
-                Arxiv_paper_down().paper_down(sql)
+            Arxiv_paper_down().paper_down()
 
         if flag == '5':
             from src.paper_website.cnki.run_cnki import run_get_paper_title
             print("获取cnki论文基础数据")
-            run_get_paper_title(0, 0, 0, False)
+            run_get_paper_title()
 
         if flag == '6':
             from src.paper_website.cnki.run_cnki import run_get_paper_info

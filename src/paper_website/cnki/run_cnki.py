@@ -15,18 +15,16 @@ import signal
 logger = Log()
 
 
-def run_get_paper_title(click_flag, total_page, total_count, None_message):
+def run_get_paper_title():
     driver, proxy_ID, proxy_flag = webserver()
     try:
         sql = f"SELECT `date`, flag FROM cnki_page_flag WHERE flag != '1111111111' ORDER BY `date` DESC LIMIT 1"
         flag, data = DB().select(sql)
-
         paper_day = data[0][0]
         paper_flag = data[0][1]
 
         res_unm, paper_type, date_str, paper_sum = open_page_of_title(driver, paper_day, paper_flag)
         if res_unm and res_unm != 0:
-            page_click_sort_type(driver, click_flag)
             get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum)
 
         else:
@@ -35,7 +33,6 @@ def run_get_paper_title(click_flag, total_page, total_count, None_message):
 
         if flag is False:
             driver.close()
-            # run_get_paper_title(click_flag, total_page, total_count, None_message)
 
         else:
             try:
