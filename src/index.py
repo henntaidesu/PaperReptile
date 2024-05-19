@@ -9,8 +9,7 @@ class Index:
         self.conf = ReadConf()
 
     def index(self):
-        flag = '5'
-
+        flag = '6'
         if flag == '1':
             from src.paper_website.arxiv.arxivorg import ArxivOrg
             print("获取arxiv论文")

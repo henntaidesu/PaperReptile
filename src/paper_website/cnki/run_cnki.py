@@ -27,6 +27,9 @@ def run_get_paper_title():
         if res_unm and res_unm != 0:
             get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum)
 
+        elif res_unm and paper_type is False:
+            driver.close()
+            run_get_paper_title()
         else:
             get_title_data_is_none(paper_flag, paper_day)
             return False
@@ -47,7 +50,7 @@ def run_get_paper_title():
                 else:
                     err2(e)
 
-            run_get_paper_title(0, 0, 0, False)
+            run_get_paper_title( )
 
     except KeyboardInterrupt:
         if driver:
@@ -98,10 +101,10 @@ def run_get_paper_info():
             if page_flag > 1:
                 sql = f"UPDATE `cnki_index` SET `status` = 'a' WHERE `UUID` = '{uuid}';"
                 rabbitmq_produce('MYSQL_UPDATE', sql)
-            elif page_flag is False:
+            elif page_flag in (False, '输入框加载超时', '结果数量加载超时'):
                 sql = f"UPDATE `Paper`.`cnki_index` SET  `status` = '9' WHERE UUID = '{uuid}';"
                 rabbitmq_produce('MYSQL_UPDATE', sql)
-            else:
+            elif page_flag is True:
                 flag = get_paper_info(driver, time_out, uuid, title, db_type, receive_time)
                 if flag is False:
                     sql = f"UPDATE `Paper`.`cnki_index` SET `status` = '0' where `uuid` = '{uuid}';"

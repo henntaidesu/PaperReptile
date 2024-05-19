@@ -58,7 +58,7 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum)
                 flag, paper_title = DB().select(sql)
                 len_data = len(paper_title)
                 total_page += 1
-                print(f'当前总查询页码   :   {total_page }')
+                logger.write_log(f'当前总查询页码   :   {total_page }', 'info')
                 if total_page == 1080 + 1:
                     return True
                 time.sleep(3)
@@ -69,8 +69,8 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum)
                 # 循环网页一页中的条目
                 for i in range(1, len(title_list) + 1):
 
-                    print(f"正在爬取第{count}条基础数据,跳过{new_paper_sum}"
-                          f"条(当前查询条件第{(count - 1) // paper_sum + 1}页第{i}条。总第{count}次查询 共{res_unm}条):")
+                    logger.write_log(f"正在爬取第{count}条基础数据,跳过{new_paper_sum}"
+                          f"条(当前查询条件第{(count - 1) // paper_sum + 1}页第{i}条。总第{count}次查询 共{res_unm}条):", 'info')
 
                     try:
                         try:
@@ -101,7 +101,7 @@ def get_paper_title(driver, res_unm, paper_type, paper_day, date_str, paper_sum)
                         if_title = False
                         for ii in paper_title:
                             if ii[0] == title:
-                                print(f"数据已存在 : {title} \n")
+                                logger.write_log(f"数据已存在 : {title} \n", 'info')
                                 if_title = True
                                 break
 

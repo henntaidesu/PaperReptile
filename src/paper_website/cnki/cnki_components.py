@@ -55,7 +55,7 @@ def webserver():
         options.add_argument('--silent')  # 禁止 DevTools 输出
         options.add_experimental_option('excludeSwitches', ['enable-logging'])  # 禁用 DevTools 监听输出
 
-        # options.add_argument('--headless')  # 不唤起实体浏览器
+        options.add_argument('--headless')  # 不唤起实体浏览器
 
         proxy_flag = read_conf.cnki_proxy()
         if proxy_flag:
@@ -409,41 +409,52 @@ def open_page_of_title(driver, paper_day, paper_flag):
         WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['cs']))).click()
         time.sleep(2)
 
-        # 切换搜索文章类型
+        # 确认时间设置:
+        start_xpath = '''//*[@id="datebox0"]'''
+        end_xpath = '''//*[@id="datebox1"]'''
+        start = None
+        end = None
+        start = WebDriverWait(driver, time_out).until(
+            EC.presence_of_element_located((By.XPATH, start_xpath))).get_attribute('txt')
+        end = WebDriverWait(driver, time_out).until(
+            EC.presence_of_element_located((By.XPATH, end_xpath))).get_attribute('txt')
 
-        paper_type, date_str = choose_banner(driver, time_out, paper_day, paper_flag)
-        time.sleep(5)
+        if start == end:
+            # 切换搜索文章类型
+            paper_type, date_str = choose_banner(driver, time_out, paper_day, paper_flag)
+            time.sleep(3)
+            # 文献数和页数
+            try:
+                res_unm = WebDriverWait(driver, time_out).until(
+                    EC.presence_of_element_located((By.XPATH, open_page_data['gn']))).text
+            except:
+                xpath = '''//*[@id="fakediv"]'''
+                res_unm = WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, xpath))).text
+                print(res_unm)
+                if res_unm == '抱歉，暂无数据，可尝试更换检索词。':
+                    res_unm = None
+                    return res_unm, paper_type, date_str, 50
 
-        # 文献数和页数
-        try:
-            res_unm = WebDriverWait(driver, time_out).until(
-                EC.presence_of_element_located((By.XPATH, open_page_data['gn']))).text
-        except:
-            xpath = '''//*[@id="fakediv"]'''
-            res_unm = WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, xpath))).text
-            print(res_unm)
-            if res_unm == '抱歉，暂无数据，可尝试更换检索词。':
-                res_unm = None
-                return res_unm, paper_type, date_str, 50
+            if res_unm:
+                res_unm = int(res_unm.replace(",", ''))
+                # if res_unm > 5950:
+                #     # 按发表顺序正
+                #     WebDriverWait(driver, time_out).until(
+                #         EC.presence_of_element_located((By.XPATH, '//*[@id="PT"]'))).click()
+                #     time.sleep(2)
+                if res_unm > 49:
+                    WebDriverWait(driver, time_out).until(
+                        EC.presence_of_element_located((By.XPATH, open_page_data['display']))).click()
+                    time.sleep(2)
+                    WebDriverWait(driver, time_out).until(
+                        EC.presence_of_element_located((By.XPATH, open_page_data['50']))).click()
+                    time.sleep(2)
 
-        if res_unm:
-            res_unm = int(res_unm.replace(",", ''))
-            # if res_unm > 5950:
-            #     # 按发表顺序正
-            #     WebDriverWait(driver, time_out).until(
-            #         EC.presence_of_element_located((By.XPATH, '//*[@id="PT"]'))).click()
-            #     time.sleep(2)
-            if res_unm > 49:
-                WebDriverWait(driver, time_out).until(
-                    EC.presence_of_element_located((By.XPATH, open_page_data['display']))).click()
-                time.sleep(2)
-                WebDriverWait(driver, time_out).until(
-                    EC.presence_of_element_located((By.XPATH, open_page_data['50']))).click()
-                time.sleep(2)
-
-        paper_sum = 50
-        print(f"共找到 {res_unm} 条结果, {int(res_unm / paper_sum + 1)} 页。")
-        return res_unm, paper_type, date_str, paper_sum
+            paper_sum = 50
+            print(f"共找到 {res_unm} 条结果, {int(res_unm / paper_sum + 1)} 页。")
+            return res_unm, paper_type, date_str, paper_sum
+        else:
+            return False, False, False, False
     except Exception as e:
         # driver.close()
         err2(e)
@@ -491,7 +502,7 @@ def get_paper_type_number(driver, yy, mm, dd):
 
 def open_paper_info(driver, paper_title):
     try:
-        time_out = 8
+        time_out = 12
         url = f"https://kns.cnki.net/kns8/AdvSearch"
         # url = f"https://www.cnki.net/index/"
         driver.get(url)
@@ -501,7 +512,7 @@ def open_paper_info(driver, paper_title):
                 EC.presence_of_element_located((By.XPATH, open_page_data['ik']))).send_keys(paper_title)
         except TimeoutException:
             logger.write_log(f"{paper_title} - 输入框加载超时", 'error')
-            return False
+            return '输入框加载超时'
 
         try:
             WebDriverWait(driver, time_out).until(
@@ -514,9 +525,13 @@ def open_paper_info(driver, paper_title):
         try:
             res_unm = WebDriverWait(driver, time_out).until(
                 EC.presence_of_element_located((By.XPATH, open_page_data['gn']))).text
+            if res_unm:
+                res_unm = re.findall(r'\d+', res_unm)[0]
+                print(res_unm)
+
         except TimeoutException:
             logger.write_log(f"{paper_title} - 结果数量加载超时", 'error')
-            return False
+            return '结果数量加载超时'
 
         paper_sum = 20
         res_unm = int(res_unm.replace(",", ''))

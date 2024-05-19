@@ -156,7 +156,7 @@ def positioned_element():  # 定位元素
         'ca': 'li[data-val="RP"]',
         'ik': '''//*[@id="gradetxt"]/dd[1]/div[2]/input''',
         'cs': '''//*[@id="ModuleSearch"]/div[1]/div/div[2]/div/div[1]/div[1]/div[2]/div[3]/input''',
-        'gn': '''//*[@id="countPageDiv"]/span[1]/em''',
+        'gn': '''//*[@id="ModuleSearch"]/div[2]/div/div/div/a/em''',
         'display': '''//*[@id="perPageDiv"]/div''',
         '50': '''//*[@id="perPageDiv"]/ul/li[3]/a''',
 
