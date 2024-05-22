@@ -90,6 +90,8 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
             ndb_type = 'c'
         elif ndb_type == '国家标准':
             ndb_type = 'd'
+        elif ndb_type == '科技成果':
+            ndb_type = 'e'
         else:
             ndb_type = '9'
     except Exception as e:
@@ -279,6 +281,7 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
 
             while True:
                 driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.END)  # 拉取页面到最低端
+                time.sleep(1)
                 if paper_flag == len(pl_list):
                     break
                 paper_list = None
@@ -399,13 +402,13 @@ def get_paper_info(driver, time_out, uuid, title1, db_type, receive_time):
                 f"`update_time`, `funding`, `album`, `classification_number`, "
                 f"`article_directory`, `Topics`, `level`, `page_sum`, `journal`, "
                 f"`master`, `PhD`, `international_journals`, `book`, "
-                f"`Chinese_and_foreign`, `newpaper`, `advisor`, `subject`) "
+                f"`Chinese_and_foreign`, `newpaper`, `patent`, `standard`, `advisor`, `subject`) "
                 f"VALUES "
                 f"('{uuid}', '{institute}', '{source}', '{ndb_type}', {down_sun}, {quote}, '{insert_time}',"
                 f" '{update_time}', '{funding}', '{publication}', '{classification_number}',"
                 f" '{article_directory}', '{topic}', '{level}', '{page_sum}', '{pl_list[0]}',"
                 f" '{pl_list[1]}', '{pl_list[2]}', '{pl_list[3]}', '{pl_list[4]}',"
-                f" '{pl_list[5]}', '{pl_list[6]}', '{advisor}', '{subject}');")
+                f" '{pl_list[5]}', '{pl_list[6]}', '{pl_list[7]}', '{pl_list[8]}', '{advisor}', '{subject}');")
 
         sql3 = (f"UPDATE `Paper`.`cnki_index` SET "
                 f"`receive_time` = '{date}', "

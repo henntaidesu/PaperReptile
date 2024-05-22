@@ -246,6 +246,10 @@ def reference_papers():
         'Chinese_and_foreign': 'quotation-crldeng',
         # 报纸
         'newpaper': 'quotation-newpaper',
+        # 专利
+        'patent': 'quotation-patent',
+        # 标准
+        'standard': 'quotation-stand',
     }
 
     return xpaths
@@ -261,7 +265,9 @@ class QuotePaper:
         book = 'book'
         Chinese_and_foreign = 'Chinese_and_foreign'
         newpaper = 'newpaper'
-        paper = [journa, master, PhD, international_journals, book, Chinese_and_foreign, newpaper]
+        patent = 'patent'
+        dis = 'standard'
+        paper = [journa, master, PhD, international_journals, book, Chinese_and_foreign, newpaper, patent, dis]
         return paper
 
     @staticmethod
@@ -273,12 +279,13 @@ class QuotePaper:
         book = None
         Chinese_and_foreign = None
         newpaper = None
-        paper = [journal, master, PhD, international, book, Chinese_and_foreign, newpaper]
+        patent = None
+        dis = None
+        paper = [journal, master, PhD, international, book, Chinese_and_foreign, newpaper, patent, dis]
         return paper
 
 
 class Crawl:
-
     @staticmethod
     def xpath_inf():
         xpath = "/html/body/div[2]/div[1]/div[3]/div/div/div"

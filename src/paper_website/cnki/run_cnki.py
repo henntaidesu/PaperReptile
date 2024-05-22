@@ -64,77 +64,82 @@ def run_get_paper_title():
 
 
 def run_get_paper_info():
-    time_out = 10
-    queue_name = "paper_title_status=0"
-    proxy_flag = None
-    proxy_ID = None
-    driver = None
-    uuid = None
-    try:
-        data = rabbitmq_consume(queue_name)
-        if data is None:
-            logger.write_log("队列无数据", 'warning')
-            time.sleep(60)
-            return
+    while True:
+        time_out = 10
+        queue_name = "paper_title_status=0"
+        proxy_flag = None
+        proxy_ID = None
+        driver = None
+        uuid = None
+        try:
+            data = rabbitmq_consume(queue_name)
+            if data is None:
+                logger.write_log("队列无数据", 'warning')
+                time.sleep(60)
+                return
 
-        data = [item.strip() for item in data.split(',')]
+            data = [item.strip() for item in data.split(',')]
 
-        uuid = data[0]
-        title = data[1]
-        receive_time = data[2]
-        status = data[3]
-        db_type = data[4]
+            uuid = data[0]
+            title = data[1]
+            receive_time = data[2]
+            status = data[3]
+            db_type = data[4]
 
-        # uuid = "41d9659a-d592-45bc-a413-49f22fe8a9a8"
-        # title = '“00后”大学生认知特点及教育管理对策研究—基于认知风格的实证调查'
-        # receive_time = '2023-06-01 00:00:00'
-        # status = '1'
-        # db_type = '2'
+            # uuid = "3bed00a8-0402-4b6c-9107-f960504f2b1f"
+            # title = '卡尔费休法测定有机胺中水分含量的改进研究'
+            # receive_time = '2022-03-29 11:27:00'
+            # status = '1'
+            # db_type = '1'
 
-        if len(title) < 6:
-            sql = f"UPDATE `Paper`.`cnki_index` SET  `status` = '8' WHERE UUID = '{uuid}';"
-            rabbitmq_produce('MYSQL_UPDATE', sql)
-        else:
-            driver, proxy_ID, proxy_flag = webserver()
-            page_flag = open_paper_info(driver, title)
-            logger.write_log(f"{title} - 共找到 {page_flag}条结果 ", 'info')
-            if page_flag > 1:
-                sql = f"UPDATE `cnki_index` SET `status` = 'a' WHERE `UUID` = '{uuid}';"
+            if len(title) < 6:
+                sql = f"UPDATE `Paper`.`cnki_index` SET  `status` = '8' WHERE UUID = '{uuid}';"
                 rabbitmq_produce('MYSQL_UPDATE', sql)
-            elif page_flag in (False, '输入框加载超时', '结果数量加载超时'):
-                sql = f"UPDATE `Paper`.`cnki_index` SET  `status` = '9' WHERE UUID = '{uuid}';"
-                rabbitmq_produce('MYSQL_UPDATE', sql)
-            elif page_flag is True:
-                flag = get_paper_info(driver, time_out, uuid, title, db_type, receive_time)
-                if flag is False:
-                    sql = f"UPDATE `Paper`.`cnki_index` SET `status` = '0' where `uuid` = '{uuid}';"
+            else:
+                driver, proxy_ID, proxy_flag = webserver()
+                res_unm = open_paper_info(driver, title)
+                logger.write_log(f"{title} - 共找到 {res_unm}条结果 ", 'info')
+                if res_unm in ('输入框加载超时', '结果数量加载超时', '输入框加载超时', '点击搜索超时'):
+                    sql = f"UPDATE `cnki_index` SET `status` = 'a' WHERE `UUID` = '{uuid}';"
                     rabbitmq_produce('MYSQL_UPDATE', sql)
-    except KeyboardInterrupt:
-        sql = f"UPDATE `Paper`.`cnki_index` SET `status` = '0' where `uuid` = '{uuid}';"
-        rabbitmq_produce('MYSQL_UPDATE', sql)
-        logger.write_log(f"程序正在关闭", 'info')
+                elif res_unm is False:
+                    sql = f"UPDATE `Paper`.`cnki_index` SET  `status` = '9' WHERE UUID = '{uuid}';"
+                    rabbitmq_produce('MYSQL_UPDATE', sql)
+                elif res_unm > 1:
+                    sql = f"UPDATE `Paper`.`cnki_index` SET  `status` = '0' WHERE UUID = '{uuid}';"
+                    rabbitmq_produce('MYSQL_UPDATE', sql)
+                else:
+                    flag = get_paper_info(driver, time_out, uuid, title, db_type, receive_time)
+                    if flag is False:
+                        sql = f"UPDATE `Paper`.`cnki_index` SET `status` = '0' where `uuid` = '{uuid}';"
+                        rabbitmq_produce('MYSQL_UPDATE', sql)
+        except KeyboardInterrupt:
+            sql = f"UPDATE `Paper`.`cnki_index` SET `status` = '0' where `uuid` = '{uuid}';"
+            rabbitmq_produce('MYSQL_UPDATE', sql)
+            logger.write_log(f"程序正在关闭", 'info')
 
-    except Exception as e:
-        if type(e).__name__ == 'WebDriverException' and proxy_flag is True:
-            logger.write_log(f"代理编号{proxy_ID}错误", 'error')
-            # sql = f"UPDATE `Paper`.`proxy_pool` SET `status` = 'D' WHERE `id` = {proxy_ID};"
-            # Date_base().update(sql)
-            sql = f"UPDATE `Paper`.`cnki_index` SET `status` = '0' where `uuid` = '{uuid}';"
-            rabbitmq_produce('MYSQL_UPDATE', sql)
-        elif type(e).__name__ == 'TimeoutException' and proxy_flag is True:
-            logger.write_log(f"代理编号{proxy_ID}超时", 'error')
-            sql = f"UPDATE `Paper`.`cnki_index` SET `status` = '0' where `uuid` = '{uuid}';"
-            rabbitmq_produce('MYSQL_UPDATE', sql)
-        else:
-            sql = f"UPDATE `Paper`.`cnki_index` SET `status` = '0' where `uuid` = '{uuid}';"
-            rabbitmq_produce('MYSQL_UPDATE', sql)
-            err2(e)
-    finally:
-        if driver:
-            all_handles = driver.window_handles
-            for handle in all_handles:
-                driver.switch_to.window(handle)
-                driver.close()
+        except Exception as e:
+            if type(e).__name__ == 'WebDriverException' and proxy_flag is True:
+                logger.write_log(f"代理编号{proxy_ID}错误", 'error')
+                # sql = f"UPDATE `Paper`.`proxy_pool` SET `status` = 'D' WHERE `id` = {proxy_ID};"
+                # Date_base().update(sql)
+                sql = f"UPDATE `Paper`.`cnki_index` SET `status` = '0' where `uuid` = '{uuid}';"
+                rabbitmq_produce('MYSQL_UPDATE', sql)
+            elif type(e).__name__ == 'TimeoutException' and proxy_flag is True:
+                logger.write_log(f"代理编号{proxy_ID}超时", 'error')
+                sql = f"UPDATE `Paper`.`cnki_index` SET `status` = '0' where `uuid` = '{uuid}';"
+                rabbitmq_produce('MYSQL_UPDATE', sql)
+            else:
+                sql = f"UPDATE `Paper`.`cnki_index` SET `status` = '0' where `uuid` = '{uuid}';"
+                rabbitmq_produce('MYSQL_UPDATE', sql)
+                err2(e)
+                print(res_unm)
+        finally:
+            if driver:
+                all_handles = driver.window_handles
+                for handle in all_handles:
+                    driver.switch_to.window(handle)
+                    driver.close()
 
 
 def run_multi_title_data():

@@ -485,14 +485,14 @@ def get_paper_type_number(driver, yy, mm, dd):
         time.sleep(3)
         # 设置时间
         yy, mm, dd = CNKI().read_cnki_date()
-        paper_day = setting_select_date(driver, time_out, yy, mm, dd)
+        setting_select_date(driver, time_out, yy, mm, dd)
 
         # 点击搜索
         WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['cs']))).click()
         time.sleep(2)
 
         # 切换搜索文章类型
-        paper_type, date_str = choose_banner(driver, time_out, paper_day)
+        paper_type, date_str = choose_banner(driver, time_out)
 
         logger.write_log(f"{yy}-{mm}-{dd} - 已获取文章数量", 'info')
         return True
@@ -504,40 +504,32 @@ def open_paper_info(driver, paper_title):
     try:
         time_out = 12
         url = f"https://kns.cnki.net/kns8/AdvSearch"
-        # url = f"https://www.cnki.net/index/"
         driver.get(url)
 
         try:
             WebDriverWait(driver, time_out).until(
                 EC.presence_of_element_located((By.XPATH, open_page_data['ik']))).send_keys(paper_title)
         except TimeoutException:
-            logger.write_log(f"{paper_title} - 输入框加载超时", 'error')
             return '输入框加载超时'
 
         try:
-            WebDriverWait(driver, time_out).until(
-                EC.presence_of_element_located((By.XPATH, open_page_data['cs']))).click()
+            WebDriverWait(driver, time_out).until(EC.presence_of_element_located((By.XPATH, open_page_data['cs']))).click()
+            time.sleep(1)
         except TimeoutException:
-            return False
-
-        time.sleep(2)
+            return '点击搜索超时'
 
         try:
-            res_unm = WebDriverWait(driver, time_out).until(
-                EC.presence_of_element_located((By.XPATH, open_page_data['gn']))).text
-            if res_unm:
-                res_unm = re.findall(r'\d+', res_unm)[0]
-                print(res_unm)
-
+            text = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.XPATH, '''//*[@id="briefBox"]/p'''))).text
+            if text == '抱歉，暂无数据，请稍后重试。':
+                return False
+        except:
+            pass
+        try:
+            res_unm = WebDriverWait(driver, time_out).until(EC.presence_of_all_elements_located((By.CLASS_NAME, "fz14")))
         except TimeoutException:
             logger.write_log(f"{paper_title} - 结果数量加载超时", 'error')
             return '结果数量加载超时'
-
-        paper_sum = 20
-        res_unm = int(res_unm.replace(",", ''))
-        page_unm = int(res_unm / paper_sum) + 1
-        # print(f"共找到 {res_unm} 条结果, {page_unm} 页。")
-        return res_unm
+        return len(res_unm)
     except Exception as e:
         if type(e).__name__ == 'TimeoutException' or type(e).__name__ == 'WebDriverException':
             logger.write_log(f"启动浏览器超时 - {paper_title}", 'error')

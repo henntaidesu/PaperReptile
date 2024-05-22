@@ -29,9 +29,9 @@ class Process:
         try:
             processes, state_interval = self.conf.processes()
             pool = multiprocessing.Pool(processes=processes)
-            for i in range(processes):
+            for _ in range(processes):
                 pool.apply_async(func)
-                time.sleep(state_interval)  # 启动间隔
+                time.sleep(state_interval)
             pool.close()
             pool.join()
 
